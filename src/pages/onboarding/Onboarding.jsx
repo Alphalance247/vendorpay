@@ -178,8 +178,9 @@ const COUNTRY_PROFILES = {
 };
 
 function BankingStep({ data, onChange }) {
-  const country = data.country || 'US';
-  const profile = COUNTRY_PROFILES[country] ?? COUNTRY_PROFILES.US;
+  const country = data.country;
+  const profile = COUNTRY_PROFILES[country] || { rail: '', bankPlaceholder: '', fields: [], accountTypes: [] };
+  const countrySelected = !!country;
   const mismatch = data.accountNumber && data.confirmAccount && data.accountNumber !== data.confirmAccount;
 
   return (
@@ -196,67 +197,104 @@ function BankingStep({ data, onChange }) {
         All bank accounts must be verified through our secure automated system before first disbursement can be processed.
       </div>
 
+      {/* Country + Payment Rail — ALWAYS ENABLED */}
       <div className="grid grid-cols-2 gap-4">
         <Select label="Country" name="country" value={country} onChange={onChange}>
+          <option value="">Select Country First</option>
           {Object.entries(COUNTRY_PROFILES).map(([code, { label }]) => (
-            <option key={code} value={code}>{label}</option>
+            <option key={code} value={code}>
+              {label}
+            </option>
           ))}
         </Select>
         <div className="flex flex-col gap-1">
           <label className="text-xs font-semibold tracking-wide text-on-surface-variant uppercase">Payment Rail</label>
           <div className="w-full rounded border border-outline-variant bg-surface-low px-3 py-2 text-sm text-on-surface-variant">
-            {profile.rail}
+            {countrySelected ? profile.rail : 'Select a country first'}
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        {profile.fields.map((field) => (
-          <div key={field.name} className={profile.fields.length % 2 === 1 && field === profile.fields[profile.fields.length - 1] ? 'col-span-2' : ''}>
+      {/* ALL BANKING FIELDS — BLOCKED UNTIL COUNTRY SELECTED */}
+      <div className="relative">
+        {/* Overlay: blocks all interaction when no country selected */}
+        {!countrySelected && (
+          <div className="absolute inset-0 z-10 bg-surface/60 backdrop-blur-[1px] rounded-lg cursor-not-allowed flex items-center justify-center">
+            <div className="bg-white border border-outline-variant rounded-lg px-4 py-3 shadow-sm text-center">
+              <p className="text-sm font-medium text-on-surface">Select a country first</p>
+              <p className="text-xs text-on-surface-variant mt-1">Banking fields will appear here</p>
+            </div>
+          </div>
+        )}
+
+        <div className={cn(
+          "grid grid-cols-2 gap-4 transition-opacity duration-200",
+          !countrySelected && "opacity-40 pointer-events-none select-none"
+        )}>
+          {profile.fields.map((field) => (
+            <div key={field.name} className={profile.fields.length % 2 === 1 && field === profile.fields[profile.fields.length - 1] ? 'col-span-2' : ''}>
+              <Input
+                label={field.label}
+                name={field.name}
+                value={data[field.name] || ''}
+                onChange={onChange}
+                placeholder={field.placeholder}
+                hint={field.hint}
+                disabled={!countrySelected}
+              />
+            </div>
+          ))}
+
+          <Input
+            label="Bank Name"
+            name="bankName"
+            value={data.bankName}
+            onChange={onChange}
+            placeholder={profile.bankPlaceholder}
+            disabled={!countrySelected}
+          />
+          <Select
+            label="Account Type"
+            name="accountType"
+            value={data.accountType}
+            onChange={onChange}
+            disabled={!countrySelected}
+          >
+            <option value="">Select account type</option>
+            {profile?.accountTypes?.map((t) => (
+              <option key={t} value={t}>{t}</option>
+            ))}
+          </Select>
+
+          <div className="col-span-2">
             <Input
-              label={field.label}
-              name={field.name}
-              value={data[field.name] || ''}
+              label="Confirm Account Number"
+              name="confirmAccount"
+              value={data.confirmAccount}
               onChange={onChange}
-              placeholder={field.placeholder}
-              hint={field.hint}
+              placeholder="Re-enter account number"
+              error={mismatch ? 'Account numbers do not match' : undefined}
+              disabled={!countrySelected}
             />
           </div>
-        ))}
-
-        <Input
-          label="Bank Name"
-          name="bankName"
-          value={data.bankName}
-          onChange={onChange}
-          placeholder={profile.bankPlaceholder}
-        />
-        <Select label="Account Type" name="accountType" value={data.accountType} onChange={onChange}>
-          {profile.accountTypes.map((t) => (
-            <option key={t}>{t}</option>
-          ))}
-        </Select>
-
-        <div className="col-span-2">
-          <Input
-            label="Confirm Account Number"
-            name="confirmAccount"
-            value={data.confirmAccount}
-            onChange={onChange}
-            placeholder="Re-enter account number"
-            error={mismatch ? 'Account numbers do not match' : undefined}
-          />
         </div>
       </div>
 
-      <label className="flex items-start gap-2 cursor-pointer select-none text-sm text-on-surface-variant">
-        <input type="checkbox" className="mt-0.5 accent-emerald" />
+      {/* Authorization checkbox — also blocked */}
+      <label className={cn(
+        "flex items-start gap-2 select-none text-sm",
+        !countrySelected ? "text-on-surface-variant/40 cursor-not-allowed" : "text-on-surface-variant cursor-pointer"
+      )}>
+        <input 
+          type="checkbox" 
+          className="mt-0.5 accent-emerald" 
+          disabled={!countrySelected} 
+        />
         I authorize VendorPay to perform a small test deposit to verify this account. I understand that failure to verify may delay payment cycles.
       </label>
     </div>
   );
 }
-
 function ContactStep({ data, onChange }) {
   return (
     <div className="space-y-4">
@@ -272,12 +310,13 @@ function ContactStep({ data, onChange }) {
         <Input label="Job Title" name="title" value={data.title} onChange={onChange} placeholder="Accounts Payable Manager" />
         <Select label="Department" name="department" value={data.department} onChange={onChange}>
           <option value="">Select department</option>
-          <option>Finance</option>
-          <option>Accounting</option>
-          <option>Operations</option>
-          <option>Legal</option>
-          <option>Other</option>
+          <option value="Finance">Finance</option>
+          <option value="Accounting">Accounting</option>
+          <option value="Operations">Operations</option>
+          <option value="Legal">Legal</option>
+          <option value="Other">Other</option>
         </Select>
+
       </div>
     </div>
   );
@@ -324,7 +363,7 @@ export default function Onboarding() {
   const [step, setStep] = useState(0);
   const [data, setData] = useState({
     company: { companyName: '', taxId: '', businessType: '', address: '', website: '', industry: '' },
-    banking: { country: 'US', routingNumber: '', accountNumber: '', confirmAccount: '', bankName: '', accountType: 'Checking', sortCode: '', iban: '', swiftCode: '', branchCode: '', transitNumber: '', institutionNumber: '' },
+    banking: { country: '', routingNumber: '', accountNumber: '', confirmAccount: '', bankName: '', accountType: 'Checking', sortCode: '', iban: '', swiftCode: '', branchCode: '', transitNumber: '', institutionNumber: '' },
     contact: { firstName: '', lastName: '', email: '', phone: '', title: '', department: '' },
   });
 

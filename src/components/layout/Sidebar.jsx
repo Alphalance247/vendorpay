@@ -42,7 +42,6 @@ export default function Sidebar({ role = 'vendor', user }) {
     { to: '/admin/vendors', icon: Users, label: 'Vendors' },
     { to: '/admin/invoices', icon: FileText, label: 'Invoices' },
     { to: '/admin/payments', icon: CreditCard, label: 'Payments' },
-    { to: '/admin/support', icon: HelpCircle, label: 'Support' },
   ];
 
   const navItems = role === 'admin' ? adminNav : vendorNav;
@@ -67,8 +66,9 @@ export default function Sidebar({ role = 'vendor', user }) {
         ))}
       </nav>
 
+      {/* Bottom section: Support + Sign out + User */}
       <div className="px-2 pb-4 border-t border-white/10 pt-3 space-y-1">
-        <NavItem to="/support" icon={HelpCircle} label="Support" />
+        <NavItem to={role === 'admin' ? '/admin/support' : '/vendor/support'} icon={HelpCircle} label="Support" />
         <button
           onClick={() => navigate('/login')}
           className="flex items-center gap-3 px-3 py-2 rounded text-sm font-medium text-slate-300 hover:bg-white/10 w-full text-left transition-colors"
