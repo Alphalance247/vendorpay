@@ -1,35 +1,62 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Download, ChevronLeft, ChevronRight, SlidersHorizontal, Zap } from 'lucide-react';
+import { Download, ChevronLeft, ChevronRight, SlidersHorizontal, Zap, Loader2 } from 'lucide-react';
 import AppLayout from '../../components/layout/AppLayout';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import Select from '../../components/ui/Select';
 import StatusChip from '../../components/ui/StatusChip';
-import { formatCurrency, formatDate } from '../../lib/utils';
-
-const INVOICES = [
-  { id: 'INV-2024-001', vendor: 'Acme Global Solutions', dept: 'Engineering', date: '2023-10-24', amount: 12450, status: 'Awaiting Payment' },
-  { id: 'INV-2024-002', vendor: 'Starlight IT Systems', dept: 'IT Ops', date: '2023-10-23', amount: 4120, status: 'Pending Review' },
-  { id: 'INV-2024-003', vendor: 'Delta Creative Agency', dept: 'Marketing', date: '2023-10-22', amount: 8900, status: 'Paid' },
-  { id: 'INV-2024-004', vendor: 'Global Logistics Group', dept: 'Supply Chain', date: '2023-10-20', amount: 21000, status: 'Pending Review' },
-];
+import { formatCurrency, formatDate, extractErrorMessage } from '../../lib/utils';
+import { adminInvoiceService } from '../../lib/services/invoiceService';
 
 const TABS = ['All Invoices', 'Pending Review', 'Awaiting Payment', 'Paid'];
 
 export default function AdminInvoiceManagement() {
   const navigate = useNavigate();
+  const [invoices, setInvoices] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState('All Invoices');
   const [vendor, setVendor] = useState('');
   const [department, setDepartment] = useState('');
   const [selected, setSelected] = useState([]);
 
-  const filtered = INVOICES.filter((inv) => {
+  const fetchInvoices = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      // Map frontend tab names to backend status values
+      let statusParam;
+      if (activeTab === 'Pending Review') statusParam = 'submitted';
+      else if (activeTab === 'Awaiting Payment') statusParam = 'reviewed';
+      else if (activeTab === 'Paid') statusParam = 'paid';
+      // 'All Invoices' sends no status filter
+
+      const data = await adminInvoiceService.getAllInvoices({
+        status: statusParam,
+        search: vendor && vendor !== 'All Vendors' ? vendor : undefined,
+      });
+      setInvoices(data);
+    } catch (err) {
+      setError(extractErrorMessage(err));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchInvoices();
+  }, [activeTab]);
+
+  const filtered = invoices.filter((inv) => {
     const matchTab =
       activeTab === 'All Invoices' ||
-      inv.status === activeTab;
-    const matchVendor = !vendor || vendor === 'All Vendors' || inv.vendor === vendor;
-    const matchDept = !department || department === 'All Departments' || inv.dept === department;
+      inv.status === activeTab ||
+      (activeTab === 'Pending Review' && inv.status === 'Submitted') ||
+      (activeTab === 'Awaiting Payment' && (inv.status === 'Awaiting Payment' || inv.status === 'reviewed' || inv.status === 'funding')) ||
+      (activeTab === 'Paid' && inv.status === 'Paid');
+    const matchVendor = !vendor || vendor === 'All Vendors' || inv.vendor === vendor || inv.vendor_name === vendor;
+    const matchDept = !department || department === 'All Departments' || inv.dept === department || inv.department === department;
     return matchTab && matchVendor && matchDept;
   });
 
@@ -39,7 +66,27 @@ export default function AdminInvoiceManagement() {
 
   function toggleAll() {
     if (selected.length === filtered.length) setSelected([]);
-    else setSelected(filtered.map((i) => i.id));
+    else setSelected(filtered.map((i) => i.id || i.invoice_number));
+  }
+
+  async function handleApprove(invoiceId) {
+    try {
+      await adminInvoiceService.approveInvoice(invoiceId, 'Approved after review');
+      fetchInvoices(); // refresh the list
+    } catch (err) {
+      setError(extractErrorMessage(err));
+    }
+  }
+
+  async function handleReject(invoiceId) {
+    const reason = prompt('Enter rejection reason:');
+    if (!reason) return;
+    try {
+      await adminInvoiceService.rejectInvoice(invoiceId, reason);
+      fetchInvoices(); // refresh the list
+    } catch (err) {
+      setError(extractErrorMessage(err));
+    }
   }
 
   return (
@@ -61,6 +108,13 @@ export default function AdminInvoiceManagement() {
           </div>
         </div>
 
+        {/* Error message */}
+        {error && (
+          <div className="p-3 bg-red-50 border border-red-200 rounded text-red-600 text-sm">
+            {error}
+          </div>
+        )}
+
         <div className="grid grid-cols-4 gap-4">
           {/* Filters + table */}
           <div className="col-span-3 space-y-4">
@@ -73,7 +127,11 @@ export default function AdminInvoiceManagement() {
               <div className="grid grid-cols-3 gap-4">
                 <Select label="Vendor" value={vendor} onChange={(e) => setVendor(e.target.value)}>
                   <option>All Vendors</option>
-                  {INVOICES.map((i) => <option key={i.vendor}>{i.vendor}</option>)}
+                  {invoices.map((i) => (
+                    <option key={i.id || i.invoice_number} value={i.vendor || i.vendor_name}>
+                      {i.vendor || i.vendor_name}
+                    </option>
+                  ))}
                 </Select>
                 <div className="flex flex-col gap-1">
                   <label className="text-xs font-semibold tracking-wide text-on-surface-variant uppercase">Amount Range</label>
@@ -113,70 +171,98 @@ export default function AdminInvoiceManagement() {
                 ))}
               </div>
 
-              <table className="w-full">
-                <thead>
-                  <tr className="bg-surface-low border-b border-outline-variant">
-                    <th className="w-10 px-4 py-3">
-                      <input
-                        type="checkbox"
-                        checked={selected.length === filtered.length && filtered.length > 0}
-                        onChange={toggleAll}
-                        className="accent-emerald"
-                      />
-                    </th>
-                    {['Vendor Name', 'Invoice #', 'Date', 'Amount', 'Status', 'Actions'].map((h) => (
-                      <th key={h} className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-on-surface-variant">
-                        {h}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-outline-variant">
-                  {filtered.map((inv) => (
-                    <tr key={inv.id} className="hover:bg-surface-low/50 transition-colors">
-                      <td className="px-4 py-4">
+              {/* Loading state */}
+              {loading ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 size={24} className="animate-spin text-emerald" />
+                  <span className="ml-2 text-sm text-on-surface-variant">Loading invoices...</span>
+                </div>
+              ) : (
+                <table className="w-full">
+                  <thead>
+                    <tr className="bg-surface-low border-b border-outline-variant">
+                      <th className="w-10 px-4 py-3">
                         <input
                           type="checkbox"
-                          checked={selected.includes(inv.id)}
-                          onChange={() => toggleSelect(inv.id)}
+                          checked={selected.length === filtered.length && filtered.length > 0}
+                          onChange={toggleAll}
                           className="accent-emerald"
                         />
-                      </td>
-                      <td className="px-4 py-4">
-                        <p className="text-sm font-semibold text-on-surface">{inv.vendor}</p>
-                        <p className="text-xs text-on-surface-variant">{inv.dept}</p>
-                      </td>
-                      <td className="px-4 py-4 text-sm text-on-surface-variant">{inv.id}</td>
-                      <td className="px-4 py-4 text-sm text-on-surface-variant">{formatDate(inv.date)}</td>
-                      <td className="px-4 py-4 text-sm font-semibold tnum text-on-surface">{formatCurrency(inv.amount)}</td>
-                      <td className="px-4 py-4">
-                        <StatusChip status={inv.status} />
-                      </td>
-                      <td className="px-4 py-4">
-                        {inv.status === 'Paid' ? (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => navigate(`/admin/invoices/${inv.id}`)}
-                          >
-                            View Details
-                          </Button>
-                        ) : (
-                          <Button
-                            size="sm"
-                            onClick={() => navigate(`/admin/invoices/${inv.id}`)}
-                          >
-                            Review
-                          </Button>
-                        )}
-                      </td>
+                      </th>
+                      {['Vendor Name', 'Invoice #', 'Date', 'Amount', 'Status', 'Actions'].map((h) => (
+                        <th key={h} className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-on-surface-variant">
+                          {h}
+                        </th>
+                      ))}
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-outline-variant">
+                    {filtered.map((inv) => (
+                      <tr key={inv.id || inv.invoice_number} className="hover:bg-surface-low/50 transition-colors">
+                        <td className="px-4 py-4">
+                          <input
+                            type="checkbox"
+                            checked={selected.includes(inv.id || inv.invoice_number)}
+                            onChange={() => toggleSelect(inv.id || inv.invoice_number)}
+                            className="accent-emerald"
+                          />
+                        </td>
+                        <td className="px-4 py-4">
+                          <p className="text-sm font-semibold text-on-surface">{inv.vendor || inv.vendor_name}</p>
+                          <p className="text-xs text-on-surface-variant">{inv.dept || inv.department}</p>
+                        </td>
+                        <td className="px-4 py-4 text-sm text-on-surface-variant">{inv.id || inv.invoice_number}</td>
+                        <td className="px-4 py-4 text-sm text-on-surface-variant">{formatDate(inv.date || inv.created_at)}</td>
+                        <td className="px-4 py-4 text-sm font-semibold tnum text-on-surface">{formatCurrency(inv.amount, inv.currency || 'USD')}</td>
+                        <td className="px-4 py-4">
+                          <StatusChip status={inv.status === 'reviewed' ? 'Awaiting Payment' : inv.status === 'submitted' ? 'Pending Review' : inv.status} />
+                        </td>
+                        <td className="px-4 py-4">
+                          <div className="flex items-center gap-2">
+                            {inv.status === 'submitted' && (
+                              <>
+                                <Button
+                                  size="sm"
+                                  variant="emerald"
+                                  onClick={() => handleApprove(inv.id || inv.invoice_number)}
+                                >
+                                  Approve
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="secondary"
+                                  onClick={() => handleReject(inv.id || inv.invoice_number)}
+                                >
+                                  Reject
+                                </Button>
+                              </>
+                            )}
+                            {inv.status === 'reviewed' && (
+                              <Button
+                                size="sm"
+                                variant="emerald"
+                                onClick={() => handleApprove(inv.id || inv.invoice_number)}
+                              >
+                                Fund
+                              </Button>
+                            )}
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => navigate(`/admin/invoices/${inv.id || inv.invoice_number}`)}
+                            >
+                              View
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
 
               <div className="flex items-center justify-between px-5 py-3 border-t border-outline-variant">
-                <p className="text-xs text-on-surface-variant">Showing {filtered.length} of 128 invoices</p>
+                <p className="text-xs text-on-surface-variant">Showing {filtered.length} of {invoices.length} invoices</p>
                 <div className="flex items-center gap-1">
                   <button className="p-1.5 rounded hover:bg-surface-container text-on-surface-variant">
                     <ChevronLeft size={15} />
@@ -201,11 +287,13 @@ export default function AdminInvoiceManagement() {
           <div className="space-y-4">
             <Card className="bg-navy text-white border-0">
               <p className="text-xs font-semibold uppercase tracking-wide text-slate-400 mb-1">Review Pending</p>
-              <p className="text-4xl font-bold">24</p>
+              <p className="text-4xl font-bold">{invoices.filter(i => i.status === 'submitted').length}</p>
             </Card>
             <Card>
               <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant mb-1">Total Volume</p>
-              <p className="text-2xl font-bold tnum text-on-surface">$1.2M</p>
+              <p className="text-2xl font-bold tnum text-on-surface">
+                ${(invoices.reduce((sum, i) => sum + (i.amount || 0), 0) / 1000000).toFixed(1)}M
+              </p>
             </Card>
             <Card className="bg-emerald text-white border-0">
               <p className="text-xs font-semibold uppercase tracking-wide text-emerald-light mb-1">Avg. Processing Time</p>

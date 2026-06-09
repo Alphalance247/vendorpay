@@ -1,13 +1,13 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
-import { Search, Filter, Download, Eye, X } from 'lucide-react';
+import { Search, Filter, Download, Eye, X, Loader2 } from 'lucide-react';
 import AppLayout from '../../components/layout/AppLayout';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import StatusChip from '../../components/ui/StatusChip';
-import { formatCurrency, formatDate } from '../../lib/utils';
-import { useInvoices } from '../../lib/invoiceStore';
+import { formatCurrency, formatDate, extractErrorMessage } from '../../lib/utils';
+import { invoiceService } from '../../lib/services/invoiceService';
 
 const trendData = [
   { month: 'Jun', invoiced: 18000, settled: 12000 },
@@ -19,12 +19,35 @@ const trendData = [
 
 export default function InvoiceHistory() {
   const navigate = useNavigate();
-  const { invoices } = useInvoices();
+  const [invoices, setInvoices] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
 
+  const fetchInvoices = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const data = await invoiceService.getMyInvoices({
+        status: statusFilter !== 'All' ? statusFilter.toLowerCase() : undefined,
+        search: search || undefined,
+      });
+      setInvoices(data);
+    } catch (err) {
+      setError(extractErrorMessage(err));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchInvoices();
+  }, [statusFilter, search]);
+
   const filtered = invoices.filter((inv) => {
-    const matchSearch = inv.id.toLowerCase().includes(search.toLowerCase());
+    const matchSearch = inv.id?.toLowerCase().includes(search.toLowerCase()) || 
+                        inv.invoice_number?.toLowerCase().includes(search.toLowerCase());
     const matchStatus = statusFilter === 'All' || inv.status === statusFilter;
     return matchSearch && matchStatus;
   });
@@ -42,6 +65,13 @@ export default function InvoiceHistory() {
             + Submit New Invoice
           </Button>
         </div>
+
+        {/* Error message */}
+        {error && (
+          <div className="p-3 bg-red-50 border border-red-200 rounded text-red-600 text-sm">
+            {error}
+          </div>
+        )}
 
         {/* Summary stats */}
         <div className="grid grid-cols-4 gap-3">
@@ -91,54 +121,65 @@ export default function InvoiceHistory() {
               <button className="flex items-center gap-1.5 text-xs text-on-surface-variant border border-outline-variant px-3 py-1.5 rounded hover:bg-surface-low transition-colors">
                 <Filter size={12} /> Jan 1, 2024 – Dec 31, 2024
               </button>
-              <button className="flex items-center gap-1.5 text-xs text-on-surface-variant hover:text-on-surface">
+              <button 
+                onClick={() => { setSearch(''); setStatusFilter('All'); }}
+                className="flex items-center gap-1.5 text-xs text-on-surface-variant hover:text-on-surface"
+              >
                 <X size={12} /> Clear Filters
               </button>
             </div>
           </div>
 
-          <table className="w-full">
-            <thead>
-              <tr className="bg-surface-low border-b border-outline-variant">
-                {['Invoice #', 'Date', 'Due Date', 'Amount', 'Status', 'Payment Date', 'Action'].map((h) => (
-                  <th key={h} className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-on-surface-variant">
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-outline-variant">
-              {filtered.map((inv) => (
-                <tr key={inv.id} className="hover:bg-surface-low/50 transition-colors">
-                  <td className="px-6 py-4 text-sm font-semibold text-on-surface">
-                    {inv.id}
-                    {inv.fileName && (
-                      <span className="block text-xs font-normal text-on-surface-variant mt-0.5 truncate max-w-[200px]">{inv.fileName}</span>
-                    )}
-                  </td>
-                  <td className="px-6 py-4 text-sm text-on-surface-variant">{formatDate(inv.date)}</td>
-                  <td className="px-6 py-4 text-sm text-on-surface-variant">{inv.dueDate ? formatDate(inv.dueDate) : '—'}</td>
-                  <td className="px-6 py-4 text-sm font-semibold tnum text-on-surface">{formatCurrency(inv.amount, inv.currency || 'USD')}</td>
-                  <td className="px-6 py-4">
-                    <StatusChip status={inv.status === 'InProgress' ? 'Awaiting Payment' : inv.status} />
-                  </td>
-                  <td className={`px-6 py-4 text-sm ${inv.paymentDate === 'Payment Delayed' ? 'text-error font-medium' : 'text-on-surface-variant'}`}>
-                    {inv.paymentDate}
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-2">
-                      <Button variant="ghost" size="sm" onClick={() => navigate(`/vendor/invoices/${inv.id}`)} className="p-1.5">
-                        <Eye size={15} />
-                      </Button>
-                      <Button variant="ghost" size="sm" className="p-1.5">
-                        <Download size={15} />
-                      </Button>
-                    </div>
-                  </td>
+          {/* Loading state */}
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 size={24} className="animate-spin text-emerald" />
+              <span className="ml-2 text-sm text-on-surface-variant">Loading invoices...</span>
+            </div>
+          ) : (
+            <table className="w-full">
+              <thead>
+                <tr className="bg-surface-low border-b border-outline-variant">
+                  {['Invoice #', 'Date', 'Due Date', 'Amount', 'Status', 'Payment Date', 'Action'].map((h) => (
+                    <th key={h} className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-on-surface-variant">
+                      {h}
+                    </th>
+                  ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-outline-variant">
+                {filtered.map((inv) => (
+                  <tr key={inv.id || inv.invoice_number} className="hover:bg-surface-low/50 transition-colors">
+                    <td className="px-6 py-4 text-sm font-semibold text-on-surface">
+                      {inv.id || inv.invoice_number}
+                      {inv.file_name && (
+                        <span className="block text-xs font-normal text-on-surface-variant mt-0.5 truncate max-w-[200px]">{inv.file_name}</span>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-on-surface-variant">{formatDate(inv.date || inv.created_at)}</td>
+                    <td className="px-6 py-4 text-sm text-on-surface-variant">{inv.due_date ? formatDate(inv.due_date) : '—'}</td>
+                    <td className="px-6 py-4 text-sm font-semibold tnum text-on-surface">{formatCurrency(inv.amount, inv.currency || 'USD')}</td>
+                    <td className="px-6 py-4">
+                      <StatusChip status={inv.status === 'InProgress' ? 'Awaiting Payment' : inv.status} />
+                    </td>
+                    <td className={`px-6 py-4 text-sm ${inv.payment_date === 'Payment Delayed' || inv.payment_date === null ? 'text-error font-medium' : 'text-on-surface-variant'}`}>
+                      {inv.payment_date || '—'}
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-2">
+                        <Button variant="ghost" size="sm" onClick={() => navigate(`/vendor/invoices/${inv.id || inv.invoice_number}`)} className="p-1.5">
+                          <Eye size={15} />
+                        </Button>
+                        <Button variant="ghost" size="sm" className="p-1.5">
+                          <Download size={15} />
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
 
           <div className="px-6 py-3 border-t border-outline-variant flex items-center justify-between">
             <p className="text-xs text-on-surface-variant">Showing {filtered.length} of {invoices.length} invoices</p>

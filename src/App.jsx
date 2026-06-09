@@ -37,7 +37,7 @@ export default function App() {
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
           <Route path="/admin/support" element={<Support admin />} />
           <Route path="/admin/vendors" element={<AdminVendors />} />
-          <Route path="/admin/vendors/:id" element={<VendorDetail />} />  // ← ADD THIS LINE
+          <Route path="/admin/vendors/:id" element={<VendorDetail />} />
           <Route path="/admin/invoices" element={<AdminInvoiceManagement />} />
           <Route path="/admin/invoices/:id" element={<InvoiceDetail />} />
           <Route path="/admin/payments" element={<AdminPayments />} />

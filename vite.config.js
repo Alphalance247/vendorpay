@@ -6,9 +6,10 @@ export default defineConfig({
   plugins: [react()],
   server: {
     proxy: {
-      '/api': {
-        target: 'http://localhost:8000',
+      '/vendorpay': {
+        target: 'https://str.ec2.alluvium.net',
         changeOrigin: true,
+        secure: true,
       }
     }
   }

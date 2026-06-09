@@ -1,26 +1,40 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, ArrowRight, ShieldCheck, Zap } from 'lucide-react';
+import { useAuth } from '../../lib/authContext';
+import { extractErrorMessage } from '../../lib/utils';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 
 export default function Login() {
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [form, setForm] = useState({ email: '', password: '', remember: false });
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
   function handleChange(e) {
     const { name, value, type, checked } = e.target;
     setForm((f) => ({ ...f, [name]: type === 'checkbox' ? checked : value }));
   }
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
-    // Route based on demo role
-    if (form.email.includes('admin')) {
-      navigate('/admin/dashboard');
-    } else {
-      navigate('/vendor/dashboard');
+    setLoading(true);
+    setError('');
+
+    try {
+      const role = await login(form.email, form.password);
+      if (role === 'admin') {
+        navigate('/admin/dashboard');
+      } else {
+        navigate('/onboarding');
+      }
+    } catch (err) {
+      setError(extractErrorMessage(err));
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -96,6 +110,13 @@ export default function Login() {
             </p>
           </div>
 
+          {/* Error message */}
+          {error && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded text-red-600 text-sm">
+              {error}
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="space-y-4">
             <Input
               label="Email Address"
@@ -153,8 +174,8 @@ export default function Login() {
               </span>
             </label>
 
-            <Button type="submit" className="w-full" size="lg">
-              Sign in
+            <Button type="submit" className="w-full" size="lg" disabled={loading}>
+              {loading ? 'Signing in...' : 'Sign in'}
               <ArrowRight size={16} />
             </Button>
           </form>

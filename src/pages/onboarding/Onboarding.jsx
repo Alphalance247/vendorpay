@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Check, ArrowRight, ArrowLeft, Save, HelpCircle, ShieldCheck } from 'lucide-react';
+import { vendorService } from '../../lib/services/vendorService';
+import { extractErrorMessage } from '../../lib/utils';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Select from '../../components/ui/Select';
@@ -197,7 +199,6 @@ function BankingStep({ data, onChange }) {
         All bank accounts must be verified through our secure automated system before first disbursement can be processed.
       </div>
 
-      {/* Country + Payment Rail — ALWAYS ENABLED */}
       <div className="grid grid-cols-2 gap-4">
         <Select label="Country" name="country" value={country} onChange={onChange}>
           <option value="">Select Country First</option>
@@ -215,9 +216,7 @@ function BankingStep({ data, onChange }) {
         </div>
       </div>
 
-      {/* ALL BANKING FIELDS — BLOCKED UNTIL COUNTRY SELECTED */}
       <div className="relative">
-        {/* Overlay: blocks all interaction when no country selected */}
         {!countrySelected && (
           <div className="absolute inset-0 z-10 bg-surface/60 backdrop-blur-[1px] rounded-lg cursor-not-allowed flex items-center justify-center">
             <div className="bg-white border border-outline-variant rounded-lg px-4 py-3 shadow-sm text-center">
@@ -280,7 +279,6 @@ function BankingStep({ data, onChange }) {
         </div>
       </div>
 
-      {/* Authorization checkbox — also blocked */}
       <label className={cn(
         "flex items-start gap-2 select-none text-sm",
         !countrySelected ? "text-on-surface-variant/40 cursor-not-allowed" : "text-on-surface-variant cursor-pointer"
@@ -295,6 +293,7 @@ function BankingStep({ data, onChange }) {
     </div>
   );
 }
+
 function ContactStep({ data, onChange }) {
   return (
     <div className="space-y-4">
@@ -316,7 +315,6 @@ function ContactStep({ data, onChange }) {
           <option value="Legal">Legal</option>
           <option value="Other">Other</option>
         </Select>
-
       </div>
     </div>
   );
@@ -324,36 +322,47 @@ function ContactStep({ data, onChange }) {
 
 function ReviewStep({ data }) {
   const rows = [
-    { label: 'Company', value: data.company.companyName || '—' },
-    { label: 'Tax ID', value: data.company.taxId || '—' },
-    { label: 'Industry', value: data.company.industry || '—' },
-    { label: 'Country', value: COUNTRY_PROFILES[data.banking.country]?.label || '—' },
-    { label: 'Bank', value: data.banking.bankName || '—' },
-    { label: 'Account Type', value: data.banking.accountType || '—' },
-    { label: 'Contact', value: `${data.contact.firstName} ${data.contact.lastName}`.trim() || '—' },
-    { label: 'Email', value: data.contact.email || '—' },
+     { label: 'Company', value: data.companyName },
+    { label: 'Tax ID', value: data.taxId },
+    { label: 'Business Type', value: data.businessType },
+    { label: 'Address', value: data.address },
+    { label: 'Website', value: data.website },
+    { label: 'Industry', value: data.industry },
+    { label: 'Country', value: COUNTRY_PROFILES[data.country]?.label || data.country },
+    { label: 'Bank Name', value: data.bankName },
+    { label: 'Account Type', value: data.accountType },
+    { label: 'Account Number', value: data.accountNumber },
+    { label: 'Contact', value: `${data.firstName} ${data.lastName}` },
+    { label: 'Email', value: data.email },
+    { label: 'Phone', value: data.phone },
+    { label: 'Title', value: data.title },
+    { label: 'Department', value: data.department },
   ];
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
       <div>
         <h2 className="text-2xl font-semibold text-on-surface tracking-tight">Review & Submit</h2>
-        <p className="text-on-surface-variant text-sm mt-1">Please verify all information before submitting your vendor profile.</p>
+        <p className="text-on-surface-variant text-sm mt-1">Please review your information before submitting.</p>
       </div>
-      <div className="bg-white rounded-lg border border-outline-variant divide-y divide-outline-variant">
-        {rows.map(({ label, value }) => (
-          <div key={label} className="flex items-center justify-between px-4 py-3">
-            <span className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant">{label}</span>
-            <span className="text-sm text-on-surface font-medium">{value}</span>
-          </div>
-        ))}
+      <div className="bg-surface-low rounded-lg border border-outline-variant overflow-hidden">
+        <table className="w-full text-sm">
+          <tbody>
+            {rows.map((row, i) => (
+              row.value ? (
+                <tr key={i} className="border-b border-outline-variant last:border-0">
+                  <td className="px-4 py-3 font-medium text-on-surface-variant w-1/3">{row.label}</td>
+                  <td className="px-4 py-3 text-on-surface">{row.value}</td>
+                </tr>
+              ) : null
+            ))}
+          </tbody>
+        </table>
       </div>
-      <p className="text-xs text-on-surface-variant text-center">
-        By submitting, you agree to VendorPay&apos;s{' '}
-        <a href="#" className="text-emerald hover:underline">Terms of Service</a>{' '}
-        and{' '}
-        <a href="#" className="text-emerald hover:underline">Privacy Policy</a>.
-      </p>
+      <div className="bg-emerald/5 border border-emerald/20 rounded-lg p-3 flex items-start gap-2 text-sm text-emerald">
+        <ShieldCheck size={16} className="mt-0.5 flex-shrink-0" />
+        By submitting, you confirm all information is accurate and agree to our verification process.
+      </div>
     </div>
   );
 }
@@ -361,119 +370,126 @@ function ReviewStep({ data }) {
 export default function Onboarding() {
   const navigate = useNavigate();
   const [step, setStep] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   const [data, setData] = useState({
-    company: { companyName: '', taxId: '', businessType: '', address: '', website: '', industry: '' },
-    banking: { country: '', routingNumber: '', accountNumber: '', confirmAccount: '', bankName: '', accountType: 'Checking', sortCode: '', iban: '', swiftCode: '', branchCode: '', transitNumber: '', institutionNumber: '' },
-    contact: { firstName: '', lastName: '', email: '', phone: '', title: '', department: '' },
+    companyName: '',
+    taxId: '',
+    businessType: '',
+    address: '',
+    website: '',
+    industry: '',
+    country: '',
+    bankName: '',
+    accountType: '',
+    accountNumber: '',
+    confirmAccount: '',
+    routingNumber: '',
+    sortCode: '',
+    swiftCode: '',
+    branchCode: '',
+    iban: '',
+    transitNumber: '',
+    institutionNumber: '',
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+    title: '',
+    department: '',
   });
 
-  function handleChange(section) {
-    return (e) => {
-      const { name, value } = e.target;
-      setData((d) => ({ ...d, [section]: { ...d[section], [name]: value } }));
-    };
-  }
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setData((prev) => ({ ...prev, [name]: value }));
+  };
 
-  function handleNext() {
-    if (step < STEPS.length - 1) setStep((s) => s + 1);
-    else navigate('/vendor/dashboard');
-  }
+  const validateStep = () => {
+    switch (step) {
+      case 0:
+        return data.companyName && data.taxId;
+      case 1:
+        return data.country && data.bankName && data.accountType && data.accountNumber && data.accountNumber === data.confirmAccount;
+      case 2:
+        return data.firstName && data.lastName && data.email && data.phone;
+      default:
+        return true;
+    }
+  };
 
-  const stepComponents = [
-    <CompanyStep data={data.company} onChange={handleChange('company')} />,
-    <BankingStep data={data.banking} onChange={handleChange('banking')} />,
-    <ContactStep data={data.contact} onChange={handleChange('contact')} />,
-    <ReviewStep data={data} />,
-  ];
+  const handleNext = () => {
+    if (!validateStep()) {
+      setError('Please fill in all required fields');
+      return;
+    }
+    setError('');
+    setStep((prev) => Math.min(prev + 1, STEPS.length - 1));
+  };
+
+  const handleBack = () => {
+    setError('');
+    setStep((prev) => Math.max(prev - 1, 0));
+  };
+
+  const handleSubmit = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      await vendorService.register(data);
+      navigate('/dashboard');
+    } catch (err) {
+      setError(extractErrorMessage(err));
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-surface flex flex-col">
-      {/* Nav */}
-      <header className="bg-white border-b border-outline-variant">
-        <div className="max-w-content mx-auto px-6 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 bg-navy rounded flex items-center justify-center">
-              <span className="text-white text-xs font-bold">VP</span>
-            </div>
-            <span className="text-navy font-semibold">VendorPay</span>
+      <div className="flex-1 max-w-3xl mx-auto w-full px-6 py-10">
+        <StepIndicator current={step} />
+        
+        {error && (
+          <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-600">
+            {error}
           </div>
-          <nav className="flex items-center gap-6 text-sm font-medium">
-            {['Dashboard', 'Onboarding', 'Invoices'].map((item) => (
-              <span
-                key={item}
-                className={cn(
-                  'pb-0.5 cursor-pointer',
-                  item === 'Onboarding'
-                    ? 'text-emerald border-b-2 border-emerald'
-                    : 'text-on-surface-variant hover:text-on-surface'
-                )}
-              >
-                {item}
-              </span>
-            ))}
-          </nav>
-          <div className="flex items-center gap-3">
-            <button className="p-2 text-on-surface-variant hover:text-on-surface"><span className="sr-only">Notifications</span>🔔</button>
-            <button className="p-2 text-on-surface-variant hover:text-on-surface"><span className="sr-only">Settings</span>⚙️</button>
-            <div className="w-8 h-8 rounded-full bg-navy flex items-center justify-center text-white text-xs font-semibold">V</div>
-          </div>
-        </div>
-      </header>
+        )}
 
-      <div className="flex-1 flex items-start justify-center py-12 px-6">
-        <div className="w-full max-w-2xl">
-          <StepIndicator current={step} />
+        <div className="bg-white rounded-xl border border-outline-variant shadow-sm p-6">
+          {step === 0 && <CompanyStep data={data} onChange={handleChange} />}
+          {step === 1 && <BankingStep data={data} onChange={handleChange} />}
+          {step === 2 && <ContactStep data={data} onChange={handleChange} />}
+          {step === 3 && <ReviewStep data={data} />}
 
-          <div className="bg-white rounded-xl border border-outline-variant p-8 shadow-card">
-            {stepComponents[step]}
-          </div>
-
-          {/* Help + Security sidecards */}
-          <div className="grid grid-cols-2 gap-4 mt-4">
-            <div className="bg-white rounded-lg border border-outline-variant p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <HelpCircle size={16} className="text-emerald" />
-                <span className="text-sm font-semibold text-on-surface">Need Help?</span>
-              </div>
-              <p className="text-xs text-on-surface-variant mb-2">
-                Our enterprise finance team is available 24/7 to assist with banking setup and compliance.
-              </p>
-              <a href="mailto:support@alluvium.net" className="text-xs text-emerald font-medium hover:underline flex items-center gap-1">
-                Contact Support <ArrowRight size={12} />
-              </a>
-            </div>
-            <div className="bg-navy rounded-lg p-4 text-white relative overflow-hidden">
-              <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'linear-gradient(135deg, #006c49 0%, transparent 60%)' }} />
-              <div className="relative">
-                <p className="text-xs font-semibold uppercase tracking-wide text-emerald-light mb-1">Security Guaranteed</p>
-                <p className="text-xs text-slate-300">Your data is encrypted with bank-grade 256-bit protocols.</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Nav buttons */}
-          <div className="flex items-center justify-between mt-6">
-            <Button variant="secondary" onClick={() => navigate('/onboarding')} size="md" className="gap-2">
-              <Save size={15} /> Save as Draft
+          <div className="flex justify-between mt-8 pt-6 border-t border-outline-variant">
+            <Button
+              variant="outline"
+              onClick={handleBack}
+              disabled={step === 0}
+              className="flex items-center gap-2"
+            >
+              <ArrowLeft size={16} />
+              Back
             </Button>
-            <div className="flex gap-3">
-              {step > 0 && (
-                <Button variant="secondary" onClick={() => setStep((s) => s - 1)}>
-                  <ArrowLeft size={15} /> Previous
-                </Button>
-              )}
-              <Button onClick={handleNext}>
-                {step === STEPS.length - 1 ? 'Submit' : 'Next Step'}
-                <ArrowRight size={15} />
+
+            {step < STEPS.length - 1 ? (
+              <Button onClick={handleNext} className="flex items-center gap-2">
+                Next
+                <ArrowRight size={16} />
               </Button>
-            </div>
+            ) : (
+              <Button 
+                onClick={handleSubmit} 
+                disabled={loading}
+                className="flex items-center gap-2"
+              >
+                <Save size={16} />
+                {loading ? 'Submitting...' : 'Submit'}
+              </Button>
+            )}
           </div>
         </div>
       </div>
-
-      <footer className="bg-white border-t border-outline-variant py-3 text-center text-xs text-on-surface-variant">
-        &copy; 2024 VendorPay Enterprise Finance Inc. All rights reserved. PCI-DSS Level 1 Compliant.
-      </footer>
     </div>
   );
 }

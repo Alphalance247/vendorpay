@@ -7,7 +7,7 @@ import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Select from '../../components/ui/Select';
 import { cn } from '../../lib/utils';
-import { useInvoices } from '../../lib/invoiceStore';
+import { invoiceService } from '../../lib/services/invoiceService';
 import { extractInvoiceData } from '../../lib/invoiceOcr';
 
 const CURRENCY_SYMBOLS = {
@@ -53,7 +53,6 @@ function generateInvoiceNumber() {
 
 export default function SubmitInvoice() {
   const navigate = useNavigate();
-  const { addInvoice } = useInvoices();
   const fileRef = useRef(null);
   const [file, setFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
@@ -61,6 +60,8 @@ export default function SubmitInvoice() {
   const [isExtracting, setIsExtracting] = useState(false);
   const [extractedData, setExtractedData] = useState(null);
   const [showManual, setShowManual] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   
   const [form, setForm] = useState({
     invoiceNumber: '',
@@ -140,24 +141,32 @@ export default function SubmitInvoice() {
     ingestFile(e.dataTransfer.files[0]);
   }
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
-    const amountNum = parseFloat(form.amount) || 0;
+    if (!file) {
+      setError('Please upload an invoice file');
+      return;
+    }
 
-    addInvoice({
-      id: form.invoiceNumber || generateInvoiceNumber(),
-      date: form.invoiceDate || new Date().toISOString().slice(0, 10),
-      dueDate: form.dueDate || '',
-      amount: amountNum,
-      currency: form.currency || 'USD',
-      status: 'Submitted',
-      paymentDate: '—',
-      notes: form.notes,
-      fileName: file?.name || null,
-    });
+    setLoading(true);
+    setError('');
 
-    setSubmitted(true);
-    setTimeout(() => navigate('/vendor/invoices'), 1500);
+    try {
+      await invoiceService.submitInvoice({
+        invoiceNumber: form.invoiceNumber || generateInvoiceNumber(),
+        amount: parseFloat(form.amount) || 0,
+        dueDate: form.dueDate || new Date().toISOString().slice(0, 10),
+        currency: form.currency || 'USD',
+        notes: form.notes || '',
+        pdfFile: file, // the raw File object
+      });
+
+      setSubmitted(true);
+      setTimeout(() => navigate('/vendor/invoices'), 1500);
+    } catch (err) {
+      setError(extractErrorMessage(err));
+      setLoading(false);
+    }
   }
 
   if (submitted) {
@@ -192,6 +201,13 @@ export default function SubmitInvoice() {
             Upload your invoice and we'll extract all details automatically.
           </p>
         </div>
+
+        {/* Error message */}
+        {error && (
+          <div className="p-3 bg-red-50 border border-red-200 rounded text-red-600 text-sm">
+            {error}
+          </div>
+        )}
 
         <div className="grid grid-cols-3 gap-6">
           {/* Main form */}
@@ -468,8 +484,15 @@ export default function SubmitInvoice() {
               </ul>
             </Card>
 
-            <Button onClick={handleSubmit} className="w-full" size="lg" disabled={!form.currency || isExtracting}>
-              {isExtracting ? <><Loader2 size={15} className="animate-spin" /> Reading...</> : <>Submit <Send size={15} /></>}
+            <Button 
+              onClick={handleSubmit} 
+              className="w-full" 
+              size="lg" 
+              disabled={!form.currency || isExtracting || loading || !file}
+            >
+              {loading ? <><Loader2 size={15} className="animate-spin" /> Submitting...</> : 
+               isExtracting ? <><Loader2 size={15} className="animate-spin" /> Reading...</> : 
+               <>Submit <Send size={15} /></>}
             </Button>
           </div>
         </div>
