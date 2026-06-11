@@ -6,7 +6,7 @@ import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Select from '../../components/ui/Select';
-import { cn } from '../../lib/utils';
+import { cn, extractErrorMessage } from '../../lib/utils';
 import { invoiceService } from '../../lib/services/invoiceService';
 import { extractInvoiceData } from '../../lib/invoiceOcr';
 
@@ -99,6 +99,7 @@ export default function SubmitInvoice() {
     const extracted = await extractInvoiceData(picked);
     setExtractedData(extracted);
     setIsExtracting(false);
+    setShowManual(true);
 
     const today = new Date().toISOString().slice(0, 10);
     const due = new Date();
@@ -148,17 +149,23 @@ export default function SubmitInvoice() {
       return;
     }
 
+    const parsedAmount = parseFloat(form.amount);
+    if (!parsedAmount || parsedAmount <= 0) {
+      setError('Please enter a valid invoice amount');
+      return;
+    }
+
     setLoading(true);
     setError('');
 
     try {
       await invoiceService.submitInvoice({
         invoiceNumber: form.invoiceNumber || generateInvoiceNumber(),
-        amount: parseFloat(form.amount) || 0,
+        amount: parsedAmount,
         dueDate: form.dueDate || new Date().toISOString().slice(0, 10),
         currency: form.currency || 'USD',
         notes: form.notes || '',
-        pdfFile: file, // the raw File object
+        pdfFile: file,
       });
 
       setSubmitted(true);

@@ -1,23 +1,51 @@
 import apiClient from "../apiClient";
 
 export const vendorService = {
+  // =========================
+  // AUTH-RELATED (kept here for now)
+  // =========================
+
+  register: async (payload) => {
+    const res = await apiClient.post("/auth/register", payload);
+    return res.data;
+  },
+
+  login: async (payload) => {
+    const res = await apiClient.post("/auth/login", payload);
+    return res.data;
+  },
+
+  forgotPassword: async (email) => {
+    const res = await apiClient.post("/auth/forgot-password", { email });
+    return res.data;
+  },
+
+  resetPassword: async (payload) => {
+    const res = await apiClient.post("/auth/reset-password", payload);
+    return res.data;
+  },
+
+  // =========================
+  // VENDOR FLOW
+  // =========================
+
   onboard: async (companyData) => {
-    const response = await apiClient.post('/vendors/onboard', companyData);
-    return response.data;
+    const res = await apiClient.post("/vendors/onboard", companyData);
+    return res.data;
   },
 
   setupBanking: async (bankingData) => {
-    const response = await apiClient.post('/banking/setup', bankingData);
-    return response.data;
+    const res = await apiClient.post("/banking/setup", bankingData);
+    return res.data;
   },
 
   getProfile: async () => {
-    const response = await apiClient.get('/vendors/profile');
-    return response.data;
+    const res = await apiClient.get("/vendors/profile");
+    return res.data;
   },
 
   getDashboard: async () => {
-    const response = await apiClient.get('/vendors/dashboard');
-    return response.data;
+    const res = await apiClient.get("/vendors/dashboard");
+    return res.data;
   },
 };

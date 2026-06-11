@@ -431,18 +431,52 @@ export default function Onboarding() {
     setStep((prev) => Math.max(prev - 1, 0));
   };
 
-  const handleSubmit = async () => {
-    setLoading(true);
-    setError('');
-    try {
-      await vendorService.register(data);
-      navigate('/dashboard');
-    } catch (err) {
-      setError(extractErrorMessage(err));
-    } finally {
-      setLoading(false);
-    }
-  };
+ const handleSubmit = async () => {
+  setLoading(true);
+  setError('');
+
+  try {
+    await vendorService.onboard({
+      company_name: data.companyName,
+      tax_id: data.taxId,
+      business_type: data.businessType,
+      business_address: data.address,
+      industry: data.industry,
+      contact_first_name: data.firstName,
+      contact_last_name: data.lastName,
+      contact_email: data.email,
+      phone: data.phone,
+      job_title: data.title,
+      department: data.department,
+      ...(data.website && { website: data.website }),
+    });
+
+    const routingNumber =
+      data.routingNumber ||
+      data.sortCode ||
+      data.branchCode ||
+      data.transitNumber ||
+      '';
+
+    await vendorService.setupBanking({
+      bank_name: data.bankName,
+      account_type: data.accountType,
+      account_number: data.accountNumber,
+      routing_number: routingNumber,
+      country_type: data.country === 'US' ? 'ACH' : 'SWIFT',
+      ...(data.swiftCode && { swift_code: data.swiftCode }),
+      ...(data.iban && { iban: data.iban }),
+      authorized_test_deposit: true,
+    });
+
+    navigate('/vendor/dashboard');
+  } catch (err) {
+    console.error(err);
+    setError(extractErrorMessage(err));
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <div className="min-h-screen bg-surface flex flex-col">

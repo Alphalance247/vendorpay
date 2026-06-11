@@ -36,7 +36,7 @@ export default function AdminInvoiceManagement() {
         status: statusParam,
         search: vendor && vendor !== 'All Vendors' ? vendor : undefined,
       });
-      setInvoices(data);
+      setInvoices(Array.isArray(data) ? data : (data.invoices ?? data.items ?? []));
     } catch (err) {
       setError(extractErrorMessage(err));
     } finally {

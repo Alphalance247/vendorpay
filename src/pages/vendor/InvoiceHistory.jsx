@@ -33,7 +33,7 @@ export default function InvoiceHistory() {
         status: statusFilter !== 'All' ? statusFilter.toLowerCase() : undefined,
         search: search || undefined,
       });
-      setInvoices(data);
+      setInvoices(Array.isArray(data) ? data : (data.invoices ?? data.items ?? data.data ?? []));
     } catch (err) {
       setError(extractErrorMessage(err));
     } finally {
@@ -148,6 +148,13 @@ export default function InvoiceHistory() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-outline-variant">
+                {filtered.length === 0 && (
+                  <tr>
+                    <td colSpan={7} className="px-6 py-12 text-center text-sm text-on-surface-variant">
+                      No invoices found.
+                    </td>
+                  </tr>
+                )}
                 {filtered.map((inv) => (
                   <tr key={inv.id || inv.invoice_number} className="hover:bg-surface-low/50 transition-colors">
                     <td className="px-6 py-4 text-sm font-semibold text-on-surface">
