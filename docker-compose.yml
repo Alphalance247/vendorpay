@@ -1,0 +1,12 @@
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        VITE_BACKEND_URL: ${VITE_BACKEND_URL:-https://str.ec2.alluvium.net/vendorpay}
+    image: vendorpay-frontend
+    container_name: vendorpay-frontend
+    ports:
+      - "${PORT:-3000}:80"
+    restart: unless-stopped

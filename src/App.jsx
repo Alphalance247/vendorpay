@@ -23,31 +23,31 @@ export default function App() {
     <InvoiceProvider>
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<Navigate to="/login" replace />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route path="/onboarding" element={<Onboarding />} />
+          <Route path="/" element={<Navigate to="/vendorpay/login" replace />} />
+          <Route path="/vendorpay/login" element={<Login />} />
+          <Route path="/vendorpay/register" element={<Register />} />
+          <Route path="/vendorpay/forgot-password" element={<ForgotPassword />} />
+          <Route path="/vendorpay/onboarding" element={<Onboarding />} />
 
           {/* Vendor routes */}
-          <Route path="/vendor/dashboard" element={<VendorDashboard />} />
-          <Route path="/vendor/invoices" element={<InvoiceHistory />} />
-          <Route path="/vendor/invoices/new" element={<SubmitInvoice />} />
-          <Route path="/vendor/invoices/:id" element={<InvoiceDetail />} />
-          <Route path="/vendor/payments" element={<VendorPayments />} />
-          <Route path="/vendor/support" element={<Support />} />
+          <Route path="/vendorpay/vendor/dashboard" element={<VendorDashboard />} />
+          <Route path="/vendorpay/vendor/invoices" element={<InvoiceHistory />} />
+          <Route path="/vendorpay/vendor/invoices/new" element={<SubmitInvoice />} />
+          <Route path="/vendorpay/vendor/invoices/:id" element={<InvoiceDetail />} />
+          <Route path="/vendorpay/vendor/payments" element={<VendorPayments />} />
+          <Route path="/vendorpay/vendor/support" element={<Support />} />
 
           {/* Admin routes */}
-          <Route path="/admin/dashboard" element={<AdminDashboard />} />
-          <Route path="/admin/support" element={<Support admin />} />
-          <Route path="/admin/vendors" element={<AdminVendors />} />
-          <Route path="/admin/vendors/:id" element={<VendorDetail />} />
-          <Route path="/admin/invoices" element={<AdminInvoiceManagement />} />
-          <Route path="/admin/invoices/:id" element={<InvoiceDetail />} />
-          <Route path="/admin/payments" element={<AdminPayments />} />
+          <Route path="/vendorpay/admin/dashboard" element={<AdminDashboard />} />
+          <Route path="/vendorpay/admin/support" element={<Support admin />} />
+          <Route path="/vendorpay/admin/vendors" element={<AdminVendors />} />
+          <Route path="/vendorpay/admin/vendors/:id" element={<VendorDetail />} />
+          <Route path="/vendorpay/admin/invoices" element={<AdminInvoiceManagement />} />
+          <Route path="/vendorpay/admin/invoices/:id" element={<InvoiceDetail />} />
+          <Route path="/vendorpay/admin/payments" element={<AdminPayments />} />
 
           {/* Fallback */}
-          <Route path="*" element={<Navigate to="/login" replace />} />
+          <Route path="*" element={<Navigate to="/vendorpay/login" replace />} />
         </Routes>
       </BrowserRouter>
     </InvoiceProvider>
