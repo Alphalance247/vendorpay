@@ -41,9 +41,9 @@ export default function Login() {
       localStorage.setItem('user_role', role);
 
       if (role === 'admin') {
-        navigate('/admin/dashboard');
+        navigate('/vendorpay/admin/dashboard');
       } else {
-        navigate('/vendor/dashboard');
+        navigate('/vendorpay/vendor/dashboard');
       }
     } catch (err) {
       setError(extractErrorMessage(err));
