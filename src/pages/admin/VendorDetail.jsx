@@ -8,11 +8,13 @@ import StatusChip from '../../components/ui/StatusChip';
 import { vendorService } from '../../lib/services/vendorService';
 import { adminInvoiceService } from '../../lib/services/invoiceService';
 import { formatCurrency, formatDate } from '../../lib/utils';
+import { useConfirm } from '../../hooks/useConfirm';
 
 export default function VendorDetail() {
   const navigate = useNavigate();
   const { id } = useParams();
 
+  const { confirm, confirmEl } = useConfirm();
   const [vendor, setVendor] = useState(null);
   const [invoices, setInvoices] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -50,7 +52,13 @@ export default function VendorDetail() {
 
   async function handleDelete() {
     const displayName = vendor.company_name || vendor.user_email || `Vendor #${id}`;
-    if (!window.confirm(`Delete "${displayName}"? This cannot be undone.`)) return;
+    const ok = await confirm({
+      title: 'Delete Vendor',
+      message: `Delete "${displayName}"? This action cannot be undone.`,
+      confirmLabel: 'Delete',
+      variant: 'danger',
+    });
+    if (!ok) return;
     setActionLoading('delete');
     try {
       await vendorService.deleteVendor(id);
@@ -89,6 +97,7 @@ export default function VendorDetail() {
 
   return (
     <AppLayout role="admin" searchPlaceholder="Search invoices...">
+      {confirmEl}
       <div className="space-y-6">
         <button
           onClick={() => navigate('/vendorpay/admin/vendors')}

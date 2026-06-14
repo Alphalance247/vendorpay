@@ -5,6 +5,7 @@ import AppLayout from '../../components/layout/AppLayout';
 import Card from '../../components/ui/Card';
 import StatusChip from '../../components/ui/StatusChip';
 import { vendorService } from '../../lib/services/vendorService';
+import { useConfirm } from '../../hooks/useConfirm';
 
 export default function AdminVendors() {
   const navigate = useNavigate();
@@ -13,6 +14,8 @@ export default function AdminVendors() {
   const [error, setError] = useState('');
   const [search, setSearch] = useState('');
   const [actionLoading, setActionLoading] = useState(null);
+
+  const { confirm, confirmEl } = useConfirm();
 
   const loadVendors = () =>
     vendorService.getAllVendors()
@@ -38,7 +41,13 @@ export default function AdminVendors() {
 
   async function handleDelete(vendor) {
     const displayName = vendor.company_name || vendor.user_email || `Vendor #${vendor.id}`;
-    if (!window.confirm(`Delete "${displayName}"? This cannot be undone.`)) return;
+    const ok = await confirm({
+      title: 'Delete Vendor',
+      message: `Delete "${displayName}"? This action cannot be undone.`,
+      confirmLabel: 'Delete',
+      variant: 'danger',
+    });
+    if (!ok) return;
     setActionLoading(`delete-${vendor.id}`);
     try {
       await vendorService.deleteVendor(vendor.id);
@@ -64,6 +73,7 @@ export default function AdminVendors() {
 
   return (
     <AppLayout role="admin" searchPlaceholder="Search vendors...">
+      {confirmEl}
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>

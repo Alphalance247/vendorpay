@@ -15,7 +15,7 @@ import AdminPayments from './pages/admin/AdminPayments';
 import { InvoiceProvider } from './lib/invoiceStore';
 import { ToastProvider } from './components/ui/Toast';
 import VendorPayments from './pages/vendor/VendorPayments';
-import Support from './pages/vendor/Support';
+import Support from './pages/vendor/Support';  // used for both vendor & admin support
 import VendorDetail from './pages/admin/VendorDetail';  // ← ADD THIS LINE
 
 export default function App() {

@@ -62,6 +62,13 @@ export const invoiceService = {
     link.remove();
   },
 
+  getAdminInvoicePdfUrl: async (invoiceId) => {
+    const response = await apiClient.get(`/invoices/all/${invoiceId}/pdf`, {
+      responseType: 'blob',
+    });
+    return window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
+  },
+
   downloadInvoicePdf: async (invoiceId) => {
     const response = await apiClient.get(`/invoices/my/${invoiceId}/pdf`, {
       responseType: 'blob',
@@ -73,6 +80,13 @@ export const invoiceService = {
     document.body.appendChild(link);
     link.click();
     link.remove();
+  },
+
+  getInvoicePdfUrl: async (invoiceId) => {
+    const response = await apiClient.get(`/invoices/my/${invoiceId}/pdf`, {
+      responseType: 'blob',
+    });
+    return window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
   },
 };
 
@@ -108,6 +122,30 @@ export const adminInvoiceService = {
 
   markPaid: async (invoiceId) => {
     const response = await apiClient.patch(`/invoices/${invoiceId}/mark-paid`);
+    return response.data;
+  },
+};
+
+export const vendorInvoiceService = {
+  confirmPayment: async (invoiceId) => {
+    const response = await apiClient.patch(`/invoices/${invoiceId}/confirm-payment`);
+    return response.data;
+  },
+
+  disputePayment: async (invoiceId) => {
+    const response = await apiClient.patch(`/invoices/${invoiceId}/dispute-payment`);
+    return response.data;
+  },
+};
+
+export const invoiceMessageService = {
+  getMessages: async (invoiceId) => {
+    const response = await apiClient.get(`/invoices/${invoiceId}/messages`);
+    return response.data;
+  },
+
+  sendMessage: async (invoiceId, body) => {
+    const response = await apiClient.post(`/invoices/${invoiceId}/messages`, { body });
     return response.data;
   },
 };

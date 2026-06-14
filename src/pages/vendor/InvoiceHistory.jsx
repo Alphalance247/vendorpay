@@ -1,61 +1,96 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
-import { Search, Filter, Download, Eye, X, Loader2 } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, Legend } from 'recharts';
+import { Search, Eye, Download, X, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
 import AppLayout from '../../components/layout/AppLayout';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import StatusChip from '../../components/ui/StatusChip';
 import { formatCurrency, formatDate, extractErrorMessage } from '../../lib/utils';
 import { invoiceService } from '../../lib/services/invoiceService';
+import { vendorService } from '../../lib/services/vendorService';
 
-const trendData = [
-  { month: 'Jun', invoiced: 18000, settled: 12000 },
-  { month: 'Jul', invoiced: 22000, settled: 19000 },
-  { month: 'Aug', invoiced: 31000, settled: 28000 },
-  { month: 'Sep', invoiced: 28000, settled: 27000 },
-  { month: 'Oct', invoiced: 43000, settled: 38000 },
-];
+const PAGE_SIZE = 20;
+const STATUS_OPTIONS = ['All', 'submitted', 'paid', 'payment_confirmed', 'payment_disputed', 'flagged', 'rejected'];
+
+const STATUS_LABEL = {
+  submitted: 'Submitted',
+  reviewed: 'Reviewed',
+  funding: 'Awaiting Payment',
+  paid: 'Paid',
+  payment_confirmed: 'Payment Confirmed',
+  payment_disputed: 'Payment Disputed',
+  rejected: 'Rejected',
+  flagged: 'Flagged',
+};
 
 export default function InvoiceHistory() {
   const navigate = useNavigate();
   const [invoices, setInvoices] = useState([]);
+  const [dash, setDash] = useState(null);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
 
-  const fetchInvoices = async () => {
-    setLoading(true);
-    setError('');
-    try {
-      const data = await invoiceService.getMyInvoices({
-        status: statusFilter !== 'All' ? statusFilter.toLowerCase() : undefined,
-        search: search || undefined,
-      });
-      setInvoices(Array.isArray(data) ? data : (data.invoices ?? data.items ?? data.data ?? []));
-    } catch (err) {
-      setError(extractErrorMessage(err));
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
-    fetchInvoices();
-  }, [statusFilter, search]);
+    let cancelled = false;
+    const fetchAll = async () => {
+      setLoading(true);
+      setError('');
+      try {
+        const [invoiceData, dashData] = await Promise.all([
+          invoiceService.getMyInvoices({
+            status: statusFilter !== 'All' ? statusFilter : undefined,
+            search: search || undefined,
+            page,
+            pageSize: PAGE_SIZE,
+          }),
+          vendorService.getDashboard(),
+        ]);
+        if (cancelled) return;
+        const items = Array.isArray(invoiceData)
+          ? invoiceData
+          : (invoiceData.items ?? invoiceData.data ?? []);
+        setInvoices(items);
+        setTotal(invoiceData.total ?? items.length);
+        setDash(dashData);
+      } catch (err) {
+        if (!cancelled) setError(extractErrorMessage(err));
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+    fetchAll();
+    return () => { cancelled = true; };
+  }, [statusFilter, search, page]);
 
-  const filtered = invoices.filter((inv) => {
-    const matchSearch = inv.id?.toLowerCase().includes(search.toLowerCase()) || 
-                        inv.invoice_number?.toLowerCase().includes(search.toLowerCase());
-    const matchStatus = statusFilter === 'All' || inv.status === statusFilter;
-    return matchSearch && matchStatus;
-  });
+  function formatByCurrency(map) {
+    if (!map || Object.keys(map).length === 0) return [{ label: formatCurrency(0), key: 'USD' }];
+    return Object.entries(map).map(([currency, amount]) => ({
+      key: currency,
+      label: formatCurrency(amount, currency),
+    }));
+  }
+
+  const trendRaw = dash?.payment_trends ?? [];
+  const histPrimaryCurrency = trendRaw.flatMap((pt) => Object.keys(pt.submitted_by_currency ?? {}))[0] ?? 'USD';
+  const histCurrSymbol = histPrimaryCurrency === 'NGN' ? '₦' : histPrimaryCurrency === 'GBP' ? '£' : histPrimaryCurrency === 'EUR' ? '€' : '$';
+
+  const trendData = trendRaw.map((pt) => ({
+    month: pt.month?.split(' ')[0] ?? pt.month,
+    submitted: pt.submitted_by_currency?.[histPrimaryCurrency] ?? 0,
+    settled:   pt.settled_by_currency?.[histPrimaryCurrency]   ?? 0,
+    rejected:  pt.rejected_by_currency?.[histPrimaryCurrency]  ?? 0,
+  }));
+
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   return (
     <AppLayout role="vendor">
       <div className="space-y-6">
-        {/* Header */}
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-semibold text-on-surface">Invoice History</h1>
@@ -66,71 +101,93 @@ export default function InvoiceHistory() {
           </Button>
         </div>
 
-        {/* Error message */}
         {error && (
           <div className="p-3 bg-red-50 border border-red-200 rounded text-red-600 text-sm">
             {error}
           </div>
         )}
 
-        {/* Summary stats */}
         <div className="grid grid-cols-4 gap-3">
-          {[
-            { label: 'Total Outstanding', value: '$127,500.00', sub: '+32% vs last month', subColor: 'text-emerald' },
-            { label: 'Paid This Month', value: '$84,200.00', sub: 'On track', subColor: 'text-emerald' },
-            { label: 'Overdue', value: '$12,400.00', sub: '3 invoices', subColor: 'text-error' },
-            { label: 'Vendor Rating', value: '98.4%', sub: 'Excellent payment health', subColor: 'text-emerald' },
-          ].map(({ label, value, sub, subColor }) => (
-            <Card key={label} className="py-4">
-              <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant">{label}</p>
-              <p className="text-xl font-bold text-on-surface mt-1 tnum">{value}</p>
-              <p className={`text-xs mt-0.5 ${subColor}`}>{sub}</p>
-            </Card>
-          ))}
+          <Card className="py-4">
+            <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant">Total Invoices</p>
+            <p className="text-xl font-bold text-on-surface mt-1 tnum">{dash?.total_invoices ?? '—'}</p>
+            <p className="text-xs mt-0.5 text-on-surface-variant">{dash?.pending_approval_count ?? 0} pending approval</p>
+          </Card>
+          <Card className="py-4">
+            <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant">Paid This Month</p>
+            {dash ? (
+              <div className="mt-1 space-y-0.5">
+                {formatByCurrency(dash.paid_this_month).map(({ key, label }) => (
+                  <p key={key} className="text-xl font-bold text-on-surface tnum leading-tight">{label}</p>
+                ))}
+              </div>
+            ) : <p className="text-xl font-bold text-on-surface mt-1">—</p>}
+            {dash && (
+              <div className="mt-1 space-y-0 text-xs text-emerald">
+                {formatByCurrency(dash.total_amount_paid_ytd).map(({ key, label }) => (
+                  <p key={key}>YTD: {label}</p>
+                ))}
+              </div>
+            )}
+          </Card>
+          <Card className="py-4">
+            <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant">Overdue</p>
+            {dash ? (
+              <div className="mt-1 space-y-0.5">
+                {formatByCurrency(dash.overdue_amount).map(({ key, label }) => (
+                  <p key={key} className="text-xl font-bold text-on-surface tnum leading-tight">{label}</p>
+                ))}
+              </div>
+            ) : <p className="text-xl font-bold text-on-surface mt-1">—</p>}
+            {dash?.overdue_count > 0
+              ? <p className="text-xs mt-0.5 text-error">{dash.overdue_count} invoice{dash.overdue_count !== 1 ? 's' : ''}</p>
+              : <p className="text-xs mt-0.5 text-emerald">None overdue</p>
+            }
+          </Card>
+          <Card className="py-4">
+            <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant">Pending Approval</p>
+            <p className="text-xl font-bold text-on-surface mt-1 tnum">{dash?.pending_approval_count ?? '—'}</p>
+            <p className="text-xs mt-0.5 text-on-surface-variant">awaiting review</p>
+          </Card>
         </div>
 
-        {/* Filters */}
         <Card className="p-0 overflow-hidden">
           <div className="flex items-center gap-3 px-4 py-3 border-b border-outline-variant flex-wrap">
             <div className="relative flex-1 min-w-[200px]">
               <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-outline" />
               <input
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search invoice # or vendor..."
+                onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+                placeholder="Search invoice #..."
                 className="w-full pl-8 pr-3 py-1.5 text-sm bg-surface-low rounded border border-outline-variant focus:outline-none focus:ring-2 focus:ring-emerald"
               />
             </div>
             <div className="flex items-center gap-2 text-sm">
               <span className="text-xs font-semibold text-on-surface-variant uppercase tracking-wide">Status</span>
-              {['All', 'Paid', 'InProgress', 'Submitted', 'Flagged'].map((s) => (
+              {STATUS_OPTIONS.map((s) => (
                 <button
                   key={s}
-                  onClick={() => setStatusFilter(s)}
+                  onClick={() => { setStatusFilter(s); setPage(1); }}
                   className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
                     statusFilter === s
                       ? 'border-navy bg-navy text-white'
                       : 'border-outline-variant text-on-surface-variant hover:bg-surface-low'
                   }`}
                 >
-                  {s}
+                  {STATUS_LABEL[s] ?? 'All'}
                 </button>
               ))}
             </div>
-            <div className="flex items-center gap-2 ml-auto">
-              <button className="flex items-center gap-1.5 text-xs text-on-surface-variant border border-outline-variant px-3 py-1.5 rounded hover:bg-surface-low transition-colors">
-                <Filter size={12} /> Jan 1, 2024 – Dec 31, 2024
-              </button>
-              <button 
-                onClick={() => { setSearch(''); setStatusFilter('All'); }}
-                className="flex items-center gap-1.5 text-xs text-on-surface-variant hover:text-on-surface"
+            {(search || statusFilter !== 'All') && (
+              <button
+                onClick={() => { setSearch(''); setStatusFilter('All'); setPage(1); }}
+                className="flex items-center gap-1.5 text-xs text-on-surface-variant hover:text-on-surface ml-auto"
               >
-                <X size={12} /> Clear Filters
+                <X size={12} /> Clear
               </button>
-            </div>
+            )}
           </div>
 
-          {/* Loading state */}
           {loading ? (
             <div className="flex items-center justify-center py-12">
               <Loader2 size={24} className="animate-spin text-emerald" />
@@ -140,7 +197,7 @@ export default function InvoiceHistory() {
             <table className="w-full">
               <thead>
                 <tr className="bg-surface-low border-b border-outline-variant">
-                  {['Invoice #', 'Date', 'Due Date', 'Amount', 'Status', 'Payment Date', 'Action'].map((h) => (
+                  {['Invoice #', 'Submitted', 'Due Date', 'Amount', 'Status', 'Payment Date', ''].map((h) => (
                     <th key={h} className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-on-surface-variant">
                       {h}
                     </th>
@@ -148,33 +205,23 @@ export default function InvoiceHistory() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-outline-variant">
-                {filtered.length === 0 && (
+                {invoices.length === 0 ? (
                   <tr>
                     <td colSpan={7} className="px-6 py-12 text-center text-sm text-on-surface-variant">
                       No invoices found.
                     </td>
                   </tr>
-                )}
-                {filtered.map((inv) => (
-                  <tr key={inv.id || inv.invoice_number} className="hover:bg-surface-low/50 transition-colors">
-                    <td className="px-6 py-4 text-sm font-semibold text-on-surface">
-                      {inv.id || inv.invoice_number}
-                      {inv.file_name && (
-                        <span className="block text-xs font-normal text-on-surface-variant mt-0.5 truncate max-w-[200px]">{inv.file_name}</span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-on-surface-variant">{formatDate(inv.date || inv.created_at)}</td>
+                ) : invoices.map((inv) => (
+                  <tr key={inv.id} className="hover:bg-surface-low/50 transition-colors">
+                    <td className="px-6 py-4 text-sm font-semibold text-on-surface">{inv.invoice_number}</td>
+                    <td className="px-6 py-4 text-sm text-on-surface-variant">{formatDate(inv.submitted_at)}</td>
                     <td className="px-6 py-4 text-sm text-on-surface-variant">{inv.due_date ? formatDate(inv.due_date) : '—'}</td>
-                    <td className="px-6 py-4 text-sm font-semibold tnum text-on-surface">{formatCurrency(inv.amount, inv.currency || 'USD')}</td>
+                    <td className="px-6 py-4 text-sm font-semibold tnum text-on-surface">{formatCurrency(inv.amount, inv.currency)}</td>
+                    <td className="px-6 py-4"><StatusChip status={STATUS_LABEL[inv.status] ?? inv.status} /></td>
+                    <td className="px-6 py-4 text-sm text-on-surface-variant">{inv.payment_date ? formatDate(inv.payment_date) : '—'}</td>
                     <td className="px-6 py-4">
-                      <StatusChip status={inv.status === 'InProgress' ? 'Awaiting Payment' : inv.status} />
-                    </td>
-                    <td className={`px-6 py-4 text-sm ${inv.payment_date === 'Payment Delayed' || inv.payment_date === null ? 'text-error font-medium' : 'text-on-surface-variant'}`}>
-                      {inv.payment_date || '—'}
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2">
-                        <Button variant="ghost" size="sm" onClick={() => navigate(`/vendorpay/vendor/invoices/${inv.id || inv.invoice_number}`)} className="p-1.5">
+                      <div className="flex items-center gap-1">
+                        <Button variant="ghost" size="sm" className="p-1.5" onClick={() => navigate(`/vendorpay/vendor/invoices/${inv.id}`)}>
                           <Eye size={15} />
                         </Button>
                         <Button variant="ghost" size="sm" className="p-1.5">
@@ -189,41 +236,52 @@ export default function InvoiceHistory() {
           )}
 
           <div className="px-6 py-3 border-t border-outline-variant flex items-center justify-between">
-            <p className="text-xs text-on-surface-variant">Showing {filtered.length} of {invoices.length} invoices</p>
+            <p className="text-xs text-on-surface-variant">
+              Showing {invoices.length === 0 ? 0 : (page - 1) * PAGE_SIZE + 1}–{(page - 1) * PAGE_SIZE + invoices.length} of {total}
+            </p>
             <div className="flex items-center gap-1">
-              {[1, 2, 3].map((p) => (
-                <button
-                  key={p}
-                  className={`w-7 h-7 rounded text-xs font-medium transition-colors ${
-                    p === 1 ? 'bg-navy text-white' : 'text-on-surface-variant hover:bg-surface-container'
-                  }`}
-                >
-                  {p}
-                </button>
-              ))}
+              <button
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={page === 1}
+                className="p-1.5 rounded text-on-surface-variant hover:bg-surface-container disabled:opacity-30 transition-colors"
+              >
+                <ChevronLeft size={14} />
+              </button>
+              <span className="px-2 text-xs text-on-surface-variant">{page} / {totalPages}</span>
+              <button
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                disabled={page === totalPages}
+                className="p-1.5 rounded text-on-surface-variant hover:bg-surface-container disabled:opacity-30 transition-colors"
+              >
+                <ChevronRight size={14} />
+              </button>
             </div>
           </div>
         </Card>
 
-        {/* Bottom row */}
         <div className="grid grid-cols-3 gap-4">
           <Card className="col-span-2">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-semibold text-on-surface">Payment Trends</h3>
-              <div className="flex items-center gap-4 text-xs text-on-surface-variant">
-                <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-navy inline-block" />Invoiced</span>
-                <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-emerald inline-block" />Settled</span>
-              </div>
             </div>
-            <ResponsiveContainer width="100%" height={150}>
-              <BarChart data={trendData} barGap={4} margin={{ left: -20, bottom: 0 }}>
-                <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#74777c' }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fontSize: 11, fill: '#74777c' }} axisLine={false} tickLine={false} tickFormatter={(v) => `$${v / 1000}k`} />
-                <Tooltip formatter={(v) => formatCurrency(v)} contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid #c4c6cc' }} />
-                <Bar dataKey="invoiced" fill="#0f1d29" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="settled" fill="#6cf8bb" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+            {trendData.length === 0 ? (
+              <p className="text-sm text-on-surface-variant text-center py-8">No payment history yet.</p>
+            ) : (
+              <ResponsiveContainer width="100%" height={150}>
+                <BarChart data={trendData} barGap={2} margin={{ left: -20, bottom: 0 }}>
+                  <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#74777c' }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 11, fill: '#74777c' }} axisLine={false} tickLine={false} tickFormatter={(v) => `${histCurrSymbol}${(v / 1000).toFixed(0)}k`} />
+                  <Tooltip
+                    formatter={(v, name) => [formatCurrency(v, histPrimaryCurrency), name]}
+                    contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid #c4c6cc' }}
+                  />
+                  <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 11, paddingTop: 6 }} />
+                  <Bar dataKey="submitted" name="Submitted" fill="#c4c6cc" radius={[3, 3, 0, 0]} />
+                  <Bar dataKey="settled"   name="Settled"   fill="#006c49" radius={[3, 3, 0, 0]} />
+                  <Bar dataKey="rejected"  name="Rejected"  fill="#ba1a1a" radius={[3, 3, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
           </Card>
 
           <Card className="bg-navy text-white border-0 flex flex-col justify-between">
