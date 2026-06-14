@@ -1,5 +1,5 @@
 import Register from './pages/auth/Register';
-import ForgotPassword from './pages/auth/ForgotPassword1';
+import ForgotPassword from './pages/auth/ForgotPassword';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Login from './pages/auth/Login';
 import Onboarding from './pages/onboarding/Onboarding';
