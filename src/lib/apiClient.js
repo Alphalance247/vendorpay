@@ -41,7 +41,7 @@ apiClient.interceptors.response.use(
 
       if (!refreshToken) {
         localStorage.clear();
-        window.location.href = '/login';
+        window.location.href = '/vendorpay-fr/vendorpay/login';
         return Promise.reject(error);
       }
 
@@ -61,7 +61,7 @@ apiClient.interceptors.response.use(
         return apiClient(originalRequest);
       } catch (err) {
         localStorage.clear();
-        window.location.href = '/login';
+        window.location.href = '/vendorpay-fr/vendorpay/login';
         return Promise.reject(err);
       }
     }

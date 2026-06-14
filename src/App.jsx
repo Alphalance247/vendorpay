@@ -21,7 +21,7 @@ export default function App() {
   return (
     <ToastProvider>
     <InvoiceProvider>
-      <BrowserRouter>
+      <BrowserRouter basename="/vendorpay-fr">
         <Routes>
           <Route path="/" element={<Navigate to="/vendorpay/login" replace />} />
           <Route path="/vendorpay/login" element={<Login />} />
