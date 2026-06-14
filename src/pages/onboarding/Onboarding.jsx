@@ -460,12 +460,15 @@ export default function Onboarding() {
       data.transitNumber ||
       '';
 
+    const COUNTRY_TYPE_MAP = { US: 'ACH', NG: 'NIP', KE: 'PESALINK' };
+    const countryType = COUNTRY_TYPE_MAP[data.country] ?? 'SWIFT';
+
     await vendorService.setupBanking({
       bank_name: data.bankName,
       account_type: data.accountType,
       account_number: data.accountNumber,
       routing_number: routingNumber,
-      country_type: data.country === 'US' ? 'ACH' : 'SWIFT',
+      country_type: countryType,
       ...(data.swiftCode && { swift_code: data.swiftCode }),
       ...(data.iban && { iban: data.iban }),
       authorized_test_deposit: true,

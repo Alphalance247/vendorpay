@@ -77,10 +77,11 @@ export const invoiceService = {
 };
 
 export const adminInvoiceService = {
-  getAllInvoices: async ({ status, search, fromDate, toDate, page = 1, pageSize = 20 } = {}) => {
+  getAllInvoices: async ({ status, search, vendor_id, fromDate, toDate, page = 1, pageSize = 20 } = {}) => {
     const params = new URLSearchParams();
     if (status) params.append('status', status);
     if (search) params.append('search', search);
+    if (vendor_id) params.append('vendor_id', String(vendor_id));
     if (fromDate) params.append('from_date', fromDate);
     if (toDate) params.append('to_date', toDate);
     params.append('page', String(page));
