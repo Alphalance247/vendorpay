@@ -48,4 +48,19 @@ export const vendorService = {
     const res = await apiClient.get("/vendors/dashboard");
     return res.data;
   },
+
+  getAdminDashboard: async () => {
+    const res = await apiClient.get("/vendors/admin/dashboard");
+    return res.data;
+  },
+
+  getAllVendors: async () => {
+    const res = await apiClient.get("/vendors/");
+    return res.data;
+  },
+
+  getVendorById: async (id) => {
+    const res = await apiClient.get(`/vendors/${id}`);
+    return res.data;
+  },
 };

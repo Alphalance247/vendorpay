@@ -38,6 +38,30 @@ export const invoiceService = {
     return response.data;
   },
 
+  getAdminInvoiceDetail: async (invoiceId) => {
+    const response = await apiClient.get(`/invoices/all/${invoiceId}`);
+    return response.data;
+  },
+
+  getAdminPayments: async ({ page = 1, page_size = 50 } = {}) => {
+    const params = new URLSearchParams({ page, page_size });
+    const response = await apiClient.get(`/invoices/admin/payments?${params}`);
+    return response.data;
+  },
+
+  downloadAdminInvoicePdf: async (invoiceId) => {
+    const response = await apiClient.get(`/invoices/all/${invoiceId}/pdf`, {
+      responseType: 'blob',
+    });
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `invoice-${invoiceId}.pdf`);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  },
+
   downloadInvoicePdf: async (invoiceId) => {
     const response = await apiClient.get(`/invoices/my/${invoiceId}/pdf`, {
       responseType: 'blob',

@@ -249,7 +249,7 @@ export default function AdminInvoiceManagement() {
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => navigate(`/admin/invoices/${inv.id || inv.invoice_number}`)}
+                              onClick={() => navigate(`/vendorpay/admin/invoices/${inv.id || inv.invoice_number}`)}
                             >
                               View
                             </Button>
