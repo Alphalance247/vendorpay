@@ -1,8 +1,15 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { authService } from './services/authService';
-import apiClient from './apiClient';
 
 const AuthContext = createContext(null);
+
+function parseJwt(token) {
+  try {
+    return JSON.parse(atob(token.split('.')[1]));
+  } catch {
+    return null;
+  }
+}
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
@@ -11,9 +18,10 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     const token = localStorage.getItem('access_token');
-    const storedRole = localStorage.getItem('user_role');
-    if (token && storedRole) {
-      setRole(storedRole);
+    if (token) {
+      const payload = parseJwt(token);
+      const storedRole = payload?.role ?? localStorage.getItem('user_role');
+      if (storedRole) setRole(storedRole);
     }
     setLoading(false);
   }, []);
@@ -24,20 +32,12 @@ export function AuthProvider({ children }) {
     localStorage.setItem('access_token', data.access_token);
     localStorage.setItem('refresh_token', data.refresh_token);
 
-    try {
-      const profileRes = await apiClient.get('/vendors/profile');
-      const profile = profileRes.data;
-      const userRole = profile.is_admin ? 'admin' : 'vendor';
-      localStorage.setItem('user_role', userRole);
-      setUser(profile);
-      setRole(userRole);
-      return userRole;
-    } catch {
-      const userRole = 'vendor';
-      localStorage.setItem('user_role', userRole);
-      setRole(userRole);
-      return userRole;
-    }
+    const payload = parseJwt(data.access_token);
+    const userRole = payload?.role ?? 'vendor';
+
+    localStorage.setItem('user_role', userRole);
+    setRole(userRole);
+    return userRole;
   };
 
   const logout = async () => {
