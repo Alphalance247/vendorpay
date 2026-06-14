@@ -77,7 +77,7 @@ export default function InvoiceDetail() {
           <FileText size={48} className="text-outline" />
           <p className="text-lg text-on-surface">Invoice not found</p>
           <p className="text-sm text-on-surface-variant">ID: {id}</p>
-          <Button onClick={() => navigate(isAdmin ? '/admin/invoices' : '/vendor/invoices')}>
+          <Button onClick={() => navigate(isAdmin ? '/vendorpay/admin/invoices' : '/vendorpay/vendor/invoices')}>
             Back to Invoices
           </Button>
         </div>
@@ -98,7 +98,7 @@ export default function InvoiceDetail() {
       <div className="space-y-4">
         {/* Back */}
         <button
-          onClick={() => navigate(isAdmin ? '/admin/invoices' : '/vendor/invoices')}
+          onClick={() => navigate(isAdmin ? '/vendorpay/admin/invoices' : '/vendorpay/vendor/invoices')}
           className="flex items-center gap-1.5 text-sm text-on-surface-variant hover:text-on-surface transition-colors"
         >
           <ArrowLeft size={15} /> Back to Invoices

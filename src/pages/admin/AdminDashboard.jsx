@@ -121,7 +121,7 @@ export default function AdminDashboard() {
                       </div>
                       <p className="text-xs text-on-surface-variant mt-0.5">{desc}</p>
                     </div>
-                    <Button variant="secondary" size="sm" onClick={() => navigate('/admin/invoices')}>
+                    <Button variant="secondary" size="sm" onClick={() => navigate('/vendorpay/admin/invoices')}>
                       {action}
                     </Button>
                   </div>
@@ -189,7 +189,7 @@ export default function AdminDashboard() {
             </div>
             <div className="px-5 py-3 border-t border-outline-variant">
               <button
-                onClick={() => navigate('/admin/payments')}
+                onClick={() => navigate('/vendorpay/admin/payments')}
                 className="text-xs text-on-surface-variant hover:text-emerald font-medium uppercase tracking-wide w-full text-center transition-colors"
               >
                 Full Transaction History

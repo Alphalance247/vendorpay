@@ -61,7 +61,7 @@ export default function InvoiceHistory() {
             <h1 className="text-2xl font-semibold text-on-surface">Invoice History</h1>
             <p className="text-sm text-on-surface-variant mt-0.5">Review and manage your accounts receivable and outgoing billing.</p>
           </div>
-          <Button onClick={() => navigate('/vendor/invoices/new')}>
+          <Button onClick={() => navigate('/vendorpay/vendor/invoices/new')}>
             + Submit New Invoice
           </Button>
         </div>
@@ -174,7 +174,7 @@ export default function InvoiceHistory() {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
-                        <Button variant="ghost" size="sm" onClick={() => navigate(`/vendor/invoices/${inv.id || inv.invoice_number}`)} className="p-1.5">
+                        <Button variant="ghost" size="sm" onClick={() => navigate(`/vendorpay/vendor/invoices/${inv.id || inv.invoice_number}`)} className="p-1.5">
                           <Eye size={15} />
                         </Button>
                         <Button variant="ghost" size="sm" className="p-1.5">

@@ -469,7 +469,7 @@ export default function Onboarding() {
       authorized_test_deposit: true,
     });
 
-    navigate('/vendor/dashboard');
+    navigate('/vendorpay/vendor/dashboard');
   } catch (err) {
     console.error(err);
     setError(extractErrorMessage(err));

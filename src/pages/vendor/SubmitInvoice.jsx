@@ -169,7 +169,7 @@ export default function SubmitInvoice() {
       });
 
       setSubmitted(true);
-      setTimeout(() => navigate('/vendor/invoices'), 1500);
+      setTimeout(() => navigate('/vendorpay/vendor/invoices'), 1500);
     } catch (err) {
       setError(extractErrorMessage(err));
       setLoading(false);
@@ -196,7 +196,7 @@ export default function SubmitInvoice() {
     <AppLayout role="vendor">
       <div className="space-y-4">
         <button
-          onClick={() => navigate('/vendor/invoices')}
+          onClick={() => navigate('/vendorpay/vendor/invoices')}
           className="flex items-center gap-1.5 text-sm text-on-surface-variant hover:text-on-surface transition-colors"
         >
           <ArrowLeft size={15} /> Back to Invoices

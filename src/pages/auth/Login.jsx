@@ -161,7 +161,7 @@ export default function Login() {
 
                 <button
                   type="button"
-                  onClick={() => navigate('/forgot-password')}
+                  onClick={() => navigate('/vendorpay/forgot-password')}
                   className="text-xs text-emerald hover:underline"
                 >
                   Forgot password?
@@ -222,7 +222,7 @@ export default function Login() {
             Don't have an account?{' '}
             <button
               type="button"
-              onClick={() => navigate('/register')}
+              onClick={() => navigate('/vendorpay/register')}
               className="text-emerald font-medium hover:underline"
             >
               Create an account

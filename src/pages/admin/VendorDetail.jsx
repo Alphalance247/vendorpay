@@ -28,7 +28,7 @@ export default function VendorDetail() {
       <AppLayout role="admin">
         <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
           <p className="text-lg text-on-surface">Vendor not found</p>
-          <Button onClick={() => navigate('/admin/vendors')}>Back to Vendors</Button>
+          <Button onClick={() => navigate('/vendorpay/admin/vendors')}>Back to Vendors</Button>
         </div>
       </AppLayout>
     );
@@ -51,7 +51,7 @@ export default function VendorDetail() {
       <div className="space-y-6">
         {/* Back button */}
         <button
-          onClick={() => navigate('/admin/vendors')}
+          onClick={() => navigate('/vendorpay/admin/vendors')}
           className="flex items-center gap-1.5 text-sm text-on-surface-variant hover:text-on-surface transition-colors"
         >
           <ArrowLeft size={15} /> Back to Vendors
