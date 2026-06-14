@@ -82,7 +82,7 @@ export default function VendorDashboard() {
         </div>
 
         <div className="grid grid-cols-4 gap-4">
-          <StatCard label="Total Invoices" value={data.total_invoices ?? 0} sub="+12% vs last month" />
+          <StatCard label="Total Invoices" value={data.total_invoices ?? 0} />
           <StatCard
             label="Pending Approval"
             value={data.pending_approval_count ?? 0}

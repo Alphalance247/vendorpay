@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Users, Search, ArrowRight, Loader2 } from 'lucide-react';
+import { Users, Search, ArrowRight, Loader2, PowerOff, Power, Trash2 } from 'lucide-react';
 import AppLayout from '../../components/layout/AppLayout';
 import Card from '../../components/ui/Card';
 import StatusChip from '../../components/ui/StatusChip';
@@ -12,13 +12,44 @@ export default function AdminVendors() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [search, setSearch] = useState('');
+  const [actionLoading, setActionLoading] = useState(null);
 
-  useEffect(() => {
+  const loadVendors = () =>
     vendorService.getAllVendors()
       .then(setVendors)
       .catch(() => setError('Failed to load vendors.'))
       .finally(() => setLoading(false));
-  }, []);
+
+  useEffect(() => { loadVendors(); }, []);
+
+  async function handleToggleStatus(vendor) {
+    setActionLoading(`status-${vendor.id}`);
+    try {
+      await vendorService.updateVendorStatus(vendor.id, !vendor.is_onboarded);
+      setVendors((prev) =>
+        prev.map((v) => v.id === vendor.id ? { ...v, is_onboarded: !v.is_onboarded } : v)
+      );
+    } catch {
+      setError('Failed to update vendor status.');
+    } finally {
+      setActionLoading(null);
+    }
+  }
+
+  async function handleDelete(vendor) {
+    const displayName = vendor.company_name || vendor.user_email || `Vendor #${vendor.id}`;
+    if (!window.confirm(`Delete "${displayName}"? This cannot be undone.`)) return;
+    setActionLoading(`delete-${vendor.id}`);
+    try {
+      await vendorService.deleteVendor(vendor.id);
+      setVendors((prev) => prev.filter((v) => v.id !== vendor.id));
+    } catch (err) {
+      const msg = err?.response?.data?.detail ?? 'Failed to delete vendor.';
+      setError(msg);
+    } finally {
+      setActionLoading(null);
+    }
+  }
 
   const filtered = vendors.filter((v) => {
     if (!search) return true;
@@ -26,6 +57,7 @@ export default function AdminVendors() {
     return (
       v.company_name?.toLowerCase().includes(q) ||
       v.contact_email?.toLowerCase().includes(q) ||
+      v.user_email?.toLowerCase().includes(q) ||
       v.industry?.toLowerCase().includes(q)
     );
   });
@@ -43,6 +75,13 @@ export default function AdminVendors() {
             <span className="text-sm font-medium">{vendors.length} total</span>
           </div>
         </div>
+
+        {error && (
+          <div className="p-3 bg-red-50 border border-red-200 rounded text-red-600 text-sm">
+            {error}
+            <button onClick={() => setError('')} className="ml-2 underline text-xs">Dismiss</button>
+          </div>
+        )}
 
         <Card className="p-0 overflow-hidden">
           <div className="flex items-center gap-3 px-4 py-3 border-b border-outline-variant">
@@ -62,13 +101,11 @@ export default function AdminVendors() {
               <Loader2 size={24} className="animate-spin text-emerald" />
               <span className="ml-2 text-sm text-on-surface-variant">Loading vendors...</span>
             </div>
-          ) : error ? (
-            <p className="px-4 py-8 text-center text-sm text-error">{error}</p>
           ) : (
             <table className="w-full">
               <thead>
                 <tr className="bg-surface-low border-b border-outline-variant">
-                  {['Company', 'Contact', 'Industry', 'Status', ''].map((h) => (
+                  {['Company', 'Contact', 'Industry', 'Status', 'Actions'].map((h) => (
                     <th key={h} className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-on-surface-variant">
                       {h}
                     </th>
@@ -90,20 +127,54 @@ export default function AdminVendors() {
                       <p className="text-xs text-on-surface-variant mt-0.5">{vendor.business_type ?? ''}</p>
                     </td>
                     <td className="px-6 py-4">
-                      <p className="text-sm text-on-surface">{vendor.contact_first_name} {vendor.contact_last_name}</p>
-                      <p className="text-xs text-on-surface-variant">{vendor.contact_email ?? '—'}</p>
+                      <p className="text-sm text-on-surface">
+                        {vendor.contact_first_name || vendor.contact_last_name
+                          ? `${vendor.contact_first_name ?? ''} ${vendor.contact_last_name ?? ''}`.trim()
+                          : '—'}
+                      </p>
+                      <p className="text-xs text-on-surface-variant">
+                        {vendor.contact_email ?? vendor.user_email ?? '—'}
+                      </p>
                     </td>
                     <td className="px-6 py-4 text-sm text-on-surface-variant">{vendor.industry ?? '—'}</td>
                     <td className="px-6 py-4">
                       <StatusChip status={vendor.is_onboarded ? 'Active' : 'Pending'} />
                     </td>
                     <td className="px-6 py-4">
-                      <button
-                        onClick={() => navigate(`/vendorpay/admin/vendors/${vendor.id}`)}
-                        className="flex items-center gap-1 text-xs text-emerald hover:underline font-medium"
-                      >
-                        View <ArrowRight size={12} />
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => navigate(`/vendorpay/admin/vendors/${vendor.id}`)}
+                          className="flex items-center gap-1 text-xs text-emerald hover:underline font-medium"
+                        >
+                          View <ArrowRight size={12} />
+                        </button>
+                        <button
+                          onClick={() => handleToggleStatus(vendor)}
+                          disabled={actionLoading === `status-${vendor.id}`}
+                          title={vendor.is_onboarded ? 'Deactivate vendor' : 'Activate vendor'}
+                          className="p-1.5 rounded hover:bg-surface-container transition-colors disabled:opacity-50"
+                        >
+                          {actionLoading === `status-${vendor.id}` ? (
+                            <Loader2 size={14} className="animate-spin text-on-surface-variant" />
+                          ) : vendor.is_onboarded ? (
+                            <PowerOff size={14} className="text-amber-600" />
+                          ) : (
+                            <Power size={14} className="text-emerald" />
+                          )}
+                        </button>
+                        <button
+                          onClick={() => handleDelete(vendor)}
+                          disabled={actionLoading === `delete-${vendor.id}`}
+                          title="Delete vendor"
+                          className="p-1.5 rounded hover:bg-red-50 transition-colors disabled:opacity-50"
+                        >
+                          {actionLoading === `delete-${vendor.id}` ? (
+                            <Loader2 size={14} className="animate-spin text-error" />
+                          ) : (
+                            <Trash2 size={14} className="text-error" />
+                          )}
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Check, ArrowRight, ArrowLeft, Save, HelpCircle, ShieldCheck } from 'lucide-react';
 import { vendorService } from '../../lib/services/vendorService';
+import { useAuth } from '../../lib/authContext';
 import { extractErrorMessage } from '../../lib/utils';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
@@ -369,6 +370,7 @@ function ReviewStep({ data }) {
 
 export default function Onboarding() {
   const navigate = useNavigate();
+  const { completeOnboarding } = useAuth();
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -469,6 +471,7 @@ export default function Onboarding() {
       authorized_test_deposit: true,
     });
 
+    completeOnboarding();
     navigate('/vendorpay/vendor/dashboard');
   } catch (err) {
     console.error(err);

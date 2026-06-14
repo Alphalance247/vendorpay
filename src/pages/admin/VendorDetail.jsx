@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Download, Eye, Loader2 } from 'lucide-react';
+import { ArrowLeft, Download, Eye, Loader2, Power, PowerOff, Trash2 } from 'lucide-react';
 import AppLayout from '../../components/layout/AppLayout';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
@@ -16,7 +16,9 @@ export default function VendorDetail() {
   const [vendor, setVendor] = useState(null);
   const [invoices, setInvoices] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [loadError, setLoadError] = useState('');
+  const [actionError, setActionError] = useState('');
+  const [actionLoading, setActionLoading] = useState('');
 
   useEffect(() => {
     Promise.all([
@@ -30,9 +32,35 @@ export default function VendorDetail() {
           : (invoiceData.items ?? invoiceData.invoices ?? invoiceData.data ?? []);
         setInvoices(items);
       })
-      .catch(() => setError('Failed to load vendor details.'))
+      .catch(() => setLoadError('Failed to load vendor details.'))
       .finally(() => setLoading(false));
   }, [id]);
+
+  async function handleToggleStatus() {
+    setActionLoading('status');
+    try {
+      const updated = await vendorService.updateVendorStatus(id, !vendor.is_onboarded);
+      setVendor(updated);
+    } catch {
+      setActionError('Failed to update vendor status.');
+    } finally {
+      setActionLoading('');
+    }
+  }
+
+  async function handleDelete() {
+    const displayName = vendor.company_name || vendor.user_email || `Vendor #${id}`;
+    if (!window.confirm(`Delete "${displayName}"? This cannot be undone.`)) return;
+    setActionLoading('delete');
+    try {
+      await vendorService.deleteVendor(id);
+      navigate('/vendorpay/admin/vendors');
+    } catch (err) {
+      const msg = err?.response?.data?.detail ?? 'Failed to delete vendor.';
+      setActionError(msg);
+      setActionLoading('');
+    }
+  }
 
   if (loading) {
     return (
@@ -44,7 +72,7 @@ export default function VendorDetail() {
     );
   }
 
-  if (error || !vendor) {
+  if (loadError || !vendor) {
     return (
       <AppLayout role="admin">
         <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
@@ -72,10 +100,46 @@ export default function VendorDetail() {
         <div className="flex items-start justify-between">
           <div>
             <h1 className="text-2xl font-semibold text-on-surface">{vendor.company_name ?? '—'}</h1>
-            <p className="text-sm text-on-surface-variant mt-0.5">{vendor.industry ?? ''} · {vendor.business_type ?? ''}</p>
+            <p className="text-sm text-on-surface-variant mt-0.5">
+              {vendor.industry ?? ''}{vendor.business_type ? ` · ${vendor.business_type}` : ''}
+            </p>
           </div>
-          <StatusChip status={vendor.is_onboarded ? 'Active' : 'Pending'} />
+          <div className="flex items-center gap-2">
+            <StatusChip status={vendor.is_onboarded ? 'Active' : 'Pending'} />
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={handleToggleStatus}
+              disabled={!!actionLoading}
+              className="flex items-center gap-1.5"
+            >
+              {actionLoading === 'status' ? (
+                <Loader2 size={13} className="animate-spin" />
+              ) : vendor.is_onboarded ? (
+                <><PowerOff size={13} /> Deactivate</>
+              ) : (
+                <><Power size={13} /> Activate</>
+              )}
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleDelete}
+              disabled={!!actionLoading}
+              className="flex items-center gap-1.5 text-error hover:bg-red-50"
+            >
+              {actionLoading === 'delete' ? <Loader2 size={13} className="animate-spin" /> : <Trash2 size={13} />}
+              Delete
+            </Button>
+          </div>
         </div>
+
+        {actionError && (
+          <div className="p-3 bg-red-50 border border-red-200 rounded text-red-600 text-sm">
+            {actionError}
+            <button onClick={() => setActionError('')} className="ml-2 underline text-xs">Dismiss</button>
+          </div>
+        )}
 
         <div className="grid grid-cols-2 gap-4">
           <Card>
@@ -87,7 +151,7 @@ export default function VendorDetail() {
               </div>
               <div className="flex gap-2">
                 <span className="text-on-surface-variant w-24 flex-shrink-0">Email</span>
-                <span className="text-on-surface">{vendor.contact_email ?? '—'}</span>
+                <span className="text-on-surface">{vendor.contact_email ?? vendor.user_email ?? '—'}</span>
               </div>
               <div className="flex gap-2">
                 <span className="text-on-surface-variant w-24 flex-shrink-0">Phone</span>

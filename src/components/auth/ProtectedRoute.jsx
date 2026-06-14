@@ -3,7 +3,7 @@ import { Loader2 } from 'lucide-react';
 import { useAuth } from '../../lib/authContext';
 
 export default function ProtectedRoute({ children, role: requiredRole }) {
-  const { role, loading } = useAuth();
+  const { role, loading, isOnboarded } = useAuth();
   const token = localStorage.getItem('access_token');
 
   if (loading) {
@@ -23,6 +23,10 @@ export default function ProtectedRoute({ children, role: requiredRole }) {
       ? '/vendorpay/admin/dashboard'
       : '/vendorpay/vendor/dashboard';
     return <Navigate to={fallback} replace />;
+  }
+
+  if (requiredRole === 'vendor' && isOnboarded === false) {
+    return <Navigate to="/vendorpay/onboarding" replace />;
   }
 
   return children;

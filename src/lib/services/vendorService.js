@@ -63,4 +63,14 @@ export const vendorService = {
     const res = await apiClient.get(`/vendors/${id}`);
     return res.data;
   },
+
+  updateVendorStatus: async (id, isActive) => {
+    const res = await apiClient.patch(`/vendors/${id}/status`, { is_active: isActive });
+    return res.data;
+  },
+
+  deleteVendor: async (id) => {
+    const res = await apiClient.delete(`/vendors/${id}`);
+    return res.data;
+  },
 };

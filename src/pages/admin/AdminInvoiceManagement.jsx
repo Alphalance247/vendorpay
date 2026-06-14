@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Download, ChevronLeft, ChevronRight, SlidersHorizontal, Zap, Loader2 } from 'lucide-react';
+import { Download, SlidersHorizontal, Loader2 } from 'lucide-react';
 import AppLayout from '../../components/layout/AppLayout';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
@@ -211,8 +211,8 @@ export default function AdminInvoiceManagement() {
                           <p className="text-sm font-semibold text-on-surface">{inv.vendor || inv.vendor_name}</p>
                           <p className="text-xs text-on-surface-variant">{inv.dept || inv.department}</p>
                         </td>
-                        <td className="px-4 py-4 text-sm text-on-surface-variant">{inv.id || inv.invoice_number}</td>
-                        <td className="px-4 py-4 text-sm text-on-surface-variant">{formatDate(inv.date || inv.created_at)}</td>
+                        <td className="px-4 py-4 text-sm text-on-surface-variant">{inv.invoice_number}</td>
+                        <td className="px-4 py-4 text-sm text-on-surface-variant">{formatDate(inv.submitted_at)}</td>
                         <td className="px-4 py-4 text-sm font-semibold tnum text-on-surface">{formatCurrency(inv.amount, inv.currency || 'USD')}</td>
                         <td className="px-4 py-4">
                           <StatusChip status={inv.status === 'reviewed' ? 'Awaiting Payment' : inv.status === 'submitted' ? 'Pending Review' : inv.status} />
@@ -261,24 +261,8 @@ export default function AdminInvoiceManagement() {
                 </table>
               )}
 
-              <div className="flex items-center justify-between px-5 py-3 border-t border-outline-variant">
+              <div className="px-5 py-3 border-t border-outline-variant">
                 <p className="text-xs text-on-surface-variant">Showing {filtered.length} of {invoices.length} invoices</p>
-                <div className="flex items-center gap-1">
-                  <button className="p-1.5 rounded hover:bg-surface-container text-on-surface-variant">
-                    <ChevronLeft size={15} />
-                  </button>
-                  {[1, 2, 3].map((p) => (
-                    <button
-                      key={p}
-                      className={`w-7 h-7 rounded text-xs font-medium ${p === 1 ? 'bg-navy text-white' : 'text-on-surface-variant hover:bg-surface-container'}`}
-                    >
-                      {p}
-                    </button>
-                  ))}
-                  <button className="p-1.5 rounded hover:bg-surface-container text-on-surface-variant">
-                    <ChevronRight size={15} />
-                  </button>
-                </div>
               </div>
             </Card>
           </div>
@@ -296,11 +280,12 @@ export default function AdminInvoiceManagement() {
               </p>
             </Card>
             <Card className="bg-emerald text-white border-0">
-              <p className="text-xs font-semibold uppercase tracking-wide text-emerald-light mb-1">Avg. Processing Time</p>
-              <div className="flex items-end gap-2">
-                <p className="text-2xl font-bold">2.4 Days</p>
-                <Zap size={18} className="text-emerald-light mb-0.5" />
-              </div>
+              <p className="text-xs font-semibold uppercase tracking-wide text-emerald-light mb-1">Avg. Invoice Amount</p>
+              <p className="text-2xl font-bold">
+                {invoices.length > 0
+                  ? formatCurrency(invoices.reduce((s, i) => s + (i.amount || 0), 0) / invoices.length)
+                  : '—'}
+              </p>
             </Card>
           </div>
         </div>

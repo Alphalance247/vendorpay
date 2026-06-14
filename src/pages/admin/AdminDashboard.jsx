@@ -1,24 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer,
-} from 'recharts';
-import {
-  Download, Plus, AlertCircle, Clock, CheckCircle, Receipt, Loader2,
+  AlertCircle, Clock, CheckCircle, Receipt, Loader2, Download, Plus,
 } from 'lucide-react';
 import AppLayout from '../../components/layout/AppLayout';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import { formatCurrency } from '../../lib/utils';
 import { vendorService } from '../../lib/services/vendorService';
-
-const processingData = [
-  { date: 'Nov 1', processed: 12 },
-  { date: 'Nov 8', processed: 18 },
-  { date: 'Nov 15', processed: 14 },
-  { date: 'Nov 22', processed: 22 },
-  { date: 'Nov 29', processed: 19 },
-];
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
@@ -86,30 +75,29 @@ export default function AdminDashboard() {
         )}
 
         <div className="grid grid-cols-3 gap-4">
-          <div className="col-span-2 space-y-4">
-            <Card>
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm font-semibold text-on-surface">Invoice Processing (Last 30 Days)</h3>
-                <div className="flex items-center gap-3 text-xs text-on-surface-variant">
-                  <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-navy inline-block" />Processed</span>
-                </div>
+          <Card className="col-span-2">
+            <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant mb-4">Invoice Status Breakdown</p>
+            {dash?.status_breakdown ? (
+              <div className="space-y-3">
+                {Object.entries(dash.status_breakdown).map(([key, count]) => {
+                  const total = Object.values(dash.status_breakdown).reduce((a, b) => a + b, 0);
+                  const pct = total ? Math.round((count / total) * 100) : 0;
+                  const colorMap = { submitted: 'bg-amber-400', reviewed: 'bg-sky-400', funding: 'bg-violet-400', paid: 'bg-emerald', rejected: 'bg-error', flagged: 'bg-orange-400' };
+                  return (
+                    <div key={key} className="flex items-center gap-3">
+                      <span className="text-xs text-on-surface-variant capitalize w-20 flex-shrink-0">{key}</span>
+                      <div className="flex-1 h-2 bg-surface-container rounded-full overflow-hidden">
+                        <div className={`h-full rounded-full ${colorMap[key] ?? 'bg-emerald'}`} style={{ width: `${pct}%` }} />
+                      </div>
+                      <span className="text-xs font-semibold text-on-surface tnum w-6 text-right">{count}</span>
+                    </div>
+                  );
+                })}
               </div>
-              <ResponsiveContainer width="100%" height={160}>
-                <AreaChart data={processingData} margin={{ left: -20, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="adminGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#006c49" stopOpacity={0.15} />
-                      <stop offset="95%" stopColor="#006c49" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <XAxis dataKey="date" tick={{ fontSize: 11, fill: '#74777c' }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fontSize: 11, fill: '#74777c' }} axisLine={false} tickLine={false} />
-                  <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid #c4c6cc' }} />
-                  <Area type="monotone" dataKey="processed" stroke="#006c49" strokeWidth={2} fill="url(#adminGrad)" />
-                </AreaChart>
-              </ResponsiveContainer>
-            </Card>
-          </div>
+            ) : (
+              <p className="text-sm text-on-surface-variant">No data available.</p>
+            )}
+          </Card>
 
           <Card className="p-0 overflow-hidden">
             <div className="flex items-center justify-between px-5 py-3 border-b border-outline-variant">
