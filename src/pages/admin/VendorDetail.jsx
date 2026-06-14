@@ -39,7 +39,7 @@ export default function VendorDetail() {
   async function handleToggleStatus() {
     setActionLoading('status');
     try {
-      const updated = await vendorService.updateVendorStatus(id, !vendor.is_onboarded);
+      const updated = await vendorService.updateVendorStatus(id, !vendor.is_active);
       setVendor(updated);
     } catch {
       setActionError('Failed to update vendor status.');
@@ -105,7 +105,7 @@ export default function VendorDetail() {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <StatusChip status={vendor.is_onboarded ? 'Active' : 'Pending'} />
+            <StatusChip status={vendor.is_active ? 'Active' : 'Inactive'} />
             <Button
               variant="secondary"
               size="sm"
@@ -115,7 +115,7 @@ export default function VendorDetail() {
             >
               {actionLoading === 'status' ? (
                 <Loader2 size={13} className="animate-spin" />
-              ) : vendor.is_onboarded ? (
+              ) : vendor.is_active ? (
                 <><PowerOff size={13} /> Deactivate</>
               ) : (
                 <><Power size={13} /> Activate</>

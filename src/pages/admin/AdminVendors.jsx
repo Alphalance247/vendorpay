@@ -25,9 +25,9 @@ export default function AdminVendors() {
   async function handleToggleStatus(vendor) {
     setActionLoading(`status-${vendor.id}`);
     try {
-      await vendorService.updateVendorStatus(vendor.id, !vendor.is_onboarded);
+      await vendorService.updateVendorStatus(vendor.id, !vendor.is_active);
       setVendors((prev) =>
-        prev.map((v) => v.id === vendor.id ? { ...v, is_onboarded: !v.is_onboarded } : v)
+        prev.map((v) => v.id === vendor.id ? { ...v, is_active: !v.is_active } : v)
       );
     } catch {
       setError('Failed to update vendor status.');
@@ -138,7 +138,7 @@ export default function AdminVendors() {
                     </td>
                     <td className="px-6 py-4 text-sm text-on-surface-variant">{vendor.industry ?? '—'}</td>
                     <td className="px-6 py-4">
-                      <StatusChip status={vendor.is_onboarded ? 'Active' : 'Pending'} />
+                      <StatusChip status={vendor.is_active ? 'Active' : 'Inactive'} />
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
@@ -151,12 +151,12 @@ export default function AdminVendors() {
                         <button
                           onClick={() => handleToggleStatus(vendor)}
                           disabled={actionLoading === `status-${vendor.id}`}
-                          title={vendor.is_onboarded ? 'Deactivate vendor' : 'Activate vendor'}
+                          title={vendor.is_active ? 'Deactivate vendor' : 'Activate vendor'}
                           className="p-1.5 rounded hover:bg-surface-container transition-colors disabled:opacity-50"
                         >
                           {actionLoading === `status-${vendor.id}` ? (
                             <Loader2 size={14} className="animate-spin text-on-surface-variant" />
-                          ) : vendor.is_onboarded ? (
+                          ) : vendor.is_active ? (
                             <PowerOff size={14} className="text-amber-600" />
                           ) : (
                             <Power size={14} className="text-emerald" />

@@ -1,6 +1,8 @@
 import { cn } from '../../lib/utils';
 
 const styles = {
+  Active: 'bg-emerald/10 text-emerald',
+  Inactive: 'bg-error/10 text-error',
   Paid: 'bg-emerald/10 text-emerald',
   paid: 'bg-emerald/10 text-emerald',
   Pending: 'bg-amber-100 text-amber-700',

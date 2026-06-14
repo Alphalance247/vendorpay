@@ -55,6 +55,7 @@ export function downloadCSV(filename, rows) {
 
 export function extractErrorMessage(error) {
   return (
+    error?.response?.data?.detail ||
     error?.response?.data?.message ||
     error?.response?.data?.error ||
     error?.message ||
