@@ -1,6 +1,7 @@
 import Register from './pages/auth/Register';
 import ForgotPassword from './pages/auth/ForgotPassword';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import ProtectedRoute from './components/auth/ProtectedRoute';
 import Login from './pages/auth/Login';
 import Onboarding from './pages/onboarding/Onboarding';
 import VendorDashboard from './pages/vendor/VendorDashboard';
@@ -30,21 +31,21 @@ export default function App() {
           <Route path="/vendorpay/onboarding" element={<Onboarding />} />
 
           {/* Vendor routes */}
-          <Route path="/vendorpay/vendor/dashboard" element={<VendorDashboard />} />
-          <Route path="/vendorpay/vendor/invoices" element={<InvoiceHistory />} />
-          <Route path="/vendorpay/vendor/invoices/new" element={<SubmitInvoice />} />
-          <Route path="/vendorpay/vendor/invoices/:id" element={<InvoiceDetail />} />
-          <Route path="/vendorpay/vendor/payments" element={<VendorPayments />} />
-          <Route path="/vendorpay/vendor/support" element={<Support />} />
+          <Route path="/vendorpay/vendor/dashboard" element={<ProtectedRoute role="vendor"><VendorDashboard /></ProtectedRoute>} />
+          <Route path="/vendorpay/vendor/invoices" element={<ProtectedRoute role="vendor"><InvoiceHistory /></ProtectedRoute>} />
+          <Route path="/vendorpay/vendor/invoices/new" element={<ProtectedRoute role="vendor"><SubmitInvoice /></ProtectedRoute>} />
+          <Route path="/vendorpay/vendor/invoices/:id" element={<ProtectedRoute role="vendor"><InvoiceDetail /></ProtectedRoute>} />
+          <Route path="/vendorpay/vendor/payments" element={<ProtectedRoute role="vendor"><VendorPayments /></ProtectedRoute>} />
+          <Route path="/vendorpay/vendor/support" element={<ProtectedRoute role="vendor"><Support /></ProtectedRoute>} />
 
           {/* Admin routes */}
-          <Route path="/vendorpay/admin/dashboard" element={<AdminDashboard />} />
-          <Route path="/vendorpay/admin/support" element={<Support admin />} />
-          <Route path="/vendorpay/admin/vendors" element={<AdminVendors />} />
-          <Route path="/vendorpay/admin/vendors/:id" element={<VendorDetail />} />
-          <Route path="/vendorpay/admin/invoices" element={<AdminInvoiceManagement />} />
-          <Route path="/vendorpay/admin/invoices/:id" element={<InvoiceDetail />} />
-          <Route path="/vendorpay/admin/payments" element={<AdminPayments />} />
+          <Route path="/vendorpay/admin/dashboard" element={<ProtectedRoute role="admin"><AdminDashboard /></ProtectedRoute>} />
+          <Route path="/vendorpay/admin/support" element={<ProtectedRoute role="admin"><Support admin /></ProtectedRoute>} />
+          <Route path="/vendorpay/admin/vendors" element={<ProtectedRoute role="admin"><AdminVendors /></ProtectedRoute>} />
+          <Route path="/vendorpay/admin/vendors/:id" element={<ProtectedRoute role="admin"><VendorDetail /></ProtectedRoute>} />
+          <Route path="/vendorpay/admin/invoices" element={<ProtectedRoute role="admin"><AdminInvoiceManagement /></ProtectedRoute>} />
+          <Route path="/vendorpay/admin/invoices/:id" element={<ProtectedRoute role="admin"><InvoiceDetail /></ProtectedRoute>} />
+          <Route path="/vendorpay/admin/payments" element={<ProtectedRoute role="admin"><AdminPayments /></ProtectedRoute>} />
 
           {/* Fallback */}
           <Route path="*" element={<Navigate to="/vendorpay/login" replace />} />
