@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Send, Bot, User, Plus, MessageSquare, ChevronRight, X, CheckCircle, Clock, AlertCircle, Loader2, Trash2 } from 'lucide-react';
+import TutorialCard from '../../components/ui/TutorialCard';
 import AppLayout from '../../components/layout/AppLayout';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
@@ -472,6 +473,29 @@ export default function Support({ admin = false }) {
         <h1 className="text-2xl font-semibold text-on-surface">
           {admin ? 'Vendor Support' : 'Support'}
         </h1>
+
+        <TutorialCard
+          id={admin ? 'admin-support' : 'vendor-support'}
+          title={admin ? 'Managing Support Tickets' : 'Getting Help'}
+          description={
+            admin
+              ? 'Review and respond to vendor support tickets raised by your suppliers.'
+              : 'Ask questions instantly or raise a ticket for issues that need human review.'
+          }
+          tips={
+            admin
+              ? [
+                  "The Support Tickets tab lists all open and resolved vendor tickets — click any ticket to read the thread and reply.",
+                  "Close a ticket once the issue is resolved; vendors can reopen it if needed.",
+                  "Use the AI Assistant tab yourself to quickly look up invoice or vendor information.",
+                ]
+              : [
+                  "The AI Assistant answers common questions about your invoices, payment status, and account 24/7.",
+                  "For issues needing human attention, open the My Tickets tab and create a new support ticket.",
+                  "You can track all your open and resolved tickets and reply directly within each ticket thread.",
+                ]
+          }
+        />
 
         {/* Tab bar */}
         {TABS.length > 1 && (

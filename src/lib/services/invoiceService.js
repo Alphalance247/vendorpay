@@ -1,5 +1,22 @@
 import apiClient from "../apiClient";
 
+export const extractInvoiceWithAI = async (file) => {
+  const formData = new FormData();
+  formData.append('file', file);
+  const response = await apiClient.post('/invoices/extract', formData, {
+    headers: { 'Content-Type': undefined },
+  });
+  const d = response.data;
+  return {
+    invoiceNumber: d.invoice_number || null,
+    amount: d.amount != null ? Number(d.amount) : null,
+    currency: d.currency || null,
+    invoiceDate: d.invoice_date || null,
+    dueDate: d.due_date || null,
+    vendorName: d.vendor_name || null,
+  };
+};
+
 export const invoiceService = {
   submitInvoice: async ({ invoiceNumber, amount, dueDate, currency, notes, pdfFile }) => {
     const formData = new FormData();
@@ -132,8 +149,8 @@ export const vendorInvoiceService = {
     return response.data;
   },
 
-  disputePayment: async (invoiceId) => {
-    const response = await apiClient.patch(`/invoices/${invoiceId}/dispute-payment`);
+  disputePayment: async (invoiceId, reason) => {
+    const response = await apiClient.patch(`/invoices/${invoiceId}/dispute-payment`, { reason: reason || null });
     return response.data;
   },
 };

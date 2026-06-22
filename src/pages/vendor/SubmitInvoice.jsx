@@ -1,14 +1,14 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, FileText, Upload, CheckCircle, Clock, Banknote, Send, Loader2, Sparkles, Eye, EyeOff, X } from 'lucide-react';
+import { ArrowLeft, FileText, Upload, CheckCircle, Clock, Banknote, Send, Loader2, Sparkles, Eye, EyeOff, X, AlertCircle } from 'lucide-react';
 import AppLayout from '../../components/layout/AppLayout';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Select from '../../components/ui/Select';
 import { cn, extractErrorMessage } from '../../lib/utils';
-import { invoiceService } from '../../lib/services/invoiceService';
-import { extractInvoiceData } from '../../lib/invoiceOcr';
+import { invoiceService, extractInvoiceWithAI } from '../../lib/services/invoiceService';
+import TutorialCard from '../../components/ui/TutorialCard';
 
 const CURRENCY_SYMBOLS = {
   USD: '$', EUR: '€', GBP: '£', CAD: 'C$',
@@ -62,6 +62,7 @@ export default function SubmitInvoice() {
   const [showManual, setShowManual] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
   
   const [form, setForm] = useState({
     invoiceNumber: '',
@@ -96,7 +97,12 @@ export default function SubmitInvoice() {
     const objectUrl = URL.createObjectURL(picked);
     setPreviewUrl(objectUrl);
 
-    const extracted = await extractInvoiceData(picked);
+    let extracted = null;
+    try {
+      extracted = await extractInvoiceWithAI(picked);
+    } catch {
+      extracted = null;
+    }
     setExtractedData(extracted);
     setIsExtracting(false);
     setShowManual(true);
@@ -142,22 +148,27 @@ export default function SubmitInvoice() {
     ingestFile(e.dataTransfer.files[0]);
   }
 
-  async function handleSubmit(e) {
-    e.preventDefault();
+  function handleSubmit(e) {
+    if (e) e.preventDefault();
     if (!file) {
       setError('Please upload an invoice file');
       return;
     }
-
     const parsedAmount = parseFloat(form.amount);
     if (!parsedAmount || parsedAmount <= 0) {
       setError('Please enter a valid invoice amount');
       return;
     }
+    setError('');
+    setShowConfirmModal(true);
+  }
 
+  async function confirmAndSubmit() {
+    setShowConfirmModal(false);
     setLoading(true);
     setError('');
 
+    const parsedAmount = parseFloat(form.amount);
     try {
       await invoiceService.submitInvoice({
         invoiceNumber: form.invoiceNumber || generateInvoiceNumber(),
@@ -209,6 +220,18 @@ export default function SubmitInvoice() {
           </p>
         </div>
 
+        <TutorialCard
+          id="vendor-submit-invoice"
+          title="How to Submit an Invoice"
+          description="Upload your invoice file and let AI fill in the details — then review before submitting."
+          tips={[
+            "Drag and drop or click Browse to upload a PDF or image of your invoice (max 25 MB).",
+            "AI will automatically extract the invoice number, amount, currency, and dates — form fields are locked during this process.",
+            "Review the extracted values carefully; you can edit any field before submitting.",
+            "When you click Submit, a confirmation dialog will ask you to verify the amount matches your document.",
+          ]}
+        />
+
         {/* Error message */}
         {error && (
           <div className="p-3 bg-red-50 border border-red-200 rounded text-red-600 text-sm">
@@ -224,7 +247,7 @@ export default function SubmitInvoice() {
               <Card
                 className={cn(
                   "border-dashed cursor-pointer transition-colors",
-                  dragging ? 'border-emerald bg-emerald/5' : 'border-outline-variant hover:border-emerald/50'
+                  dragging ? 'border-amber bg-amber/5' : 'border-outline-variant hover:border-amber/50'
                 )}
                 onClick={() => fileRef.current?.click()}
                 onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
@@ -239,7 +262,7 @@ export default function SubmitInvoice() {
                     <p className="text-sm font-semibold text-on-surface">Upload Invoice File</p>
                     <p className="text-xs text-on-surface-variant mt-1">
                       Drag and drop your PDF, Image, or DOC file here, or{' '}
-                      <span className="text-emerald underline">browse computer</span>
+                      <span className="text-amber underline">browse computer</span>
                     </p>
                   </div>
                   <p className="text-xs text-outline uppercase tracking-wide">Maximum file size: 25MB</p>
@@ -282,9 +305,22 @@ export default function SubmitInvoice() {
                         className="w-full h-[400px] rounded border border-outline-variant"
                         title="Invoice Preview"
                       />
-                      <div className="absolute top-2 right-2 bg-white/90 rounded px-2 py-1 text-xs font-medium text-on-surface shadow-sm">
-                        PDF Preview
-                      </div>
+                      {isExtracting && (
+                        <div className="absolute inset-0 rounded bg-navy/60 backdrop-blur-sm flex flex-col items-center justify-center gap-3">
+                          <div className="w-14 h-14 rounded-full bg-white/10 border border-white/20 flex items-center justify-center">
+                            <Loader2 size={28} className="animate-spin text-white" />
+                          </div>
+                          <div className="text-center">
+                            <p className="text-white text-sm font-semibold">AI Reading Invoice</p>
+                            <p className="text-white/70 text-xs mt-0.5">Extracting fields from your document…</p>
+                          </div>
+                        </div>
+                      )}
+                      {!isExtracting && (
+                        <div className="absolute top-2 right-2 bg-white/90 rounded px-2 py-1 text-xs font-medium text-on-surface shadow-sm">
+                          PDF Preview
+                        </div>
+                      )}
                     </div>
                   ) : (
                     <div className="relative">
@@ -293,30 +329,57 @@ export default function SubmitInvoice() {
                         alt="Invoice preview"
                         className="w-full max-h-[400px] object-contain rounded border border-outline-variant"
                       />
-                      <div className="absolute top-2 right-2 bg-white/90 rounded px-2 py-1 text-xs font-medium text-on-surface shadow-sm">
-                        Image Preview
-                      </div>
+                      {isExtracting && (
+                        <div className="absolute inset-0 rounded bg-navy/60 backdrop-blur-sm flex flex-col items-center justify-center gap-3">
+                          <div className="w-14 h-14 rounded-full bg-white/10 border border-white/20 flex items-center justify-center">
+                            <Loader2 size={28} className="animate-spin text-white" />
+                          </div>
+                          <div className="text-center">
+                            <p className="text-white text-sm font-semibold">AI Reading Invoice</p>
+                            <p className="text-white/70 text-xs mt-0.5">Extracting fields from your document…</p>
+                          </div>
+                        </div>
+                      )}
+                      {!isExtracting && (
+                        <div className="absolute top-2 right-2 bg-white/90 rounded px-2 py-1 text-xs font-medium text-on-surface shadow-sm">
+                          Image Preview
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
 
-                {/* Extraction status */}
-                <div className="px-4 py-3 border-t border-outline-variant">
-                  {isExtracting ? (
-                    <div className="flex items-center gap-2 text-sm text-emerald">
-                      <Loader2 size={16} className="animate-spin" />
-                      AI is reading your invoice...
+                {/* Extraction status bar */}
+                {isExtracting ? (
+                  <div className="px-4 py-3 border-t border-amber/30 bg-amber/5 flex items-center gap-3">
+                    <Loader2 size={16} className="animate-spin text-amber flex-shrink-0" />
+                    <div>
+                      <p className="text-sm font-semibold text-amber">Extracting invoice details…</p>
+                      <p className="text-xs text-on-surface-variant">Please wait — form will be filled automatically</p>
                     </div>
-                  ) : extractedData ? (
-                    <div className="flex items-center gap-2 text-sm text-emerald">
-                      <Sparkles size={16} />
-                      {extractedData.currency && extractedData.amount 
-                        ? `Detected: ${extractedData.currency} ${extractedData.amount.toLocaleString()}`
-                        : 'Data extracted'}
-                    </div>
-                  ) : null}
-                </div>
+                  </div>
+                ) : extractedData ? (
+                  <div className="px-4 py-3 border-t border-emerald/20 bg-emerald/5 flex items-center gap-2 text-sm text-emerald">
+                    <Sparkles size={16} className="flex-shrink-0" />
+                    {extractedData.currency && extractedData.amount
+                      ? `Detected: ${extractedData.currency} ${extractedData.amount.toLocaleString()}`
+                      : 'Data extracted'}
+                  </div>
+                ) : null}
               </Card>
+            )}
+
+            {/* Form area — blocked while AI is extracting */}
+            {isExtracting && (
+              <div className="rounded-lg border border-amber/30 bg-amber/5 px-4 py-5 flex items-center gap-4">
+                <div className="w-10 h-10 rounded-full bg-amber/15 flex items-center justify-center flex-shrink-0">
+                  <Loader2 size={20} className="animate-spin text-amber" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-on-surface">AI is extracting your invoice details</p>
+                  <p className="text-xs text-on-surface-variant mt-0.5">Form fields will populate automatically — please wait before making any edits.</p>
+                </div>
+              </div>
             )}
 
             {/* Extracted Results */}
@@ -367,7 +430,8 @@ export default function SubmitInvoice() {
             )}
 
             {/* Manual Form */}
-            <form onSubmit={handleSubmit} className={cn("space-y-4", !showManual && extractedData && "hidden")}>
+            <form onSubmit={handleSubmit} className={cn("space-y-4", !file || (!showManual && extractedData) || isExtracting ? "hidden" : "")}>
+            <fieldset disabled={isExtracting} className="contents">
               <div className="grid grid-cols-2 gap-4">
                 <Input
                   label="Invoice Number"
@@ -442,9 +506,10 @@ export default function SubmitInvoice() {
                   onChange={handleChange}
                   placeholder="Add any additional context..."
                   rows={4}
-                  className="w-full rounded border border-outline-variant bg-white px-3 py-2 text-sm text-on-surface placeholder:text-outline resize-none focus:outline-none focus:ring-2 focus:ring-emerald"
+                  className="w-full rounded border border-outline-variant bg-white px-3 py-2 text-sm text-on-surface placeholder:text-outline resize-none focus:outline-none focus:ring-2 focus:ring-amber"
                 />
               </div>
+            </fieldset>
             </form>
           </div>
 
@@ -453,7 +518,7 @@ export default function SubmitInvoice() {
             {isExtracting && (
               <Card className="bg-navy text-white border-0">
                 <div className="flex items-center gap-3">
-                  <Loader2 size={20} className="animate-spin text-emerald-light" />
+                  <Loader2 size={20} className="animate-spin text-amber" />
                   <div>
                     <p className="text-sm font-semibold">AI Working...</p>
                     <p className="text-xs text-slate-300">Reading your invoice</p>
@@ -504,6 +569,61 @@ export default function SubmitInvoice() {
           </div>
         </div>
       </div>
+
+      {/* Confirmation modal */}
+      {showConfirmModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            onClick={() => setShowConfirmModal(false)}
+          />
+          <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-md p-6 flex flex-col gap-5">
+            {/* Header */}
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-full bg-amber/10 flex items-center justify-center flex-shrink-0">
+                <AlertCircle size={20} className="text-amber" />
+              </div>
+              <div>
+                <h2 className="text-base font-semibold text-on-surface">Confirm Invoice Amount</h2>
+                <p className="text-sm text-on-surface-variant mt-0.5">
+                  Please verify the amount below matches exactly what is stated on your uploaded invoice.
+                </p>
+              </div>
+            </div>
+
+            {/* Amount display */}
+            <div className="bg-surface rounded-lg border border-outline-variant px-4 py-4 text-center">
+              <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant mb-1">Amount to be submitted</p>
+              <p className="text-3xl font-bold text-on-surface">
+                {CURRENCY_SYMBOLS[form.currency] || ''}{parseFloat(form.amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </p>
+              <p className="text-sm text-on-surface-variant mt-1">{form.currency} · Invoice {form.invoiceNumber}</p>
+            </div>
+
+            {/* Warning note */}
+            <p className="text-xs text-on-surface-variant bg-amber/5 border border-amber/20 rounded-lg px-3 py-2">
+              Submitting an amount that does not match your invoice document may result in rejection or delays in processing.
+            </p>
+
+            {/* Actions */}
+            <div className="flex gap-3">
+              <Button
+                variant="secondary"
+                className="flex-1"
+                onClick={() => setShowConfirmModal(false)}
+              >
+                Go Back
+              </Button>
+              <Button
+                className="flex-1"
+                onClick={confirmAndSubmit}
+              >
+                <CheckCircle size={15} /> Yes, Submit
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </AppLayout>
   );
 }

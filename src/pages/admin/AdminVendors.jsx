@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Users, Search, ArrowRight, Loader2, PowerOff, Power, Trash2 } from 'lucide-react';
+import TutorialCard from '../../components/ui/TutorialCard';
 import AppLayout from '../../components/layout/AppLayout';
 import Card from '../../components/ui/Card';
 import StatusChip from '../../components/ui/StatusChip';
@@ -85,6 +86,18 @@ export default function AdminVendors() {
             <span className="text-sm font-medium">{vendors.length} total</span>
           </div>
         </div>
+
+        <TutorialCard
+          id="admin-vendors"
+          title="Vendor Management"
+          description="Oversee all registered vendor accounts and their onboarding status."
+          tips={[
+            "Active vendors (green badge) can submit invoices; toggle a vendor inactive to suspend their access without deleting them.",
+            "Use the search bar to find vendors by company name, email address, or industry.",
+            "Click the arrow icon on any vendor row to view their full profile, banking details, and complete invoice history.",
+            "Deleting a vendor is permanent — deactivate instead unless you are certain the account should be removed.",
+          ]}
+        />
 
         {error && (
           <div className="p-3 bg-red-50 border border-red-200 rounded text-red-600 text-sm">

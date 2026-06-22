@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Loader2, Eye, ChevronLeft, ChevronRight } from 'lucide-react';
+import TutorialCard from '../../components/ui/TutorialCard';
 import { formatCurrency, formatDate, extractErrorMessage } from '../../lib/utils';
 import AppLayout from '../../components/layout/AppLayout';
 import Card from '../../components/ui/Card';
@@ -79,6 +80,17 @@ export default function VendorPayments() {
           <h1 className="text-2xl font-semibold text-on-surface">Payments</h1>
           <p className="text-sm text-on-surface-variant mt-0.5">All invoices that have been paid or settled.</p>
         </div>
+
+        <TutorialCard
+          id="vendor-payments"
+          title="Your Payment History"
+          description="View all invoices that have been paid or settled by the finance team."
+          tips={[
+            "Only invoices with a Paid or Confirmed status appear here.",
+            "The stat cards at the top summarise your total received amount, payment count, and any disputes.",
+            "If a payment looks incorrect, go to Invoice History, open the invoice, and raise a dispute from the detail page.",
+          ]}
+        />
 
         <div className="grid grid-cols-4 gap-4">
           <Card className="py-4">

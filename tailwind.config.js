@@ -25,6 +25,8 @@ export default {
         navy: '#0f1d29',
         emerald: '#006c49',
         'emerald-light': '#6cf8bb',
+        amber: '#d97706',
+        'amber-dark': '#b45309',
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],

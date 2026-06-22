@@ -44,6 +44,11 @@ export const vendorService = {
     return res.data;
   },
 
+  updateProfile: async (data) => {
+    const res = await apiClient.patch("/vendors/profile", data);
+    return res.data;
+  },
+
   getDashboard: async () => {
     const res = await apiClient.get("/vendors/dashboard");
     return res.data;

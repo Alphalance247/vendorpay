@@ -2,7 +2,7 @@ import { forwardRef } from 'react';
 import { cn } from '../../lib/utils';
 
 const variants = {
-  primary: 'bg-navy text-white hover:bg-navy/90 active:bg-navy/80',
+  primary: 'bg-amber text-white hover:bg-amber-dark active:bg-amber-dark',
   secondary: 'bg-white text-navy border border-outline-variant hover:bg-surface-low active:bg-surface-container',
   ghost: 'text-navy hover:bg-surface-container active:bg-surface-high',
   danger: 'bg-error text-white hover:bg-error/90',
@@ -24,7 +24,7 @@ const Button = forwardRef(function Button(
       ref={ref}
       disabled={disabled}
       className={cn(
-        'inline-flex items-center justify-center gap-2 rounded transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald disabled:opacity-50 disabled:pointer-events-none whitespace-nowrap',
+        'inline-flex items-center justify-center gap-2 rounded transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber disabled:opacity-50 disabled:pointer-events-none whitespace-nowrap',
         variants[variant],
         sizes[size],
         className

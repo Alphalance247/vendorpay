@@ -5,6 +5,7 @@ import {
   PieChart, Pie, Cell,
 } from 'recharts';
 import { Plus, Loader2 } from 'lucide-react';
+import TutorialCard from '../../components/ui/TutorialCard';
 import AppLayout from '../../components/layout/AppLayout';
 import Card from '../../components/ui/Card';
 import { formatCurrency } from '../../lib/utils';
@@ -75,21 +76,6 @@ export default function VendorDashboard() {
     );
   }
 
-  const dist = data.status_distribution ?? {};
-  const pieData = [
-    { name: 'Submitted',   value: dist.submitted         ?? 0, color: '#74777c' },
-    { name: 'Reviewed',    value: dist.reviewed          ?? 0, color: '#6b7280' },
-    { name: 'Funding',     value: dist.funding           ?? 0, color: '#3b82f6' },
-    { name: 'Paid',        value: dist.paid              ?? 0, color: '#006c49' },
-    { name: 'Confirmed',   value: dist.payment_confirmed ?? 0, color: '#059669' },
-    { name: 'Disputed',    value: dist.payment_disputed  ?? 0, color: '#ef4444' },
-    { name: 'Rejected',    value: dist.rejected          ?? 0, color: '#ba1a1a' },
-    { name: 'Flagged',     value: dist.flagged           ?? 0, color: '#f59e0b' },
-  ].filter((s) => s.value > 0);
-
-  // "settled" = paid + confirmed — both represent fully settled invoices
-  const settledPct = (dist.paid ?? 0) + (dist.payment_confirmed ?? 0);
-
   // Determine primary currency from first trend bucket
   const trendRaw = data.payment_trends ?? [];
   const allCurrencies = trendRaw.flatMap((pt) => Object.keys(pt.submitted_by_currency ?? {}));
@@ -101,6 +87,27 @@ export default function VendorDashboard() {
     settled:   pt.settled_by_currency?.[primaryCurrency]   ?? 0,
     rejected:  pt.rejected_by_currency?.[primaryCurrency]  ?? 0,
     currency:  primaryCurrency,
+  }));
+
+  // All amounts derived from trend data so slices + centre label are consistent
+  const totalSubmittedAmt = trendData.reduce((sum, t) => sum + t.submitted, 0);
+  const totalSettledAmt   = trendData.reduce((sum, t) => sum + t.settled, 0);
+  const totalRejectedAmt  = trendData.reduce((sum, t) => sum + t.rejected, 0);
+  const totalPendingAmt   = Math.max(0, totalSubmittedAmt - totalSettledAmt - totalRejectedAmt);
+
+  const settledPct = totalSubmittedAmt > 0 ? Math.round((totalSettledAmt / totalSubmittedAmt) * 100) : 0;
+
+  // Pie built from monetary amounts — slices and legend percentages are now value-based
+  const rawPie = [
+    { name: 'Settled',  value: totalSettledAmt,  color: '#059669' },
+    { name: 'Rejected', value: totalRejectedAmt, color: '#ba1a1a' },
+    { name: 'Pending',  value: totalPendingAmt,  color: '#74777c' },
+  ].filter((s) => s.value > 0);
+
+  const pieTotal = rawPie.reduce((sum, s) => sum + s.value, 0);
+  const pieData  = rawPie.map((s) => ({
+    ...s,
+    pct: pieTotal > 0 ? Math.round((s.value / pieTotal) * 100) : 0,
   }));
 
   const currSymbol = primaryCurrency === 'NGN' ? '₦' : primaryCurrency === 'USD' ? '$' : primaryCurrency === 'GBP' ? '£' : primaryCurrency === 'EUR' ? '€' : '';
@@ -116,6 +123,17 @@ export default function VendorDashboard() {
           </h1>
           <p className="text-sm text-on-surface-variant mt-0.5">Here is what&apos;s happening with your accounts today.</p>
         </div>
+
+        <TutorialCard
+          id="vendor-dashboard"
+          title="Welcome to Your Dashboard"
+          description="Get a real-time snapshot of your invoice activity and payment health."
+          tips={[
+            "The 4 stat cards show your total invoices, pending approvals, amount paid this month, and total received year-to-date.",
+            "The bar chart tracks submission and settlement trends by month — useful for spotting payment patterns.",
+            "Click the + button at the bottom right to submit a new invoice at any time.",
+          ]}
+        />
 
         <div className="grid grid-cols-4 gap-4">
           <StatCard label="Total Invoices" value={data.total_invoices ?? 0} />
@@ -173,13 +191,13 @@ export default function VendorDashboard() {
                   </div>
                 </div>
                 <div className="space-y-1">
-                  {pieData.map(({ name, value, color }) => (
+                  {pieData.map(({ name, pct, color }) => (
                     <div key={name} className="flex items-center justify-between text-xs">
                       <div className="flex items-center gap-1.5">
                         <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
                         <span className="text-on-surface-variant">{name}</span>
                       </div>
-                      <span className="font-semibold text-on-surface">{value}%</span>
+                      <span className="font-semibold text-on-surface">{pct}%</span>
                     </div>
                   ))}
                 </div>

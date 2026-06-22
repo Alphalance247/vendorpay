@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Search, Download, CheckCircle, Clock, XCircle, Eye, Receipt, Loader2 } from 'lucide-react';
+import TutorialCard from '../../components/ui/TutorialCard';
 import AppLayout from '../../components/layout/AppLayout';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
@@ -56,6 +57,18 @@ export default function AdminPayments() {
             <Download size={14} /> Export
           </Button>
         </div>
+
+        <TutorialCard
+          id="admin-payments"
+          title="Tracking Disbursements"
+          description="Monitor all vendor payments from funding through vendor confirmation."
+          tips={[
+            "The Paid tab shows fully confirmed payments; Awaiting Payment shows funded invoices not yet confirmed by the vendor.",
+            "Denied shows invoices that were rejected before payment — the vendor will need to resubmit.",
+            "Search by vendor name, invoice number, or payment rail to locate specific records quickly.",
+            "Click the eye icon on any row to open the full invoice detail and complete audit trail.",
+          ]}
+        />
 
         <div className="grid grid-cols-3 gap-4">
           {TABS.map(({ key, icon: Icon, accent }) => (

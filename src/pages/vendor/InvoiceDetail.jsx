@@ -2,10 +2,12 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Download, FileText, Check, Send, Bot, User, Loader2, MessageSquare } from 'lucide-react';
 import AppLayout from '../../components/layout/AppLayout';
+import TutorialCard from '../../components/ui/TutorialCard';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import StatusChip from '../../components/ui/StatusChip';
 import RejectModal from '../../components/ui/RejectModal';
+import DisputeModal from '../../components/ui/DisputeModal';
 import { useAuth } from '../../lib/authContext';
 import { invoiceService, adminInvoiceService, vendorInvoiceService, invoiceMessageService } from '../../lib/services/invoiceService';
 import { supportService } from '../../lib/services/supportService';
@@ -71,6 +73,8 @@ export default function InvoiceDetail() {
 
   // Rejection modal
   const [rejectOpen, setRejectOpen] = useState(false);
+  // Dispute modal
+  const [disputeOpen, setDisputeOpen] = useState(false);
 
   // Per-invoice messaging
   const [messages, setMessages]   = useState([]);
@@ -143,18 +147,14 @@ export default function InvoiceDetail() {
     }
   };
 
-  const handleDisputePayment = async () => {
-    const ok = await confirm({
-      title: 'Dispute Payment',
-      message: 'Flag this payment as not received? The finance team will be notified to investigate.',
-      confirmLabel: 'Dispute',
-      variant: 'danger',
-    });
-    if (!ok) return;
+  const handleDisputePayment = () => setDisputeOpen(true);
+
+  const handleDisputeConfirm = async (reason) => {
+    setDisputeOpen(false);
     setActionLoading('dispute-payment');
     setActionError('');
     try {
-      await vendorInvoiceService.disputePayment(id);
+      await vendorInvoiceService.disputePayment(id, reason);
       await refreshInvoice();
     } catch (err) {
       setActionError(err?.response?.data?.detail ?? 'Action failed.');
@@ -287,6 +287,12 @@ export default function InvoiceDetail() {
         onConfirm={handleRejectConfirm}
         onCancel={() => setRejectOpen(false)}
       />
+      <DisputeModal
+        open={disputeOpen}
+        invoiceNumber={invoice.invoice_number}
+        onConfirm={handleDisputeConfirm}
+        onCancel={() => setDisputeOpen(false)}
+      />
       <div className="space-y-4">
         <button
           onClick={() => navigate(backPath)}
@@ -294,6 +300,19 @@ export default function InvoiceDetail() {
         >
           <ArrowLeft size={15} /> Back to Invoices
         </button>
+
+        <TutorialCard
+          id="invoice-detail"
+          title="Invoice Details & Communication"
+          description="Track the full lifecycle of this invoice and communicate with the finance team."
+          tips={[
+            "The status badge at the top shows exactly where this invoice is in the approval and payment process.",
+            "Download the original PDF using the Download button in the top-right.",
+            "Use the Messages section to ask questions or provide additional information to the finance team.",
+            "Once payment is disbursed you can Confirm Receipt or raise a Dispute if the amount is incorrect.",
+            "The Audit Log at the bottom records every action taken on this invoice with timestamps.",
+          ]}
+        />
 
         <div className="flex items-start justify-between">
           <div>

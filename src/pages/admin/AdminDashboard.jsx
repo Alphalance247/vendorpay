@@ -7,6 +7,7 @@ import AppLayout from '../../components/layout/AppLayout';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import { formatCurrency } from '../../lib/utils';
+import TutorialCard from '../../components/ui/TutorialCard';
 import { vendorService } from '../../lib/services/vendorService';
 
 export default function AdminDashboard() {
@@ -45,6 +46,17 @@ export default function AdminDashboard() {
             </Button>
           </div>
         </div>
+
+        <TutorialCard
+          id="admin-dashboard"
+          title="Finance Command Center"
+          description="A real-time overview of your organisation's vendor payment pipeline."
+          tips={[
+            "The stat cards show total active vendors, invoices pending approval, payments awaiting disbursement, and monthly volume.",
+            "Invoices highlighted in red indicate urgent items — pending approvals or disputed payments that need attention.",
+            "Use Review Invoices to jump directly to the approval queue, or navigate via the sidebar for detailed management.",
+          ]}
+        />
 
         <div className="grid grid-cols-4 gap-4">
           {stats.map(({ label, value, sub, subColor, highlight }) => (

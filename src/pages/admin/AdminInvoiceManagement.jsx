@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Eye, Search, X, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
+import TutorialCard from '../../components/ui/TutorialCard';
 import AppLayout from '../../components/layout/AppLayout';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
@@ -143,6 +144,18 @@ export default function AdminInvoiceManagement() {
             <p className="text-sm text-on-surface-variant mt-0.5">Review, approve, and track all vendor invoices.</p>
           </div>
         </div>
+
+        <TutorialCard
+          id="admin-invoices"
+          title="Invoice Review & Approval Workflow"
+          description="Process vendor invoices through the approval-to-payment pipeline."
+          tips={[
+            "Submitted invoices appear in the Pending tab — open the invoice, review the attached PDF, then click Approve to advance it.",
+            "Approved invoices move to Reviewed; click Fund to initiate payment, then Mark Paid once the transfer is complete.",
+            "Use Reject to decline an invoice — always provide a clear reason so the vendor can correct and resubmit.",
+            "The status tabs (Pending, Funding, Disputed, etc.) let you focus on one stage of the pipeline at a time.",
+          ]}
+        />
 
         {error && (
           <div className="p-3 bg-red-50 border border-red-200 rounded text-red-600 text-sm flex items-center justify-between">

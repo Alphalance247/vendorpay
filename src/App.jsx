@@ -16,7 +16,8 @@ import { InvoiceProvider } from './lib/invoiceStore';
 import { ToastProvider } from './components/ui/Toast';
 import VendorPayments from './pages/vendor/VendorPayments';
 import Support from './pages/vendor/Support';  // used for both vendor & admin support
-import VendorDetail from './pages/admin/VendorDetail';  // ← ADD THIS LINE
+import VendorDetail from './pages/admin/VendorDetail';
+import VendorProfile from './pages/vendor/VendorProfile';
 
 export default function App() {
   return (
@@ -37,6 +38,7 @@ export default function App() {
           <Route path="/vendorpay/vendor/invoices/:id" element={<ProtectedRoute role="vendor"><InvoiceDetail /></ProtectedRoute>} />
           <Route path="/vendorpay/vendor/payments" element={<ProtectedRoute role="vendor"><VendorPayments /></ProtectedRoute>} />
           <Route path="/vendorpay/vendor/support" element={<ProtectedRoute role="vendor"><Support /></ProtectedRoute>} />
+          <Route path="/vendorpay/vendor/profile" element={<ProtectedRoute role="vendor"><VendorProfile /></ProtectedRoute>} />
 
           {/* Admin routes */}
           <Route path="/vendorpay/admin/dashboard" element={<ProtectedRoute role="admin"><AdminDashboard /></ProtectedRoute>} />

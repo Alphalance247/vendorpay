@@ -22,7 +22,7 @@ const Input = forwardRef(function Input(
           ref={ref}
           className={cn(
             'w-full rounded border bg-white px-3 py-2 text-sm text-on-surface placeholder:text-outline transition-colors',
-            'border-outline-variant focus:outline-none focus:ring-2 focus:ring-emerald focus:border-emerald',
+            'border-outline-variant focus:outline-none focus:ring-2 focus:ring-amber focus:border-amber',
             error && 'border-error focus:ring-error',
             prefix && 'pl-7',
             className

@@ -17,7 +17,7 @@ function NavItem({ to, icon: Icon, label }) {
         cn(
           'flex items-center gap-3 px-3 py-2 rounded text-sm font-medium transition-colors',
           isActive
-            ? 'bg-emerald text-white'
+            ? 'bg-amber text-white'
             : 'text-on-primary-container hover:bg-white/10 text-slate-300'
         )
       }
@@ -49,15 +49,15 @@ export default function Sidebar({ role = 'vendor', user }) {
   return (
     <aside className="fixed inset-y-0 left-0 w-[160px] bg-navy flex flex-col z-30">
       <div className="px-4 py-5 border-b border-white/10">
-        <div className="flex items-center gap-2">
-          <div className="w-6 h-6 bg-emerald rounded flex items-center justify-center">
-            <span className="text-white text-xs font-bold">VP</span>
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 bg-emerald rounded-lg flex items-center justify-center flex-shrink-0">
+            <span className="text-white text-base font-bold leading-none" style={{ fontFamily: 'Georgia, serif', letterSpacing: '-1px' }}>~</span>
           </div>
-          <span className="text-white font-semibold text-sm">VendorPay</span>
+          <div className="min-w-0">
+            <p className="text-white font-bold text-sm leading-tight">Alluvium</p>
+            <p className="text-emerald-light text-xs leading-tight">VendorPay</p>
+          </div>
         </div>
-        {role === 'admin' && (
-          <p className="text-slate-400 text-xs mt-0.5">Enterprise Finance</p>
-        )}
       </div>
 
       <nav className="flex-1 px-2 py-4 flex flex-col gap-1">
@@ -80,7 +80,7 @@ export default function Sidebar({ role = 'vendor', user }) {
 
       {user && (
         <div className="px-3 py-3 border-t border-white/10 flex items-center gap-2">
-          <div className="w-7 h-7 rounded-full bg-emerald flex items-center justify-center text-white text-xs font-semibold flex-shrink-0">
+          <div className="w-7 h-7 rounded-full bg-amber flex items-center justify-center text-white text-xs font-semibold flex-shrink-0">
             {user.name?.charAt(0) ?? 'U'}
           </div>
           <div className="min-w-0">

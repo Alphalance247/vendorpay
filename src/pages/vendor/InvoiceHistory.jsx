@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import { Search, Eye, Download, X, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
+import TutorialCard from '../../components/ui/TutorialCard';
 import AppLayout from '../../components/layout/AppLayout';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
@@ -34,6 +35,7 @@ export default function InvoiceHistory() {
   const [error, setError] = useState('');
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
+  const [downloadingId, setDownloadingId] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -66,6 +68,18 @@ export default function InvoiceHistory() {
     fetchAll();
     return () => { cancelled = true; };
   }, [statusFilter, search, page]);
+
+  async function handleDownload(invoiceId) {
+    if (downloadingId) return;
+    setDownloadingId(invoiceId);
+    try {
+      await invoiceService.downloadInvoicePdf(invoiceId);
+    } catch {
+      // silent — browser already shows if blocked
+    } finally {
+      setDownloadingId(null);
+    }
+  }
 
   function formatByCurrency(map) {
     if (!map || Object.keys(map).length === 0) return [{ label: formatCurrency(0), key: 'USD' }];
@@ -100,6 +114,18 @@ export default function InvoiceHistory() {
             + Submit New Invoice
           </Button>
         </div>
+
+        <TutorialCard
+          id="vendor-invoices"
+          title="Managing Your Invoices"
+          description="Search, filter, and track every invoice you have submitted."
+          tips={[
+            "Use the search bar to find invoices by invoice number.",
+            "Filter by status (Pending, Paid, Rejected, etc.) to focus on what needs attention.",
+            "Click the eye icon on any row to view full details, download the PDF, or message the finance team.",
+            "Use the Submit New Invoice button in the top-right to start a new submission.",
+          ]}
+        />
 
         {error && (
           <div className="p-3 bg-red-50 border border-red-200 rounded text-red-600 text-sm">
@@ -224,8 +250,17 @@ export default function InvoiceHistory() {
                         <Button variant="ghost" size="sm" className="p-1.5" onClick={() => navigate(`/vendorpay/vendor/invoices/${inv.id}`)}>
                           <Eye size={15} />
                         </Button>
-                        <Button variant="ghost" size="sm" className="p-1.5">
-                          <Download size={15} />
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="p-1.5"
+                          onClick={() => handleDownload(inv.id)}
+                          disabled={downloadingId === inv.id}
+                          title="Download PDF"
+                        >
+                          {downloadingId === inv.id
+                            ? <Loader2 size={15} className="animate-spin" />
+                            : <Download size={15} />}
                         </Button>
                       </div>
                     </td>
@@ -259,44 +294,29 @@ export default function InvoiceHistory() {
           </div>
         </Card>
 
-        <div className="grid grid-cols-3 gap-4">
-          <Card className="col-span-2">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-semibold text-on-surface">Payment Trends</h3>
-            </div>
-            {trendData.length === 0 ? (
-              <p className="text-sm text-on-surface-variant text-center py-8">No payment history yet.</p>
-            ) : (
-              <ResponsiveContainer width="100%" height={150}>
-                <BarChart data={trendData} barGap={2} margin={{ left: -20, bottom: 0 }}>
-                  <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#74777c' }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fontSize: 11, fill: '#74777c' }} axisLine={false} tickLine={false} tickFormatter={(v) => `${histCurrSymbol}${(v / 1000).toFixed(0)}k`} />
-                  <Tooltip
-                    formatter={(v, name) => [formatCurrency(v, histPrimaryCurrency), name]}
-                    contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid #c4c6cc' }}
-                  />
-                  <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 11, paddingTop: 6 }} />
-                  <Bar dataKey="submitted" name="Submitted" fill="#c4c6cc" radius={[3, 3, 0, 0]} />
-                  <Bar dataKey="settled"   name="Settled"   fill="#006c49" radius={[3, 3, 0, 0]} />
-                  <Bar dataKey="rejected"  name="Rejected"  fill="#ba1a1a" radius={[3, 3, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            )}
-          </Card>
-
-          <Card className="bg-navy text-white border-0 flex flex-col justify-between">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-emerald-light mb-2">Instant Settle</p>
-              <p className="text-sm font-semibold mb-1">Need liquidity now?</p>
-              <p className="text-xs text-slate-300 leading-relaxed">
-                Convert your outstanding invoices to cash instantly for a flat 1.5% fee.
-              </p>
-            </div>
-            <Button variant="emerald" size="sm" className="mt-4 self-start">
-              Apply Now
-            </Button>
-          </Card>
-        </div>
+        <Card>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-semibold text-on-surface">Payment Trends</h3>
+          </div>
+          {trendData.length === 0 ? (
+            <p className="text-sm text-on-surface-variant text-center py-8">No payment history yet.</p>
+          ) : (
+            <ResponsiveContainer width="100%" height={150}>
+              <BarChart data={trendData} barGap={2} margin={{ left: -20, bottom: 0 }}>
+                <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#74777c' }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 11, fill: '#74777c' }} axisLine={false} tickLine={false} tickFormatter={(v) => `${histCurrSymbol}${(v / 1000).toFixed(0)}k`} />
+                <Tooltip
+                  formatter={(v, name) => [formatCurrency(v, histPrimaryCurrency), name]}
+                  contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid #c4c6cc' }}
+                />
+                <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 11, paddingTop: 6 }} />
+                <Bar dataKey="submitted" name="Submitted" fill="#c4c6cc" radius={[3, 3, 0, 0]} />
+                <Bar dataKey="settled"   name="Settled"   fill="#006c49" radius={[3, 3, 0, 0]} />
+                <Bar dataKey="rejected"  name="Rejected"  fill="#ba1a1a" radius={[3, 3, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
+        </Card>
       </div>
     </AppLayout>
   );
