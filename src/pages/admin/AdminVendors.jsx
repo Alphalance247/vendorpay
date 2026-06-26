@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Users, Search, ArrowRight, Loader2, PowerOff, Power, Trash2 } from 'lucide-react';
+import { Users, Search, Loader2, PowerOff, Power, Trash2 } from 'lucide-react';
 import TutorialCard from '../../components/ui/TutorialCard';
 import AppLayout from '../../components/layout/AppLayout';
 import Card from '../../components/ui/Card';
@@ -94,7 +94,7 @@ export default function AdminVendors() {
           tips={[
             "Active vendors (green badge) can submit invoices; toggle a vendor inactive to suspend their access without deleting them.",
             "Use the search bar to find vendors by company name, email address, or industry.",
-            "Click the arrow icon on any vendor row to view their full profile, banking details, and complete invoice history.",
+            "Click any vendor row to view their full profile, banking details, and complete invoice history.",
             "Deleting a vendor is permanent — deactivate instead unless you are certain the account should be removed.",
           ]}
         />
@@ -128,7 +128,7 @@ export default function AdminVendors() {
             <table className="w-full">
               <thead>
                 <tr className="bg-surface-low border-b border-outline-variant">
-                  {['Company', 'Contact', 'Industry', 'Status', 'Actions'].map((h) => (
+                  {['Company', 'Contact', 'Industry', 'Status', ''].map((h) => (
                     <th key={h} className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-on-surface-variant">
                       {h}
                     </th>
@@ -144,7 +144,7 @@ export default function AdminVendors() {
                   </tr>
                 )}
                 {filtered.map((vendor) => (
-                  <tr key={vendor.id} className="hover:bg-surface-low/50 transition-colors">
+                  <tr key={vendor.id} className="hover:bg-surface-low/50 transition-colors cursor-pointer" onClick={() => navigate(`/vendorpay/admin/vendors/${vendor.id}`)}>
                     <td className="px-6 py-4">
                       <p className="text-sm font-semibold text-on-surface">{vendor.company_name ?? '—'}</p>
                       <p className="text-xs text-on-surface-variant mt-0.5">{vendor.business_type ?? ''}</p>
@@ -163,14 +163,8 @@ export default function AdminVendors() {
                     <td className="px-6 py-4">
                       <StatusChip status={vendor.is_active ? 'Active' : 'Inactive'} />
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => navigate(`/vendorpay/admin/vendors/${vendor.id}`)}
-                          className="flex items-center gap-1 text-xs text-emerald hover:underline font-medium"
-                        >
-                          View <ArrowRight size={12} />
-                        </button>
                         <button
                           onClick={() => handleToggleStatus(vendor)}
                           disabled={actionLoading === `status-${vendor.id}`}

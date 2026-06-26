@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Eye, Search, X, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, X, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
 import TutorialCard from '../../components/ui/TutorialCard';
 import AppLayout from '../../components/layout/AppLayout';
 import Card from '../../components/ui/Card';
@@ -252,7 +252,7 @@ export default function AdminInvoiceManagement() {
                     const status   = STATUS_LABEL[inv.status] ?? inv.status;
 
                     return (
-                      <tr key={inv.id} className="hover:bg-surface-low/50 transition-colors">
+                      <tr key={inv.id} className="hover:bg-surface-low/50 transition-colors cursor-pointer" onClick={() => navigate(`/vendorpay/admin/invoices/${inv.id}`)}>
                         {/* Vendor */}
                         <td className="px-3 py-2.5">
                           <p className="text-sm font-semibold text-on-surface whitespace-nowrap">{inv.vendor_name ?? '—'}</p>
@@ -303,7 +303,7 @@ export default function AdminInvoiceManagement() {
                         </td>
 
                         {/* Actions */}
-                        <td className="px-3 py-2.5">
+                        <td className="px-3 py-2.5" onClick={(e) => e.stopPropagation()}>
                           <div className="flex items-center gap-1.5 flex-nowrap">
                             {inv.status === 'submitted' && (
                               <>
@@ -330,14 +330,6 @@ export default function AdminInvoiceManagement() {
                                 {loading === 'paid' ? <Loader2 size={11} className="animate-spin" /> : 'Mark Paid'}
                               </Button>
                             )}
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="p-1.5"
-                              onClick={() => navigate(`/vendorpay/admin/invoices/${inv.id}`)}
-                            >
-                              <Eye size={14} />
-                            </Button>
                           </div>
                         </td>
                       </tr>

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Search, Download, CheckCircle, Clock, XCircle, Eye, Receipt, Loader2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Search, Download, CheckCircle, Clock, XCircle, Receipt, Loader2 } from 'lucide-react';
 import TutorialCard from '../../components/ui/TutorialCard';
 import AppLayout from '../../components/layout/AppLayout';
 import Card from '../../components/ui/Card';
@@ -17,6 +18,7 @@ const TABS = [
 ];
 
 export default function AdminPayments() {
+  const navigate = useNavigate();
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -66,7 +68,7 @@ export default function AdminPayments() {
             "The Paid tab shows fully confirmed payments; Awaiting Payment shows funded invoices not yet confirmed by the vendor.",
             "Denied shows invoices that were rejected before payment — the vendor will need to resubmit.",
             "Search by vendor name, invoice number, or payment rail to locate specific records quickly.",
-            "Click the eye icon on any row to open the full invoice detail and complete audit trail.",
+            "Click any row to open the full invoice detail and complete audit trail.",
           ]}
         />
 
@@ -142,7 +144,7 @@ export default function AdminPayments() {
               </thead>
               <tbody className="divide-y divide-outline-variant">
                 {filtered.map((p) => (
-                  <tr key={p.id} className="hover:bg-surface-low/50 transition-colors">
+                  <tr key={p.id} className="hover:bg-surface-low/50 transition-colors cursor-pointer" onClick={() => navigate(`/vendorpay/admin/invoices/${p.id}`)}>
                     <td className="px-6 py-4">
                       <p className="text-sm font-semibold text-on-surface">{p.vendor_name ?? '—'}</p>
                     </td>
@@ -157,17 +159,12 @@ export default function AdminPayments() {
                     <td className="px-6 py-4">
                       <StatusChip status={STATUS_MAP[p.status] ?? p.status} />
                     </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-1">
-                        <Button variant="ghost" size="sm" className="p-1.5" title="View invoice">
-                          <Eye size={15} />
+                    <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
+                      {p.status === 'paid' && (
+                        <Button variant="ghost" size="sm" className="p-1.5" title="Receipt">
+                          <Receipt size={15} />
                         </Button>
-                        {p.status === 'paid' && (
-                          <Button variant="ghost" size="sm" className="p-1.5" title="Receipt">
-                            <Receipt size={15} />
-                          </Button>
-                        )}
-                      </div>
+                      )}
                     </td>
                   </tr>
                 ))}

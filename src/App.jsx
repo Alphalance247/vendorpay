@@ -1,5 +1,6 @@
 import Register from './pages/auth/Register';
 import ForgotPassword from './pages/auth/ForgotPassword';
+import ResetPassword from './pages/auth/ResetPassword';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import Login from './pages/auth/Login';
@@ -29,6 +30,7 @@ export default function App() {
           <Route path="/vendorpay/login" element={<Login />} />
           <Route path="/vendorpay/register" element={<Register />} />
           <Route path="/vendorpay/forgot-password" element={<ForgotPassword />} />
+          <Route path="/vendorpay/reset-password" element={<ResetPassword />} />
           <Route path="/vendorpay/onboarding" element={<Onboarding />} />
 
           {/* Vendor routes */}

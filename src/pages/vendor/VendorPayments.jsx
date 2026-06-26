@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Loader2, Eye, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
 import TutorialCard from '../../components/ui/TutorialCard';
 import { formatCurrency, formatDate, extractErrorMessage } from '../../lib/utils';
 import AppLayout from '../../components/layout/AppLayout';
@@ -130,7 +130,7 @@ export default function VendorPayments() {
             <table className="w-full">
               <thead>
                 <tr className="bg-surface-low border-b border-outline-variant">
-                  {['Invoice #', 'Date Paid', 'Amount', 'Currency', 'Status', ''].map((h) => (
+                  {['Invoice #', 'Date Paid', 'Amount', 'Currency', 'Status'].map((h) => (
                     <th key={h} className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-on-surface-variant">
                       {h}
                     </th>
@@ -140,12 +140,12 @@ export default function VendorPayments() {
               <tbody className="divide-y divide-outline-variant">
                 {invoices.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-4 py-12 text-center text-sm text-on-surface-variant">
+                    <td colSpan={5} className="px-4 py-12 text-center text-sm text-on-surface-variant">
                       No payments yet. Invoices marked &quot;Paid&quot; by your admin will appear here.
                     </td>
                   </tr>
                 ) : invoices.map((inv) => (
-                  <tr key={inv.id} className="hover:bg-surface-low/50 transition-colors">
+                  <tr key={inv.id} className="hover:bg-surface-low/50 transition-colors cursor-pointer" onClick={() => navigate(`/vendorpay/vendor/invoices/${inv.id}`)}>
                     <td className="px-4 py-3 text-sm font-semibold text-on-surface">{inv.invoice_number}</td>
                     <td className="px-4 py-3 text-sm text-on-surface-variant">
                       {inv.payment_date ? formatDate(inv.payment_date) : '—'}
@@ -156,16 +156,6 @@ export default function VendorPayments() {
                     <td className="px-4 py-3 text-sm text-on-surface-variant">{inv.currency ?? 'USD'}</td>
                     <td className="px-4 py-3">
                       <StatusChip status={STATUS_LABEL[inv.status] ?? inv.status} />
-                    </td>
-                    <td className="px-4 py-3">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="p-1.5"
-                        onClick={() => navigate(`/vendorpay/vendor/invoices/${inv.id}`)}
-                      >
-                        <Eye size={15} />
-                      </Button>
                     </td>
                   </tr>
                 ))}

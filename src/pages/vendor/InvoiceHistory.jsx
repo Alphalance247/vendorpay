@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, Legend } from 'recharts';
-import { Search, Eye, Download, X, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, Download, X, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
 import TutorialCard from '../../components/ui/TutorialCard';
 import AppLayout from '../../components/layout/AppLayout';
 import Card from '../../components/ui/Card';
@@ -122,7 +122,7 @@ export default function InvoiceHistory() {
           tips={[
             "Use the search bar to find invoices by invoice number.",
             "Filter by status (Pending, Paid, Rejected, etc.) to focus on what needs attention.",
-            "Click the eye icon on any row to view full details, download the PDF, or message the finance team.",
+            "Click any row to view full details, download the PDF, or message the finance team.",
             "Use the Submit New Invoice button in the top-right to start a new submission.",
           ]}
         />
@@ -238,31 +238,26 @@ export default function InvoiceHistory() {
                     </td>
                   </tr>
                 ) : invoices.map((inv) => (
-                  <tr key={inv.id} className="hover:bg-surface-low/50 transition-colors">
+                  <tr key={inv.id} className="hover:bg-surface-low/50 transition-colors cursor-pointer" onClick={() => navigate(`/vendorpay/vendor/invoices/${inv.id}`)}>
                     <td className="px-6 py-4 text-sm font-semibold text-on-surface">{inv.invoice_number}</td>
                     <td className="px-6 py-4 text-sm text-on-surface-variant">{formatDate(inv.submitted_at)}</td>
                     <td className="px-6 py-4 text-sm text-on-surface-variant">{inv.due_date ? formatDate(inv.due_date) : '—'}</td>
                     <td className="px-6 py-4 text-sm font-semibold tnum text-on-surface">{formatCurrency(inv.amount, inv.currency)}</td>
                     <td className="px-6 py-4"><StatusChip status={STATUS_LABEL[inv.status] ?? inv.status} /></td>
                     <td className="px-6 py-4 text-sm text-on-surface-variant">{inv.payment_date ? formatDate(inv.payment_date) : '—'}</td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-1">
-                        <Button variant="ghost" size="sm" className="p-1.5" onClick={() => navigate(`/vendorpay/vendor/invoices/${inv.id}`)}>
-                          <Eye size={15} />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="p-1.5"
-                          onClick={() => handleDownload(inv.id)}
-                          disabled={downloadingId === inv.id}
-                          title="Download PDF"
-                        >
-                          {downloadingId === inv.id
-                            ? <Loader2 size={15} className="animate-spin" />
-                            : <Download size={15} />}
-                        </Button>
-                      </div>
+                    <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="p-1.5"
+                        onClick={() => handleDownload(inv.id)}
+                        disabled={downloadingId === inv.id}
+                        title="Download PDF"
+                      >
+                        {downloadingId === inv.id
+                          ? <Loader2 size={15} className="animate-spin" />
+                          : <Download size={15} />}
+                      </Button>
                     </td>
                   </tr>
                 ))}
