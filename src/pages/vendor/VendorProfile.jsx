@@ -162,7 +162,7 @@ export default function VendorProfile() {
                     className="w-full rounded border border-outline-variant bg-surface-container px-3 py-2 text-sm text-on-surface-variant cursor-not-allowed select-none"
                   />
                 </div>
-                <p className="text-[11px] text-outline">To update, <button type="button" onClick={() => navigate('/vendorpay/vendor/support')} className="text-amber underline hover:no-underline">contact support</button>.</p>
+                <p className="text-[11px] text-outline">To update, <button type="button" onClick={() => navigate('/vendor/support')} className="text-amber underline hover:no-underline">contact support</button>.</p>
               </div>
               <div className="flex flex-col gap-1">
                 <label className="text-xs font-semibold tracking-wide text-on-surface-variant uppercase">Phone</label>
@@ -173,7 +173,7 @@ export default function VendorProfile() {
                     className="w-full rounded border border-outline-variant bg-surface-container px-3 py-2 text-sm text-on-surface-variant cursor-not-allowed select-none"
                   />
                 </div>
-                <p className="text-[11px] text-outline">To update, <button type="button" onClick={() => navigate('/vendorpay/vendor/support')} className="text-amber underline hover:no-underline">contact support</button>.</p>
+                <p className="text-[11px] text-outline">To update, <button type="button" onClick={() => navigate('/vendor/support')} className="text-amber underline hover:no-underline">contact support</button>.</p>
               </div>
 
               <Input label="Job Title"   name="job_title"   value={form.job_title}   onChange={handleChange} placeholder="Finance Manager" />

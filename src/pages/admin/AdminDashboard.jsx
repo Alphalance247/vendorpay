@@ -41,7 +41,7 @@ export default function AdminDashboard() {
             <Button variant="secondary" size="sm">
               <Download size={14} /> Export Report
             </Button>
-            <Button size="sm" onClick={() => navigate('/vendorpay/admin/invoices')}>
+            <Button size="sm" onClick={() => navigate('/admin/invoices')}>
               <Plus size={14} /> Review Invoices
             </Button>
           </div>
@@ -118,9 +118,9 @@ export default function AdminDashboard() {
             </div>
             <div className="divide-y divide-outline-variant">
               {[
-                { label: 'Review Pending Invoices', path: '/vendorpay/admin/invoices', icon: Receipt },
-                { label: 'View All Vendors', path: '/vendorpay/admin/vendors', icon: AlertCircle },
-                { label: 'Payment History', path: '/vendorpay/admin/payments', icon: Clock },
+                { label: 'Review Pending Invoices', path: '/admin/invoices', icon: Receipt },
+                { label: 'View All Vendors', path: '/admin/vendors', icon: AlertCircle },
+                { label: 'Payment History', path: '/admin/payments', icon: Clock },
               ].map(({ label, path, icon: Icon }) => (
                 <button
                   key={label}
@@ -134,7 +134,7 @@ export default function AdminDashboard() {
             </div>
             <div className="px-5 py-3 border-t border-outline-variant">
               <button
-                onClick={() => navigate('/vendorpay/admin/payments')}
+                onClick={() => navigate('/admin/payments')}
                 className="text-xs text-on-surface-variant hover:text-emerald font-medium uppercase tracking-wide w-full text-center transition-colors"
               >
                 Full Transaction History

@@ -475,7 +475,7 @@ export default function Onboarding() {
     });
 
     completeOnboarding();
-    navigate('/vendorpay/vendor/dashboard');
+    navigate('/vendor/dashboard');
   } catch (err) {
     console.error(err);
     setError(extractErrorMessage(err));

@@ -41,9 +41,9 @@ export default function Login() {
       localStorage.setItem('user_role', role);
 
       if (role === 'admin') {
-        navigate('/vendorpay/admin/dashboard');
+        navigate('/admin/dashboard');
       } else {
-        navigate('/vendorpay/vendor/dashboard');
+        navigate('/vendor/dashboard');
       }
     } catch (err) {
       setError(extractErrorMessage(err));
@@ -161,7 +161,7 @@ export default function Login() {
 
                 <button
                   type="button"
-                  onClick={() => navigate('/vendorpay/forgot-password')}
+                  onClick={() => navigate('/forgot-password')}
                   className="text-xs text-emerald hover:underline"
                 >
                   Forgot password?
@@ -222,7 +222,7 @@ export default function Login() {
             Don't have an account?{' '}
             <button
               type="button"
-              onClick={() => navigate('/vendorpay/register')}
+              onClick={() => navigate('/register')}
               className="text-emerald font-medium hover:underline"
             >
               Create an account

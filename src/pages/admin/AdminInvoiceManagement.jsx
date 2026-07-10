@@ -252,7 +252,7 @@ export default function AdminInvoiceManagement() {
                     const status   = STATUS_LABEL[inv.status] ?? inv.status;
 
                     return (
-                      <tr key={inv.id} className="hover:bg-surface-low/50 transition-colors cursor-pointer" onClick={() => navigate(`/vendorpay/admin/invoices/${inv.id}`)}>
+                      <tr key={inv.id} className="hover:bg-surface-low/50 transition-colors cursor-pointer" onClick={() => navigate(`/admin/invoices/${inv.id}`)}>
                         {/* Vendor */}
                         <td className="px-3 py-2.5">
                           <p className="text-sm font-semibold text-on-surface whitespace-nowrap">{inv.vendor_name ?? '—'}</p>

@@ -208,7 +208,7 @@ export default function VendorDashboard() {
       </div>
 
       <button
-        onClick={() => navigate('/vendorpay/vendor/invoices/new')}
+        onClick={() => navigate('/vendor/invoices/new')}
         className="fixed bottom-8 right-8 w-12 h-12 bg-navy rounded-full flex items-center justify-center text-white shadow-dropdown hover:bg-navy/90 transition-colors z-20"
       >
         <Plus size={20} />

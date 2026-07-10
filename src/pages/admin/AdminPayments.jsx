@@ -144,7 +144,7 @@ export default function AdminPayments() {
               </thead>
               <tbody className="divide-y divide-outline-variant">
                 {filtered.map((p) => (
-                  <tr key={p.id} className="hover:bg-surface-low/50 transition-colors cursor-pointer" onClick={() => navigate(`/vendorpay/admin/invoices/${p.id}`)}>
+                  <tr key={p.id} className="hover:bg-surface-low/50 transition-colors cursor-pointer" onClick={() => navigate(`/admin/invoices/${p.id}`)}>
                     <td className="px-6 py-4">
                       <p className="text-sm font-semibold text-on-surface">{p.vendor_name ?? '—'}</p>
                     </td>

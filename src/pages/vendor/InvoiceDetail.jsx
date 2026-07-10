@@ -236,7 +236,7 @@ export default function InvoiceDetail() {
     }
   }
 
-  const backPath = isAdmin ? '/vendorpay/admin/invoices' : '/vendorpay/vendor/invoices';
+  const backPath = isAdmin ? '/admin/invoices' : '/vendor/invoices';
 
   if (loading) {
     return (

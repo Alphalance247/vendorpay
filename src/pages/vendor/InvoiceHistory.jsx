@@ -110,7 +110,7 @@ export default function InvoiceHistory() {
             <h1 className="text-2xl font-semibold text-on-surface">Invoice History</h1>
             <p className="text-sm text-on-surface-variant mt-0.5">Review and manage your accounts receivable and outgoing billing.</p>
           </div>
-          <Button onClick={() => navigate('/vendorpay/vendor/invoices/new')}>
+          <Button onClick={() => navigate('/vendor/invoices/new')}>
             + Submit New Invoice
           </Button>
         </div>
@@ -238,7 +238,7 @@ export default function InvoiceHistory() {
                     </td>
                   </tr>
                 ) : invoices.map((inv) => (
-                  <tr key={inv.id} className="hover:bg-surface-low/50 transition-colors cursor-pointer" onClick={() => navigate(`/vendorpay/vendor/invoices/${inv.id}`)}>
+                  <tr key={inv.id} className="hover:bg-surface-low/50 transition-colors cursor-pointer" onClick={() => navigate(`/vendor/invoices/${inv.id}`)}>
                     <td className="px-6 py-4 text-sm font-semibold text-on-surface">{inv.invoice_number}</td>
                     <td className="px-6 py-4 text-sm text-on-surface-variant">{formatDate(inv.submitted_at)}</td>
                     <td className="px-6 py-4 text-sm text-on-surface-variant">{inv.due_date ? formatDate(inv.due_date) : '—'}</td>

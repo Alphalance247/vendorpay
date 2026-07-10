@@ -43,7 +43,7 @@ export default function Register() {
         form.password
       );
 
-      navigate('/vendorpay/login');
+      navigate('/login');
     } catch (err) {
       setError(
         err?.response?.data?.detail ||
@@ -119,7 +119,7 @@ export default function Register() {
           Already have an account?{' '}
           <button
             type="button"
-            onClick={() => navigate('/vendorpay/login')}
+            onClick={() => navigate('/login')}
             className="text-emerald hover:underline"
           >
             Sign In

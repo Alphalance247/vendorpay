@@ -62,7 +62,7 @@ export default function VendorDetail() {
     setActionLoading('delete');
     try {
       await vendorService.deleteVendor(id);
-      navigate('/vendorpay/admin/vendors');
+      navigate('/admin/vendors');
     } catch (err) {
       const msg = err?.response?.data?.detail ?? 'Failed to delete vendor.';
       setActionError(msg);
@@ -85,7 +85,7 @@ export default function VendorDetail() {
       <AppLayout role="admin">
         <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
           <p className="text-lg text-on-surface">Vendor not found</p>
-          <Button onClick={() => navigate('/vendorpay/admin/vendors')}>Back to Vendors</Button>
+          <Button onClick={() => navigate('/admin/vendors')}>Back to Vendors</Button>
         </div>
       </AppLayout>
     );
@@ -100,7 +100,7 @@ export default function VendorDetail() {
       {confirmEl}
       <div className="space-y-6">
         <button
-          onClick={() => navigate('/vendorpay/admin/vendors')}
+          onClick={() => navigate('/admin/vendors')}
           className="flex items-center gap-1.5 text-sm text-on-surface-variant hover:text-on-surface transition-colors"
         >
           <ArrowLeft size={15} /> Back to Vendors
@@ -233,7 +233,7 @@ export default function VendorDetail() {
                     <td className="px-5 py-4">
                       <Button
                         variant="ghost" size="sm" className="p-1.5"
-                        onClick={() => navigate(`/vendorpay/admin/invoices/${inv.id}`)}
+                        onClick={() => navigate(`/admin/invoices/${inv.id}`)}
                       >
                         <Eye size={15} />
                       </Button>

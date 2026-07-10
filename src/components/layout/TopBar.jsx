@@ -114,8 +114,8 @@ export default function TopBar({ searchPlaceholder = 'Search invoices, payments,
     markIdsRead([inv.id]);
     setShowBell(false);
     navigate(role === 'admin'
-      ? `/vendorpay/admin/invoices/${inv.id}`
-      : `/vendorpay/vendor/invoices/${inv.id}`);
+      ? `/admin/invoices/${inv.id}`
+      : `/vendor/invoices/${inv.id}`);
   }
 
   function handleSearch(e) {
@@ -123,14 +123,14 @@ export default function TopBar({ searchPlaceholder = 'Search invoices, payments,
     if (!query.trim()) return;
     const q = encodeURIComponent(query.trim());
     navigate(role === 'admin'
-      ? `/vendorpay/admin/invoices?search=${q}`
-      : `/vendorpay/vendor/invoices?search=${q}`);
+      ? `/admin/invoices?search=${q}`
+      : `/vendor/invoices?search=${q}`);
     setQuery('');
   }
 
   function handleSignOut() {
     logout();
-    navigate('/vendorpay/login');
+    navigate('/login');
   }
 
   const displayName = profile
@@ -214,7 +214,7 @@ export default function TopBar({ searchPlaceholder = 'Search invoices, payments,
 
               <div className="border-t border-outline-variant px-4 py-2.5">
                 <button
-                  onClick={() => { setShowBell(false); navigate(role === 'admin' ? '/vendorpay/admin/invoices' : '/vendorpay/vendor/invoices'); }}
+                  onClick={() => { setShowBell(false); navigate(role === 'admin' ? '/admin/invoices' : '/vendor/invoices'); }}
                   className="text-xs text-amber font-medium hover:underline"
                 >
                   View all invoices →
@@ -250,7 +250,7 @@ export default function TopBar({ searchPlaceholder = 'Search invoices, payments,
               <div className="py-1">
                 {role === 'vendor' && (
                   <button
-                    onClick={() => { setShowSettings(false); navigate('/vendorpay/vendor/profile'); }}
+                    onClick={() => { setShowSettings(false); navigate('/vendor/profile'); }}
                     className="w-full text-left px-4 py-2.5 text-sm text-on-surface hover:bg-surface-low transition-colors flex items-center gap-2.5"
                   >
                     <User size={15} className="text-on-surface-variant" />
@@ -258,7 +258,7 @@ export default function TopBar({ searchPlaceholder = 'Search invoices, payments,
                   </button>
                 )}
                 <button
-                  onClick={() => { setShowSettings(false); navigate(role === 'admin' ? '/vendorpay/admin/support' : '/vendorpay/vendor/support'); }}
+                  onClick={() => { setShowSettings(false); navigate(role === 'admin' ? '/admin/support' : '/vendor/support'); }}
                   className="w-full text-left px-4 py-2.5 text-sm text-on-surface hover:bg-surface-low transition-colors flex items-center gap-2.5"
                 >
                   <Bell size={15} className="text-on-surface-variant" />
