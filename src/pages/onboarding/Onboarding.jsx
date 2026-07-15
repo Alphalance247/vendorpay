@@ -460,7 +460,7 @@ export default function Onboarding() {
       data.transitNumber ||
       '';
 
-    const COUNTRY_TYPE_MAP = { US: 'ACH', NG: 'NIP', KE: 'PESALINK' };
+    const COUNTRY_TYPE_MAP = { US: 'ACH', GB: 'FASTER_PAYMENTS', NG: 'NIP', KE: 'PESALINK' };
     const countryType = COUNTRY_TYPE_MAP[data.country] ?? 'SWIFT';
 
     await vendorService.setupBanking({
