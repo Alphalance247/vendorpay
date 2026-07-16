@@ -231,6 +231,16 @@ function BankingStep({ data, onChange }) {
           "grid grid-cols-2 gap-4 transition-opacity duration-200",
           !countrySelected && "opacity-40 pointer-events-none select-none"
         )}>
+          <Input
+            label="Account Name"
+            name="accountName"
+            value={data.accountName}
+            onChange={onChange}
+            placeholder="Name on the bank account"
+            hint="Must match the name on file with your bank"
+            disabled={!countrySelected}
+          />
+
           {profile.fields.map((field) => (
             <div key={field.name} className={profile.fields.length % 2 === 1 && field === profile.fields[profile.fields.length - 1] ? 'col-span-2' : ''}>
               <Input
@@ -331,6 +341,7 @@ function ReviewStep({ data }) {
     { label: 'Industry', value: data.industry },
     { label: 'Country', value: COUNTRY_PROFILES[data.country]?.label || data.country },
     { label: 'Bank Name', value: data.bankName },
+    { label: 'Account Name', value: data.accountName },
     { label: 'Account Type', value: data.accountType },
     { label: 'Account Number', value: data.accountNumber },
     { label: 'Contact', value: `${data.firstName} ${data.lastName}` },
@@ -383,6 +394,7 @@ export default function Onboarding() {
     industry: '',
     country: '',
     bankName: '',
+    accountName: '',
     accountType: '',
     accountNumber: '',
     confirmAccount: '',
@@ -411,7 +423,7 @@ export default function Onboarding() {
       case 0:
         return data.companyName && data.taxId;
       case 1:
-        return data.country && data.bankName && data.accountType && data.accountNumber && data.accountNumber === data.confirmAccount;
+        return data.country && data.bankName && data.accountName && data.accountType && data.accountNumber && data.accountNumber === data.confirmAccount;
       case 2:
         return data.firstName && data.lastName && data.email && data.phone;
       default:
@@ -465,6 +477,7 @@ export default function Onboarding() {
 
     await vendorService.setupBanking({
       bank_name: data.bankName,
+      account_name: data.accountName,
       account_type: data.accountType,
       account_number: data.accountNumber,
       routing_number: routingNumber,
