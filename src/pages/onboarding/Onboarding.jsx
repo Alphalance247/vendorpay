@@ -80,6 +80,25 @@ function CompanyStep({ data, onChange }) {
           <option>Healthcare</option>
           <option>Other</option>
         </Select>
+        <Select label="Preferred Currency" name="currency" value={data.currency} onChange={onChange} required>
+          <option value="">Select currency</option>
+          <option value="USD">USD – US Dollar ($)</option>
+          <option value="EUR">EUR – Euro (€)</option>
+          <option value="GBP">GBP – British Pound (£)</option>
+          <option value="CAD">CAD – Canadian Dollar (C$)</option>
+          <option value="KES">KES – Kenyan Shilling (KSh)</option>
+          <option value="NGN">NGN – Nigerian Naira (₦)</option>
+          <option value="ZAR">ZAR – South African Rand (R)</option>
+          <option value="GHS">GHS – Ghanaian Cedi (GH₵)</option>
+          <option value="UGX">UGX – Ugandan Shilling (USh)</option>
+          <option value="TZS">TZS – Tanzanian Shilling (TSh)</option>
+          <option value="RWF">RWF – Rwandan Franc (FRw)</option>
+          <option value="ETB">ETB – Ethiopian Birr (Br)</option>
+          <option value="XOF">XOF – West African CFA (CFA)</option>
+          <option value="XAF">XAF – Central African CFA (FCFA)</option>
+          <option value="EGP">EGP – Egyptian Pound (E£)</option>
+          <option value="MAD">MAD – Moroccan Dirham (DH)</option>
+        </Select>
       </div>
     </div>
   );
@@ -339,6 +358,7 @@ function ReviewStep({ data }) {
     { label: 'Address', value: data.address },
     { label: 'Website', value: data.website },
     { label: 'Industry', value: data.industry },
+    { label: 'Preferred Currency', value: data.currency },
     { label: 'Country', value: COUNTRY_PROFILES[data.country]?.label || data.country },
     { label: 'Bank Name', value: data.bankName },
     { label: 'Account Name', value: data.accountName },
@@ -392,6 +412,7 @@ export default function Onboarding() {
     address: '',
     website: '',
     industry: '',
+    currency: '',
     country: '',
     bankName: '',
     accountName: '',
@@ -421,7 +442,7 @@ export default function Onboarding() {
   const validateStep = () => {
     switch (step) {
       case 0:
-        return data.companyName && data.taxId;
+        return data.companyName && data.taxId && data.currency;
       case 1:
         return data.country && data.bankName && data.accountName && data.accountType && data.accountNumber && data.accountNumber === data.confirmAccount;
       case 2:
@@ -456,6 +477,7 @@ export default function Onboarding() {
       business_type: data.businessType,
       business_address: data.address,
       industry: data.industry,
+      currency: data.currency,
       contact_first_name: data.firstName,
       contact_last_name: data.lastName,
       contact_email: data.email,

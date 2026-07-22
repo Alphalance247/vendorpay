@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
@@ -8,6 +9,8 @@ import {
   Users,
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
+import { useAuth } from '../../lib/authContext';
+import ConfirmModal from '../ui/ConfirmModal';
 
 function NavItem({ to, icon: Icon, label }) {
   return (
@@ -30,6 +33,14 @@ function NavItem({ to, icon: Icon, label }) {
 
 export default function Sidebar({ role = 'vendor', user }) {
   const navigate = useNavigate();
+  const { logout } = useAuth();
+  const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
+
+  async function handleSignOut() {
+    setShowSignOutConfirm(false);
+    await logout();
+    navigate('/login', { replace: true });
+  }
 
   const vendorNav = [
     { to: '/vendor/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
@@ -70,7 +81,7 @@ export default function Sidebar({ role = 'vendor', user }) {
       <div className="px-2 pb-4 border-t border-white/10 pt-3 space-y-1">
         <NavItem to={role === 'admin' ? '/admin/support' : '/vendor/support'} icon={HelpCircle} label="Support" />
         <button
-          onClick={() => navigate('/login')}
+          onClick={() => setShowSignOutConfirm(true)}
           className="flex items-center gap-3 px-3 py-2 rounded text-sm font-medium text-slate-300 hover:bg-white/10 w-full text-left transition-colors"
         >
           <LogOut size={18} />
@@ -89,6 +100,16 @@ export default function Sidebar({ role = 'vendor', user }) {
           </div>
         </div>
       )}
+
+      <ConfirmModal
+        open={showSignOutConfirm}
+        variant="neutral"
+        title="Sign out of VendorPay?"
+        message="You'll need to sign in again to access your dashboard."
+        confirmLabel="Sign out"
+        onConfirm={handleSignOut}
+        onCancel={() => setShowSignOutConfirm(false)}
+      />
     </aside>
   );
 }

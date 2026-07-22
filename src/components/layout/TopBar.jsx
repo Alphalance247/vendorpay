@@ -5,6 +5,7 @@ import { useAuth } from '../../lib/authContext';
 import { invoiceService, adminInvoiceService } from '../../lib/services/invoiceService';
 import { vendorService } from '../../lib/services/vendorService';
 import { formatCurrency, formatDate } from '../../lib/utils';
+import ConfirmModal from '../ui/ConfirmModal';
 
 const STATUS_LABEL = {
   submitted: 'Submitted',
@@ -61,6 +62,7 @@ export default function TopBar({ searchPlaceholder = 'Search invoices, payments,
   const [notifications, setNotifications] = useState([]);
   const [unread, setUnread] = useState(0);
   const [profile, setProfile] = useState(null);
+  const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
 
   const bellRef = useRef(null);
   const settingsRef = useRef(null);
@@ -128,9 +130,10 @@ export default function TopBar({ searchPlaceholder = 'Search invoices, payments,
     setQuery('');
   }
 
-  function handleSignOut() {
-    logout();
-    navigate('/login');
+  async function handleSignOut() {
+    setShowSignOutConfirm(false);
+    await logout();
+    navigate('/login', { replace: true });
   }
 
   const displayName = profile
@@ -265,7 +268,7 @@ export default function TopBar({ searchPlaceholder = 'Search invoices, payments,
                   Support
                 </button>
                 <button
-                  onClick={handleSignOut}
+                  onClick={() => { setShowSettings(false); setShowSignOutConfirm(true); }}
                   className="w-full text-left px-4 py-2.5 text-sm text-error hover:bg-red-50 transition-colors flex items-center gap-2.5"
                 >
                   <LogOut size={15} />
@@ -276,6 +279,16 @@ export default function TopBar({ searchPlaceholder = 'Search invoices, payments,
           )}
         </div>
       </div>
+
+      <ConfirmModal
+        open={showSignOutConfirm}
+        variant="neutral"
+        title="Sign out of VendorPay?"
+        message="You'll need to sign in again to access your dashboard."
+        confirmLabel="Sign out"
+        onConfirm={handleSignOut}
+        onCancel={() => setShowSignOutConfirm(false)}
+      />
     </header>
   );
 }

@@ -94,6 +94,7 @@ export default function VendorDetail() {
   const totalInvoiced = invoices.reduce((sum, inv) => sum + (inv.amount ?? 0), 0);
   const paidInvoices = invoices.filter((inv) => inv.status === 'paid');
   const totalPaid = paidInvoices.reduce((sum, inv) => sum + (inv.amount ?? 0), 0);
+  const vendorCurrency = vendor.currency ?? invoices[0]?.currency ?? 'USD';
 
   return (
     <AppLayout role="admin" searchPlaceholder="Search invoices...">
@@ -199,11 +200,11 @@ export default function VendorDetail() {
           </Card>
           <Card>
             <p className="text-xs uppercase text-on-surface-variant">Total Invoiced</p>
-            <p className="text-2xl font-bold text-on-surface tnum mt-1">{formatCurrency(totalInvoiced)}</p>
+            <p className="text-2xl font-bold text-on-surface tnum mt-1">{formatCurrency(totalInvoiced, vendorCurrency)}</p>
           </Card>
           <Card>
             <p className="text-xs uppercase text-on-surface-variant">Total Paid</p>
-            <p className="text-2xl font-bold text-on-surface tnum mt-1">{formatCurrency(totalPaid)}</p>
+            <p className="text-2xl font-bold text-on-surface tnum mt-1">{formatCurrency(totalPaid, vendorCurrency)}</p>
           </Card>
         </div>
 

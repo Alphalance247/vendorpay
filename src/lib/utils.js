@@ -2,6 +2,17 @@ export function cn(...classes) {
   return classes.filter(Boolean).join(' ');
 }
 
+export const CURRENCY_SYMBOLS = {
+  USD: '$', EUR: '€', GBP: '£', CAD: 'C$',
+  KES: 'KSh', NGN: '₦', ZAR: 'R', GHS: 'GH₵',
+  UGX: 'USh', TZS: 'TSh', RWF: 'FRw', ETB: 'Br',
+  XOF: 'CFA', XAF: 'FCFA', EGP: 'E£', MAD: 'DH',
+};
+
+export function getCurrencySymbol(currency) {
+  return CURRENCY_SYMBOLS[currency] ?? currency ?? '';
+}
+
 export function formatCurrency(amount, currency = 'USD') {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',

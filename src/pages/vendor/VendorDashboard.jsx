@@ -8,7 +8,7 @@ import { Plus, Loader2 } from 'lucide-react';
 import TutorialCard from '../../components/ui/TutorialCard';
 import AppLayout from '../../components/layout/AppLayout';
 import Card from '../../components/ui/Card';
-import { formatCurrency } from '../../lib/utils';
+import { formatCurrency, getCurrencySymbol } from '../../lib/utils';
 import { vendorService } from '../../lib/services/vendorService';
 
 function StatCard({ label, value, values, sub, subColor = 'text-emerald', badge }) {
@@ -34,14 +34,15 @@ function StatCard({ label, value, values, sub, subColor = 'text-emerald', badge 
   );
 }
 
-function currencyValues(map) {
-  if (!map || Object.keys(map).length === 0) return [formatCurrency(0)];
+function currencyValues(map, fallbackCurrency = 'USD') {
+  if (!map || Object.keys(map).length === 0) return [formatCurrency(0, fallbackCurrency)];
   return Object.entries(map).map(([currency, amount]) => formatCurrency(amount, currency));
 }
 
 export default function VendorDashboard() {
   const navigate = useNavigate();
   const [data, setData] = useState(null);
+  const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -54,6 +55,7 @@ export default function VendorDashboard() {
       .then(setData)
       .catch(() => setError('Failed to load dashboard data.'))
       .finally(() => setLoading(false));
+    vendorService.getProfile().then(setProfile).catch(() => {});
   }, []);
 
   if (loading) {
@@ -79,7 +81,7 @@ export default function VendorDashboard() {
   // Determine primary currency from first trend bucket
   const trendRaw = data.payment_trends ?? [];
   const allCurrencies = trendRaw.flatMap((pt) => Object.keys(pt.submitted_by_currency ?? {}));
-  const primaryCurrency = allCurrencies[0] ?? 'USD';
+  const primaryCurrency = allCurrencies[0] ?? profile?.currency ?? 'USD';
 
   const trendData = trendRaw.map((pt) => ({
     month: pt.month?.split(' ')[0] ?? pt.month,
@@ -110,7 +112,7 @@ export default function VendorDashboard() {
     pct: pieTotal > 0 ? Math.round((s.value / pieTotal) * 100) : 0,
   }));
 
-  const currSymbol = primaryCurrency === 'NGN' ? '₦' : primaryCurrency === 'USD' ? '$' : primaryCurrency === 'GBP' ? '£' : primaryCurrency === 'EUR' ? '€' : '';
+  const currSymbol = getCurrencySymbol(primaryCurrency);
   const axisFormatter = (v) => `${currSymbol}${(v / 1000).toFixed(0)}k`;
 
   return (
@@ -143,8 +145,8 @@ export default function VendorDashboard() {
             badge={data.pending_approval_count > 0 ? 'Action Req.' : undefined}
             subColor="text-error"
           />
-          <StatCard label="Paid This Month" values={currencyValues(data.paid_this_month)} sub={`${settledPct}% of invoices settled`} />
-          <StatCard label="Total Amount Paid" values={currencyValues(data.total_amount_paid_ytd)} sub="YTD" />
+          <StatCard label="Paid This Month" values={currencyValues(data.paid_this_month, primaryCurrency)} sub={`${settledPct}% of invoices settled`} />
+          <StatCard label="Total Amount Paid" values={currencyValues(data.total_amount_paid_ytd, primaryCurrency)} sub="YTD" />
         </div>
 
         <div className="grid grid-cols-3 gap-4">

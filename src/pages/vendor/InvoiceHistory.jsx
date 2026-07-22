@@ -7,7 +7,7 @@ import AppLayout from '../../components/layout/AppLayout';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import StatusChip from '../../components/ui/StatusChip';
-import { formatCurrency, formatDate, extractErrorMessage } from '../../lib/utils';
+import { formatCurrency, formatDate, extractErrorMessage, getCurrencySymbol } from '../../lib/utils';
 import { invoiceService } from '../../lib/services/invoiceService';
 import { vendorService } from '../../lib/services/vendorService';
 
@@ -29,6 +29,7 @@ export default function InvoiceHistory() {
   const navigate = useNavigate();
   const [invoices, setInvoices] = useState([]);
   const [dash, setDash] = useState(null);
+  const [profile, setProfile] = useState(null);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
@@ -69,6 +70,10 @@ export default function InvoiceHistory() {
     return () => { cancelled = true; };
   }, [statusFilter, search, page]);
 
+  useEffect(() => {
+    vendorService.getProfile().then(setProfile).catch(() => {});
+  }, []);
+
   async function handleDownload(invoiceId) {
     if (downloadingId) return;
     setDownloadingId(invoiceId);
@@ -82,7 +87,7 @@ export default function InvoiceHistory() {
   }
 
   function formatByCurrency(map) {
-    if (!map || Object.keys(map).length === 0) return [{ label: formatCurrency(0), key: 'USD' }];
+    if (!map || Object.keys(map).length === 0) return [{ label: formatCurrency(0, profile?.currency ?? 'USD'), key: profile?.currency ?? 'USD' }];
     return Object.entries(map).map(([currency, amount]) => ({
       key: currency,
       label: formatCurrency(amount, currency),
@@ -90,8 +95,8 @@ export default function InvoiceHistory() {
   }
 
   const trendRaw = dash?.payment_trends ?? [];
-  const histPrimaryCurrency = trendRaw.flatMap((pt) => Object.keys(pt.submitted_by_currency ?? {}))[0] ?? 'USD';
-  const histCurrSymbol = histPrimaryCurrency === 'NGN' ? '₦' : histPrimaryCurrency === 'GBP' ? '£' : histPrimaryCurrency === 'EUR' ? '€' : '$';
+  const histPrimaryCurrency = trendRaw.flatMap((pt) => Object.keys(pt.submitted_by_currency ?? {}))[0] ?? profile?.currency ?? 'USD';
+  const histCurrSymbol = getCurrencySymbol(histPrimaryCurrency);
 
   const trendData = trendRaw.map((pt) => ({
     month: pt.month?.split(' ')[0] ?? pt.month,

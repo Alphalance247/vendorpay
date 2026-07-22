@@ -26,7 +26,7 @@ export default function AdminDashboard() {
     { label: 'Total Vendors', value: loading ? '—' : (dash?.total_vendors ?? '—'), sub: '', subColor: 'text-emerald' },
     { label: 'Pending Approvals', value: loading ? '—' : (dash?.pending_invoices ?? '—'), sub: 'Requires action', subColor: 'text-error', highlight: true },
     { label: 'Pending Payments', value: loading ? '—' : (dash?.pending_payments ?? '—'), sub: '', subColor: 'text-on-surface-variant' },
-    { label: 'Monthly Volume', value: loading ? '—' : formatCurrency(dash?.monthly_volume ?? 0), sub: '', subColor: 'text-on-surface-variant' },
+    { label: 'Monthly Volume', value: loading ? '—' : formatCurrency(dash?.monthly_volume ?? 0, dash?.currency ?? 'USD'), sub: '', subColor: 'text-on-surface-variant' },
   ];
 
   return (
