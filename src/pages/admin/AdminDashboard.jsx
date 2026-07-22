@@ -10,6 +10,11 @@ import { formatCurrency } from '../../lib/utils';
 import TutorialCard from '../../components/ui/TutorialCard';
 import { vendorService } from '../../lib/services/vendorService';
 
+function currencyValues(map) {
+  if (!map || Object.keys(map).length === 0) return [formatCurrency(0, 'USD')];
+  return Object.entries(map).map(([currency, amount]) => formatCurrency(amount, currency));
+}
+
 export default function AdminDashboard() {
   const navigate = useNavigate();
   const [dash, setDash] = useState(null);
@@ -26,7 +31,7 @@ export default function AdminDashboard() {
     { label: 'Total Vendors', value: loading ? '—' : (dash?.total_vendors ?? '—'), sub: '', subColor: 'text-emerald' },
     { label: 'Pending Approvals', value: loading ? '—' : (dash?.pending_invoices ?? '—'), sub: 'Requires action', subColor: 'text-error', highlight: true },
     { label: 'Pending Payments', value: loading ? '—' : (dash?.pending_payments ?? '—'), sub: '', subColor: 'text-on-surface-variant' },
-    { label: 'Monthly Volume', value: loading ? '—' : formatCurrency(dash?.monthly_volume ?? 0, dash?.currency ?? 'USD'), sub: '', subColor: 'text-on-surface-variant' },
+    { label: 'Monthly Volume', values: loading ? null : currencyValues(dash?.monthly_volume_by_currency), value: loading ? '—' : undefined, sub: '', subColor: 'text-on-surface-variant' },
   ];
 
   return (
@@ -59,11 +64,17 @@ export default function AdminDashboard() {
         />
 
         <div className="grid grid-cols-4 gap-4">
-          {stats.map(({ label, value, sub, subColor, highlight }) => (
+          {stats.map(({ label, value, values, sub, subColor, highlight }) => (
             <Card key={label} className={highlight ? 'border-error/30 bg-error/5' : ''}>
               <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant">{label}</p>
               {loading ? (
                 <Loader2 size={20} className="animate-spin text-emerald mt-2" />
+              ) : values ? (
+                <div className="space-y-0.5 mt-1">
+                  {values.map((v, i) => (
+                    <p key={i} className={`text-2xl font-bold tnum leading-tight ${highlight ? 'text-error' : 'text-on-surface'}`}>{v}</p>
+                  ))}
+                </div>
               ) : (
                 <p className={`text-2xl font-bold mt-1 tnum ${highlight ? 'text-error' : 'text-on-surface'}`}>{value}</p>
               )}

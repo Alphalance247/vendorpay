@@ -11,6 +11,21 @@ import { invoiceService } from '../../lib/services/invoiceService';
 
 const STATUS_MAP = { paid: 'Paid', funding: 'Awaiting Payment', rejected: 'Denied' };
 
+function totalsByCurrency(items) {
+  const totals = {};
+  items.forEach((p) => {
+    const currency = p.currency ?? 'USD';
+    totals[currency] = (totals[currency] ?? 0) + p.amount;
+  });
+  return totals;
+}
+
+function formatTotals(items) {
+  const totals = totalsByCurrency(items);
+  if (Object.keys(totals).length === 0) return formatCurrency(0, 'USD');
+  return Object.entries(totals).map(([currency, amount]) => formatCurrency(amount, currency)).join(' + ');
+}
+
 const TABS = [
   { key: 'Paid', dbStatus: 'paid', icon: CheckCircle, accent: 'text-emerald' },
   { key: 'Awaiting Payment', dbStatus: 'funding', icon: Clock, accent: 'text-amber-600' },
@@ -35,7 +50,7 @@ export default function AdminPayments() {
   const byTab = (tab) => payments.filter((p) => STATUS_MAP[p.status] === tab);
 
   const counts = Object.fromEntries(TABS.map(({ key }) => [key, byTab(key).length]));
-  const totals = Object.fromEntries(TABS.map(({ key }) => [key, byTab(key).reduce((s, p) => s + p.amount, 0)]));
+  const totals = Object.fromEntries(TABS.map(({ key }) => [key, formatTotals(byTab(key))]));
 
   const filtered = byTab(activeTab).filter((p) => {
     if (!search) return true;
@@ -84,7 +99,7 @@ export default function AdminPayments() {
               ) : (
                 <>
                   <p className="text-2xl font-bold tnum text-on-surface mt-1">{counts[key] ?? 0}</p>
-                  <p className="text-xs text-on-surface-variant mt-0.5">Total {formatCurrency(totals[key] ?? 0)}</p>
+                  <p className="text-xs text-on-surface-variant mt-0.5">Total {totals[key] ?? formatCurrency(0, 'USD')}</p>
                 </>
               )}
             </Card>
@@ -184,7 +199,7 @@ export default function AdminPayments() {
               Showing {filtered.length} of {counts[activeTab] ?? 0} {activeTab.toLowerCase()} payments
             </p>
             <p className="text-xs font-semibold tnum text-on-surface">
-              Total {formatCurrency(filtered.reduce((s, p) => s + p.amount, 0))}
+              Total {formatTotals(filtered)}
             </p>
           </div>
         </Card>
