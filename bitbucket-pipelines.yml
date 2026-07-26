@@ -1,0 +1,61 @@
+# Bitbucket Pipelines — VendorPay Front End (Vite/React -> Docker/nginx)
+#
+# Deploy model (SSH into the server, pull the branch, rebuild the docker-compose stack):
+#   main  ->  Development server  (deploys automatically on every push)
+#   prod  ->  Production server   (deploys automatically on every push/merge to prod)
+#
+# VITE_BACKEND_URL is baked into the JS bundle at build time, so it must point at the
+# matching environment's back end. It is passed straight through to docker-compose,
+# which forwards it as the Dockerfile build arg.
+#
+# Required variables (set in Repository settings > Repository variables,
+# scoped per Deployment environment where noted):
+#   SSH_PRIVATE_KEY_B64  (repo-level, SECURED)  base64 of the deploy user's private key
+#   SSH_HOST             (per environment)      server IP / hostname
+#   SSH_USER             (per environment)      deploy user (must be in the docker group)
+#   DEPLOY_PATH          (per environment)      absolute path to this repo on the server
+#   VITE_BACKEND_URL     (per environment)      back end base URL for that environment
+#
+# Prerequisites on each server (one-time):
+#   - This repo already cloned at $DEPLOY_PATH
+#   - docker + docker compose v2 installed; deploy user can run docker
+#   - The deploy key's PUBLIC half added to the server's ~/.ssh/authorized_keys
+
+image: atlassian/default-image:4
+
+definitions:
+  steps:
+    - step: &deploy
+        name: Deploy over SSH
+        clone:
+          enabled: false          # nothing is built here — deployment happens on the server
+        script:
+          # --- set up the SSH key from the base64 secured variable ---
+          - mkdir -p ~/.ssh
+          - echo "$SSH_PRIVATE_KEY_B64" | base64 -d > ~/.ssh/id_rsa
+          - chmod 600 ~/.ssh/id_rsa
+          - ssh-keyscan -H "$SSH_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
+          # --- pull the branch on the server and rebuild the stack ---
+          - >
+            ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no "$SSH_USER@$SSH_HOST"
+            "set -e &&
+            cd '$DEPLOY_PATH' &&
+            git fetch --all --prune &&
+            git checkout $BITBUCKET_BRANCH &&
+            git reset --hard origin/$BITBUCKET_BRANCH &&
+            export VITE_BACKEND_URL='$VITE_BACKEND_URL' &&
+            docker compose up -d --build &&
+            docker image prune -f"
+
+pipelines:
+  branches:
+    main:
+      - step:
+          <<: *deploy
+          name: Deploy to Development
+          deployment: test
+    prod:
+      - step:
+          <<: *deploy
+          name: Deploy to Production
+          deployment: production
