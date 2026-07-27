@@ -1,38 +1,160 @@
-image: atlassian/default-image:4
+# VendorPay frontend — CI gate + gated deployments
+#
+#   feature/* --PR--> main    guard + test gate   (merge blocked by repo merge check)
+#   push/merge to main        test gate -> deploy to TEST
+#   main      --PR--> prod    guard + test gate   (guard proves the commit went through TEST)
+#   merge     main -> prod    test gate -> deploy to PRODUCTION
+#
+# Branch keys below are case-sensitive: `main` matches a push to main and does NOT
+# match a push to `Main`. A push to `Main` matches no branch pipeline and therefore
+# deploys nothing at all — delete that branch (see notes at the end of this file).
+#
+# Steps run in order and a failed step stops the pipeline, so no deploy step can
+# ever run unless the test gate ahead of it passed on that exact commit.
+#
+# NOTE: the pull-requests pipeline only *reports* — Bitbucket still allows the
+# merge unless "Require passing builds before merge" is enabled in
+# Repository settings -> Branch restrictions for both `main` and `prod`.
+#
+# Nothing is built in CI for deployment: the deploy steps only SSH to the Ubuntu
+# host, which runs `docker compose up -d --build` itself.
 
 definitions:
   steps:
+    # ------------------------------------------------------------------
+    # Guard: production only accepts changes that already went through TEST
+    # ------------------------------------------------------------------
+    - step: &guard
+        name: Promotion guard
+        image: alpine:3.22
+        clone:
+          depth: full           # needs history to prove the commit is on main
+        script:
+          - apk add --no-cache git
+          - |
+            set -e
+            DEST="${BITBUCKET_PR_DESTINATION_BRANCH:-}"
+            if [ "$DEST" != "prod" ]; then
+              echo "PR destination is '${DEST:-<none>}' — production guard not applicable."
+              exit 0
+            fi
+
+            echo "PR targets prod — verifying this change already went through the test environment."
+
+            if [ "$BITBUCKET_BRANCH" != "main" ]; then
+              echo "BLOCKED: prod only accepts PRs from 'main'; this PR is from '$BITBUCKET_BRANCH'."
+              echo "Merge into main first so the change deploys to TEST, then open main -> prod."
+              exit 1
+            fi
+
+            git fetch -q origin main:refs/remotes/origin/main
+            if ! git merge-base --is-ancestor "$BITBUCKET_COMMIT" origin/main; then
+              echo "BLOCKED: commit $BITBUCKET_COMMIT is not contained in origin/main,"
+              echo "so it was never deployed to the test environment."
+              exit 1
+            fi
+
+            echo "OK: $BITBUCKET_COMMIT is on main and has been through TEST."
+
+    # ------------------------------------------------------------------
+    # Test gate: everything runnable without a deployed environment
+    # ------------------------------------------------------------------
+    - step: &test
+        name: Test gate
+        image: node:22            # Node 20 is EOL (April 2026) — do not run CI on it
+        caches:
+          - node
+        script:
+          # npm ci, not npm install — honours package-lock.json so CI resolves the
+          # exact tree that was tested locally.
+          - npm ci
+
+          - npm run lint
+
+          - |
+            echo "--- production build ---"
+            # A Vite build failure is the real signal here: it type-resolves every
+            # import and fails on any broken module across all of src/.
+            export VITE_BACKEND_URL="${VITE_BACKEND_URL:-https://str.ec2.alluvium.net/vendorpay}"
+            npm run build
+            test -f dist/index.html || { echo "build produced no dist/index.html"; exit 1; }
+            echo "build output:"
+            ls -la dist
+
+          - |
+            echo "--- unit tests ---"
+            if node -e "const s=require('./package.json').scripts||{}; process.exit(s.test ? 0 : 1)"; then
+              # CI=true is already set by Bitbucket, so vitest runs once instead of watching.
+              npm test
+            else
+              echo "WARNING: no \"test\" script in package.json — this repo has no test suite"
+              echo "yet, so the unit-test portion of this gate asserted nothing."
+              echo "Add vitest + a \"test\" script and it will run here automatically."
+            fi
+
+    # ------------------------------------------------------------------
+    # Deploy: SSH only. Slim image — nothing is built here.
+    # ------------------------------------------------------------------
     - step: &deploy
         name: Deploy over SSH
+        image: alpine:3.22
         clone:
-          enabled: false          # nothing is built here — deployment happens on the server
+          enabled: false
         script:
-          # --- set up the SSH key from the base64 secured variable ---
+          - apk add --no-cache openssh-client
           - mkdir -p ~/.ssh
           - echo "$SSH_PRIVATE_KEY_B64" | base64 -d > ~/.ssh/id_rsa
           - chmod 600 ~/.ssh/id_rsa
-          - ssh-keyscan -H "$SSH_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
-          # --- pull the branch on the server and rebuild the stack ---
+          # Pin the host key and then actually enforce it (no StrictHostKeyChecking=no).
+          - ssh-keyscan -H "$SSH_HOST" >> ~/.ssh/known_hosts
           - >
-            ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no "$SSH_USER@$SSH_HOST"
+            ssh -i ~/.ssh/id_rsa "$SSH_USER@$SSH_HOST"
             "set -e &&
             cd '$DEPLOY_PATH' &&
             git fetch --all --prune &&
-            git checkout $BITBUCKET_BRANCH &&
-            git reset --hard origin/$BITBUCKET_BRANCH &&
+            git checkout '$BITBUCKET_BRANCH' &&
+            git reset --hard 'origin/$BITBUCKET_BRANCH' &&
             export VITE_BACKEND_URL='$VITE_BACKEND_URL' &&
             docker compose up -d --build &&
             docker image prune -f"
 
 pipelines:
+  pull-requests:
+    '**':
+      - step: *guard
+      - step: *test
+
   branches:
     main:
+      - step: *test
       - step:
           <<: *deploy
-          name: Deploy to Development
+          name: Deploy to Test environment
           deployment: test
+
+    # Merging main -> prod is the production release trigger. The test gate re-runs
+    # on the merge commit first; production deploys only if it passes.
     prod:
+      - step: *test
       - step:
           <<: *deploy
           name: Deploy to Production
           deployment: production
+
+# ----------------------------------------------------------------------
+# Repo housekeeping this file depends on:
+#
+#  1. This repo has BOTH `main` and `Main` on the remote, and origin/HEAD points
+#     at `Main`. Only lowercase `main` triggers the test+TEST-deploy pipeline
+#     above. Delete the `Main` branch and repoint origin/HEAD to `main`, or
+#     pushes will silently deploy nothing.
+#
+#  2. Enable in Repository settings -> Branch restrictions, for `main` and `prod`:
+#       - Require passing builds before merge (minimum 1)
+#       - Prevent direct pushes (forces changes through a PR)
+#     Without these, Bitbucket still allows merging a red build. The step
+#     ordering above is what guarantees a failed gate blocks the deploy.
+#
+#  3. The `test` and `production` deployment environments must define distinct
+#     SSH_HOST / DEPLOY_PATH / VITE_BACKEND_URL values.
+# ----------------------------------------------------------------------
