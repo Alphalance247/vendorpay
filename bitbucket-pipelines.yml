@@ -106,13 +106,14 @@ definitions:
           enabled: false
         script:
           - apk add --no-cache openssh-client
-          - mkdir -p ~/.ssh
-          - echo "$SSH_PRIVATE_KEY_B64" | base64 -d > ~/.ssh/id_rsa
-          - chmod 600 ~/.ssh/id_rsa
-          # Pin the host key and then actually enforce it (no StrictHostKeyChecking=no).
-          - ssh-keyscan -H "$SSH_HOST" >> ~/.ssh/known_hosts
+          # No key or known_hosts handling here, deliberately. Bitbucket injects
+          # the key pair and the known_hosts entries configured under
+          # Repository settings -> Pipelines -> SSH keys, and ssh picks the key up
+          # automatically. Writing ~/.ssh/id_rsa here would overwrite that key
+          # (the previous cause of "error in libcrypto"), and running ssh-keyscan
+          # would defeat the curated host-key list by trusting whatever answers.
           - >
-            ssh -i ~/.ssh/id_rsa "$SSH_USER@$SSH_HOST"
+            ssh "$SSH_USER@$SSH_HOST"
             "set -e &&
             cd '$DEPLOY_PATH' &&
             git fetch --all --prune &&
