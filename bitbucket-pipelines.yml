@@ -122,12 +122,16 @@ definitions:
             set -e
             mkdir -p ~/.ssh && chmod 700 ~/.ssh
 
-            # An empty value means the variable is missing or out of deployment
-            # scope. Without this check, base64 writes a 0-byte key file and the
-            # failure surfaces much later as an unrelated-looking
-            # "Permission denied (publickey)".
-            [ -n "$SSH_PRIVATE_KEY_B64" ] || { echo "SSH_PRIVATE_KEY_B64 is empty — is it set on this deployment environment?"; exit 1; }
-            [ -n "$KNOWN_HOSTS_B64" ]     || { echo "KNOWN_HOSTS_B64 is empty — is it set on this deployment environment?"; exit 1; }
+            # An empty value means the variable is unset, misspelled, or out of
+            # deployment scope. Check all of them up front, because each one
+            # fails obscurely on its own: an empty SSH_PRIVATE_KEY_B64 writes a
+            # 0-byte key file and reads as "Permission denied (publickey)", an
+            # empty SSH_HOST makes the command `ssh user@`, and an empty
+            # VITE_BACKEND_URL builds a frontend that talks to nothing.
+            # Note the name is SSH_HOST, not SSH_HOSTS.
+            for v in SSH_PRIVATE_KEY_B64 KNOWN_HOSTS_B64 SSH_HOST SSH_USER DEPLOY_PATH VITE_BACKEND_URL; do
+              [ -n "$(printenv "$v")" ] || { echo "MISSING: $v is empty — set it on the '$BITBUCKET_DEPLOYMENT_ENVIRONMENT' deployment environment (exact spelling)."; exit 1; }
+            done
 
             echo "$SSH_PRIVATE_KEY_B64" | base64 -d > ~/.ssh/id_ed25519
             chmod 600 ~/.ssh/id_ed25519
