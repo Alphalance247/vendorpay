@@ -105,7 +105,10 @@ definitions:
         clone:
           enabled: false
         script:
-          - apk add --no-cache openssh-client
+          # openssh-keygen is a SEPARATE Alpine package from openssh-client.
+          # Without it ssh-keygen is simply "not found" and the key checks below
+          # die with no explanation.
+          - apk add --no-cache openssh-client openssh-keygen
           # The deploy key comes from deployment variables, NOT from
           # Repository settings -> Pipelines -> SSH keys.
           #
@@ -132,20 +135,64 @@ definitions:
             for v in SSH_PRIVATE_KEY_B64 KNOWN_HOSTS_B64 SSH_HOST SSH_USER DEPLOY_PATH VITE_BACKEND_URL; do
               [ -n "$(printenv "$v")" ] || { echo "MISSING: $v is empty — set it on the '$BITBUCKET_DEPLOYMENT_ENVIRONMENT' deployment environment (exact spelling)."; exit 1; }
             done
+            echo "OK: all six deployment variables are present"
 
-            echo "$SSH_PRIVATE_KEY_B64" | base64 -d > ~/.ssh/id_ed25519
+            command -v ssh-keygen >/dev/null 2>&1 || { echo "FAIL: ssh-keygen not installed — add the openssh-keygen package"; exit 1; }
+
+            # --- private key -------------------------------------------------
+            printf '%s' "$SSH_PRIVATE_KEY_B64" | base64 -d > ~/.ssh/id_ed25519 2>/tmp/b64.err || {
+              echo "FAIL: SSH_PRIVATE_KEY_B64 did not decode: $(cat /tmp/b64.err)"
+              echo "  Regenerate with: base64 -w0 <keyfile>   (plain base64 wraps at 76 columns)"
+              exit 1
+            }
             chmod 600 ~/.ssh/id_ed25519
-            echo "$KNOWN_HOSTS_B64" | base64 -d > ~/.ssh/known_hosts
-            chmod 644 ~/.ssh/known_hosts
+            echo "decoded private key: $(wc -c < ~/.ssh/id_ed25519) bytes"
 
-            # Fails loudly if the variable holds a public key or a line-wrapped
-            # (mangled) private key. Generate with `base64 -w0`, never plain base64.
-            ssh-keygen -y -f ~/.ssh/id_ed25519 > /dev/null
-            echo "deploy key loaded: $(ssh-keygen -lf ~/.ssh/id_ed25519)"
+            # Header check, because busybox base64 is lenient and will happily
+            # decode the wrong thing. Prints only the first line, never the body.
+            if ! head -n 1 ~/.ssh/id_ed25519 | grep -q 'BEGIN .*PRIVATE KEY'; then
+              echo "FAIL: the decoded value is not a private key. First 40 characters:"
+              head -n 1 ~/.ssh/id_ed25519 | cut -c1-40
+              echo "  A PRIVATE key starts '-----BEGIN OPENSSH PRIVATE KEY-----' and is ~400 bytes."
+              echo "  A PUBLIC key starts 'ssh-ed25519 AAAA' and is ~100 bytes — that one belongs"
+              echo "  in the server's authorized_keys, not in this variable."
+              exit 1
+            fi
+
+            # Derives the public half: fails on a malformed key, and on a
+            # passphrase-protected key, which cannot be used unattended.
+            ssh-keygen -y -f ~/.ssh/id_ed25519 > /tmp/derived.pub 2>/tmp/kg.err || {
+              echo "FAIL: ssh-keygen could not read the private key: $(cat /tmp/kg.err)"
+              echo "  If it has a passphrase, regenerate it with an empty one."
+              exit 1
+            }
+            echo "deploy key: $(ssh-keygen -lf /tmp/derived.pub)"
+            echo "  ^ compare against: ssh-keygen -lf ~/.ssh/authorized_keys  (as $SSH_USER on $SSH_HOST)"
+
+            # --- host key ----------------------------------------------------
+            printf '%s' "$KNOWN_HOSTS_B64" | base64 -d > ~/.ssh/known_hosts 2>/tmp/b64h.err || {
+              echo "FAIL: KNOWN_HOSTS_B64 did not decode: $(cat /tmp/b64h.err)"
+              exit 1
+            }
+            chmod 644 ~/.ssh/known_hosts
+            echo "known_hosts: $(wc -l < ~/.ssh/known_hosts) entries"
+
+            # ssh-keyscan records the exact name it was given, so scanning an IP
+            # and connecting by hostname (or the reverse) fails verification.
+            # Catch that here rather than as a bare "Host key verification failed".
+            if ! ssh-keygen -F "$SSH_HOST" -f ~/.ssh/known_hosts >/dev/null 2>&1; then
+              echo "FAIL: known_hosts decoded but has no entry for '$SSH_HOST'."
+              echo "  Regenerate on a TRUSTED machine using the same name as SSH_HOST:"
+              echo "    ssh-keyscan -H $SSH_HOST | base64 -w0"
+              exit 1
+            fi
+            echo "OK: host key for $SSH_HOST is pinned"
           - >
             ssh -i ~/.ssh/id_ed25519
             -o IdentitiesOnly=yes
             -o StrictHostKeyChecking=yes
+            -o BatchMode=yes
+            -o ConnectTimeout=15
             "$SSH_USER@$SSH_HOST"
             "set -e &&
             cd '$DEPLOY_PATH' &&
