@@ -140,7 +140,28 @@ definitions:
             command -v ssh-keygen >/dev/null 2>&1 || { echo "FAIL: ssh-keygen not installed — add the openssh-keygen package"; exit 1; }
 
             # --- private key -------------------------------------------------
-            printf '%s' "$SSH_PRIVATE_KEY_B64" | base64 -d > ~/.ssh/id_ed25519 2>/tmp/b64.err || {
+            # Whitespace is stripped first: a value pasted from a wrapped
+            # terminal line can carry newlines or trailing spaces, which are not
+            # part of the encoding.
+            KEY_B64=$(printf '%s' "$SSH_PRIVATE_KEY_B64" | tr -d '\n\r \t')
+
+            # Report the length. Base64 always comes in groups of 4, so a count
+            # that is not a multiple of 4 proves characters were lost in the
+            # paste — that is what "base64: truncated input" means.
+            KEY_LEN=$(printf '%s' "$KEY_B64" | wc -c)
+            echo "SSH_PRIVATE_KEY_B64: $KEY_LEN base64 characters received"
+            if [ $(( KEY_LEN % 4 )) -ne 0 ]; then
+              echo "FAIL: $KEY_LEN is not a multiple of 4, so the pasted value is incomplete."
+              echo "  Get the expected count on the server with:"
+              echo "    base64 -w0 ~/.ssh/id_ed25519 | wc -c"
+              echo "  (a 464-byte ed25519 key encodes to 620 characters) and make sure the"
+              echo "  variable holds exactly that many. Selecting a wrapped line in a"
+              echo "  terminal commonly drops the tail — prefer scp'ing the key file down"
+              echo "  and piping it through the clipboard instead of copying by hand."
+              exit 1
+            fi
+
+            printf '%s' "$KEY_B64" | base64 -d > ~/.ssh/id_ed25519 2>/tmp/b64.err || {
               echo "FAIL: SSH_PRIVATE_KEY_B64 did not decode: $(cat /tmp/b64.err)"
               echo "  Regenerate with: base64 -w0 <keyfile>   (plain base64 wraps at 76 columns)"
               exit 1
@@ -170,8 +191,10 @@ definitions:
             echo "  ^ compare against: ssh-keygen -lf ~/.ssh/authorized_keys  (as $SSH_USER on $SSH_HOST)"
 
             # --- host key ----------------------------------------------------
-            printf '%s' "$KNOWN_HOSTS_B64" | base64 -d > ~/.ssh/known_hosts 2>/tmp/b64h.err || {
+            printf '%s' "$KNOWN_HOSTS_B64" | tr -d '\n\r \t' | base64 -d > ~/.ssh/known_hosts 2>/tmp/b64h.err || {
               echo "FAIL: KNOWN_HOSTS_B64 did not decode: $(cat /tmp/b64h.err)"
+              echo "  If this says 'truncated input', the pasted value is incomplete."
+              echo "  Regenerate with: ssh-keyscan -H $SSH_HOST | base64 -w0"
               exit 1
             }
             chmod 644 ~/.ssh/known_hosts
