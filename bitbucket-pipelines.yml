@@ -106,14 +106,43 @@ definitions:
           enabled: false
         script:
           - apk add --no-cache openssh-client
-          # No key or known_hosts handling here, deliberately. Bitbucket injects
-          # the key pair and the known_hosts entries configured under
-          # Repository settings -> Pipelines -> SSH keys, and ssh picks the key up
-          # automatically. Writing ~/.ssh/id_rsa here would overwrite that key
-          # (the previous cause of "error in libcrypto"), and running ssh-keyscan
-          # would defeat the curated host-key list by trusting whatever answers.
+          # The deploy key comes from deployment variables, NOT from
+          # Repository settings -> Pipelines -> SSH keys.
+          #
+          #   SSH_PRIVATE_KEY_B64   base64 -w0 of the ed25519 PRIVATE key (not .pub)
+          #   KNOWN_HOSTS_B64       base64 -w0 of `ssh-keyscan -H <SSH_HOST>` output
+          #
+          # IMPORTANT: the repo-settings SSH key must be cleared. If one is
+          # configured there, Bitbucket also injects it at ~/.ssh/id_rsa and the
+          # two keys together are what produced "error in libcrypto".
+          #
+          # Both variables are scoped to the deployment environment, so they only
+          # reach steps declaring `deployment:` — the two that use this step do.
+          - |
+            set -e
+            mkdir -p ~/.ssh && chmod 700 ~/.ssh
+
+            # An empty value means the variable is missing or out of deployment
+            # scope. Without this check, base64 writes a 0-byte key file and the
+            # failure surfaces much later as an unrelated-looking
+            # "Permission denied (publickey)".
+            [ -n "$SSH_PRIVATE_KEY_B64" ] || { echo "SSH_PRIVATE_KEY_B64 is empty — is it set on this deployment environment?"; exit 1; }
+            [ -n "$KNOWN_HOSTS_B64" ]     || { echo "KNOWN_HOSTS_B64 is empty — is it set on this deployment environment?"; exit 1; }
+
+            echo "$SSH_PRIVATE_KEY_B64" | base64 -d > ~/.ssh/id_ed25519
+            chmod 600 ~/.ssh/id_ed25519
+            echo "$KNOWN_HOSTS_B64" | base64 -d > ~/.ssh/known_hosts
+            chmod 644 ~/.ssh/known_hosts
+
+            # Fails loudly if the variable holds a public key or a line-wrapped
+            # (mangled) private key. Generate with `base64 -w0`, never plain base64.
+            ssh-keygen -y -f ~/.ssh/id_ed25519 > /dev/null
+            echo "deploy key loaded: $(ssh-keygen -lf ~/.ssh/id_ed25519)"
           - >
-            ssh "$SSH_USER@$SSH_HOST"
+            ssh -i ~/.ssh/id_ed25519
+            -o IdentitiesOnly=yes
+            -o StrictHostKeyChecking=yes
+            "$SSH_USER@$SSH_HOST"
             "set -e &&
             cd '$DEPLOY_PATH' &&
             git fetch --all --prune &&
@@ -162,4 +191,9 @@ pipelines:
 #
 #  3. The `test` and `production` deployment environments must define distinct
 #     SSH_HOST / DEPLOY_PATH / VITE_BACKEND_URL values.
+#
+#  4. Both deployment environments must also define SSH_PRIVATE_KEY_B64 (masked)
+#     and KNOWN_HOSTS_B64. These are deployment-scoped, so they are only visible
+#     to steps declaring `deployment:`. Clear the key under Repository settings
+#     -> Pipelines -> SSH keys, or it will collide with the one written here.
 # ----------------------------------------------------------------------
