@@ -1,4 +1,10 @@
-# React + Vite
+# VendorPay Frontend (React + Vite)
+
+> **Deploying this app?** See **[PIPELINE-README.md](./PIPELINE-README.md)** — a complete,
+> step-by-step guide to the Bitbucket Pipeline that deploys this repo to AWS EC2:
+> every command, every variable (and whether it's a repository or deployment variable),
+> how to generate the SSH keys and access keys, and a troubleshooting table for every
+> error you can hit.
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 

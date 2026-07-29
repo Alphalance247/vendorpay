@@ -1,38 +1,311 @@
-image: atlassian/default-image:4
+# VendorPay frontend — CI gate + gated deployments
+#
+#   feature/* --PR--> main    guard + test gate   (merge blocked by repo merge check)
+#   push/merge to main        test gate -> deploy to TEST
+#   main      --PR--> prod    guard + test gate   (guard proves the commit went through TEST)
+#   merge     main -> prod    test gate -> deploy to PRODUCTION
+#
+# Branch keys below are case-sensitive: `main` matches a push to main and does NOT
+# match a push to `Main`. A push to `Main` matches no branch pipeline and therefore
+# deploys nothing at all — delete that branch (see notes at the end of this file).
+#
+# Steps run in order and a failed step stops the pipeline, so no deploy step can
+# ever run unless the test gate ahead of it passed on that exact commit.
+#
+# NOTE: the pull-requests pipeline only *reports* — Bitbucket still allows the
+# merge unless "Require passing builds before merge" is enabled in
+# Repository settings -> Branch restrictions for both `main` and `prod`.
+#
+# Nothing is built in CI for deployment: the deploy steps only SSH to the Ubuntu
+# host, which runs `docker compose up -d --build` itself.
 
 definitions:
   steps:
+    # ------------------------------------------------------------------
+    # Guard: production only accepts changes that already went through TEST
+    # ------------------------------------------------------------------
+    - step: &guard
+        name: Promotion guard
+        image: alpine:3.22
+        clone:
+          depth: full           # needs history to prove the commit is on main
+        script:
+          - apk add --no-cache git
+          - |
+            set -e
+            DEST="${BITBUCKET_PR_DESTINATION_BRANCH:-}"
+            if [ "$DEST" != "prod" ]; then
+              echo "PR destination is '${DEST:-<none>}' — production guard not applicable."
+              exit 0
+            fi
+
+            echo "PR targets prod — verifying this change already went through the test environment."
+
+            if [ "$BITBUCKET_BRANCH" != "main" ]; then
+              echo "BLOCKED: prod only accepts PRs from 'main'; this PR is from '$BITBUCKET_BRANCH'."
+              echo "Merge into main first so the change deploys to TEST, then open main -> prod."
+              exit 1
+            fi
+
+            git fetch -q origin main:refs/remotes/origin/main
+            if ! git merge-base --is-ancestor "$BITBUCKET_COMMIT" origin/main; then
+              echo "BLOCKED: commit $BITBUCKET_COMMIT is not contained in origin/main,"
+              echo "so it was never deployed to the test environment."
+              exit 1
+            fi
+
+            echo "OK: $BITBUCKET_COMMIT is on main and has been through TEST."
+
+    # ------------------------------------------------------------------
+    # Test gate: everything runnable without a deployed environment
+    # ------------------------------------------------------------------
+    - step: &test
+        name: Test gate
+        image: node:22            # Node 20 is EOL (April 2026) — do not run CI on it
+        caches:
+          - node
+        script:
+          # npm ci, not npm install — honours package-lock.json so CI resolves the
+          # exact tree that was tested locally.
+          - npm ci
+
+          # Linting is deliberately NOT part of this gate. `eslint .` currently
+          # reports 36 pre-existing errors (20 regex escapes, 6 unused
+          # identifiers, 7 react-hooks/set-state-in-effect, 3 react-refresh),
+          # none of which are runtime defects. Run `npm run lint` locally when
+          # you want to work through them; it must not block deployments.
+
+          - |
+            echo "--- production build ---"
+            # A Vite build failure is the real signal here: it type-resolves every
+            # import and fails on any broken module across all of src/.
+            export VITE_BACKEND_URL="${VITE_BACKEND_URL:-https://str.ec2.alluvium.net/vendorpay}"
+            npm run build
+            test -f dist/index.html || { echo "build produced no dist/index.html"; exit 1; }
+            echo "build output:"
+            ls -la dist
+
+          - |
+            echo "--- unit tests ---"
+            if node -e "const s=require('./package.json').scripts||{}; process.exit(s.test ? 0 : 1)"; then
+              # CI=true is already set by Bitbucket, so vitest runs once instead of watching.
+              npm test
+            else
+              echo "WARNING: no \"test\" script in package.json — this repo has no test suite"
+              echo "yet, so the unit-test portion of this gate asserted nothing."
+              echo "Add vitest + a \"test\" script and it will run here automatically."
+            fi
+
+    # ------------------------------------------------------------------
+    # Deploy: SSH only. Slim image — nothing is built here.
+    # ------------------------------------------------------------------
     - step: &deploy
         name: Deploy over SSH
+        image: alpine:3.22
         clone:
-          enabled: false          # nothing is built here — deployment happens on the server
+          enabled: false
         script:
-          # --- set up the SSH key from the base64 secured variable ---
-          - mkdir -p ~/.ssh
-          - echo "$SSH_PRIVATE_KEY_B64" | base64 -d > ~/.ssh/id_rsa
-          - chmod 600 ~/.ssh/id_rsa
-          - ssh-keyscan -H "$SSH_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
-          # --- pull the branch on the server and rebuild the stack ---
+          # openssh-keygen is a SEPARATE Alpine package from openssh-client.
+          # Without it ssh-keygen is simply "not found" and the key checks below
+          # die with no explanation.
+          - apk add --no-cache openssh-client openssh-keygen
+          # The deploy key comes from deployment variables, NOT from
+          # Repository settings -> Pipelines -> SSH keys.
+          #
+          #   SSH_PRIVATE_KEY_B64   base64 -w0 of the ed25519 PRIVATE key (not .pub)
+          #   KNOWN_HOSTS_B64       base64 -w0 of `ssh-keyscan -H <SSH_HOST>` output
+          #
+          # IMPORTANT: the repo-settings SSH key must be cleared. If one is
+          # configured there, Bitbucket also injects it at ~/.ssh/id_rsa and the
+          # two keys together are what produced "error in libcrypto".
+          #
+          # Both variables are scoped to the deployment environment, so they only
+          # reach steps declaring `deployment:` — the two that use this step do.
+          - |
+            set -e
+            mkdir -p ~/.ssh && chmod 700 ~/.ssh
+
+            # An empty value means the variable is unset, misspelled, or out of
+            # deployment scope. Check all of them up front, because each one
+            # fails obscurely on its own: an empty SSH_PRIVATE_KEY_B64 writes a
+            # 0-byte key file and reads as "Permission denied (publickey)", an
+            # empty SSH_HOST makes the command `ssh user@`, and an empty
+            # VITE_BACKEND_URL builds a frontend that talks to nothing.
+            # Note the name is SSH_HOST, not SSH_HOSTS.
+            for v in SSH_PRIVATE_KEY_B64 KNOWN_HOSTS_B64 SSH_HOST SSH_USER DEPLOY_PATH VITE_BACKEND_URL; do
+              [ -n "$(printenv "$v")" ] || { echo "MISSING: $v is empty — set it on the '$BITBUCKET_DEPLOYMENT_ENVIRONMENT' deployment environment (exact spelling)."; exit 1; }
+            done
+            echo "OK: all six deployment variables are present"
+
+            command -v ssh-keygen >/dev/null 2>&1 || { echo "FAIL: ssh-keygen not installed — add the openssh-keygen package"; exit 1; }
+
+            # --- private key -------------------------------------------------
+            # Whitespace is stripped first: a value pasted from a wrapped
+            # terminal line can carry newlines or trailing spaces, which are not
+            # part of the encoding.
+            KEY_B64=$(printf '%s' "$SSH_PRIVATE_KEY_B64" | tr -d '\n\r \t')
+
+            # Report the length. Base64 always comes in groups of 4, so a count
+            # that is not a multiple of 4 proves characters were lost in the
+            # paste — that is what "base64: truncated input" means.
+            KEY_LEN=$(printf '%s' "$KEY_B64" | wc -c)
+            echo "SSH_PRIVATE_KEY_B64: $KEY_LEN base64 characters received"
+            if [ $(( KEY_LEN % 4 )) -ne 0 ]; then
+              echo "FAIL: $KEY_LEN is not a multiple of 4, so the pasted value is incomplete."
+              echo "  Get the expected count on the server with:"
+              echo "    base64 -w0 ~/.ssh/id_ed25519 | wc -c"
+              echo "  (a 464-byte ed25519 key encodes to 620 characters) and make sure the"
+              echo "  variable holds exactly that many. Selecting a wrapped line in a"
+              echo "  terminal commonly drops the tail — prefer scp'ing the key file down"
+              echo "  and piping it through the clipboard instead of copying by hand."
+              exit 1
+            fi
+
+            printf '%s' "$KEY_B64" | base64 -d > ~/.ssh/id_ed25519 2>/tmp/b64.err || {
+              echo "FAIL: SSH_PRIVATE_KEY_B64 did not decode: $(cat /tmp/b64.err)"
+              echo "  Regenerate with: base64 -w0 <keyfile>   (plain base64 wraps at 76 columns)"
+              exit 1
+            }
+            chmod 600 ~/.ssh/id_ed25519
+            echo "decoded private key: $(wc -c < ~/.ssh/id_ed25519) bytes"
+
+            # Header check, because busybox base64 is lenient and will happily
+            # decode the wrong thing. Prints only the first line, never the body.
+            if ! head -n 1 ~/.ssh/id_ed25519 | grep -q 'BEGIN .*PRIVATE KEY'; then
+              echo "FAIL: the decoded value is not a private key. First 40 characters:"
+              head -n 1 ~/.ssh/id_ed25519 | cut -c1-40
+              echo "  A PRIVATE key starts '-----BEGIN OPENSSH PRIVATE KEY-----' and is ~400 bytes."
+              echo "  A PUBLIC key starts 'ssh-ed25519 AAAA' and is ~100 bytes — that one belongs"
+              echo "  in the server's authorized_keys, not in this variable."
+              exit 1
+            fi
+
+            # Derives the public half: fails on a malformed key, and on a
+            # passphrase-protected key, which cannot be used unattended.
+            ssh-keygen -y -f ~/.ssh/id_ed25519 > /tmp/derived.pub 2>/tmp/kg.err || {
+              echo "FAIL: ssh-keygen could not read the private key: $(cat /tmp/kg.err)"
+              echo "  If it has a passphrase, regenerate it with an empty one."
+              exit 1
+            }
+            echo "deploy key: $(ssh-keygen -lf /tmp/derived.pub)"
+            echo "  ^ compare against: ssh-keygen -lf ~/.ssh/authorized_keys  (as $SSH_USER on $SSH_HOST)"
+
+            # --- host key ----------------------------------------------------
+            printf '%s' "$KNOWN_HOSTS_B64" | tr -d '\n\r \t' | base64 -d > ~/.ssh/known_hosts 2>/tmp/b64h.err || {
+              echo "FAIL: KNOWN_HOSTS_B64 did not decode: $(cat /tmp/b64h.err)"
+              echo "  If this says 'truncated input', the pasted value is incomplete."
+              echo "  Regenerate with: ssh-keyscan -H $SSH_HOST | base64 -w0"
+              exit 1
+            }
+            chmod 644 ~/.ssh/known_hosts
+            echo "known_hosts: $(wc -l < ~/.ssh/known_hosts) entries"
+
+            # ssh-keyscan records the exact name it was given, so scanning an IP
+            # and connecting by hostname (or the reverse) fails verification.
+            # Catch that here rather than as a bare "Host key verification failed".
+            if ! ssh-keygen -F "$SSH_HOST" -f ~/.ssh/known_hosts >/dev/null 2>&1; then
+              echo "FAIL: known_hosts decoded but has no entry for '$SSH_HOST'."
+              echo "  Regenerate on a TRUSTED machine using the same name as SSH_HOST:"
+              echo "    ssh-keyscan -H $SSH_HOST | base64 -w0"
+              exit 1
+            fi
+            echo "OK: host key for $SSH_HOST is pinned"
           - >
-            ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no "$SSH_USER@$SSH_HOST"
+            ssh -i ~/.ssh/id_ed25519
+            -o IdentitiesOnly=yes
+            -o StrictHostKeyChecking=yes
+            -o BatchMode=yes
+            -o ConnectTimeout=15
+            "$SSH_USER@$SSH_HOST"
             "set -e &&
             cd '$DEPLOY_PATH' &&
             git fetch --all --prune &&
-            git checkout $BITBUCKET_BRANCH &&
-            git reset --hard origin/$BITBUCKET_BRANCH &&
+            git checkout '$BITBUCKET_BRANCH' &&
+            git reset --hard 'origin/$BITBUCKET_BRANCH' &&
             export VITE_BACKEND_URL='$VITE_BACKEND_URL' &&
             docker compose up -d --build &&
             docker image prune -f"
 
 pipelines:
+  # ------------------------------------------------------------------
+  # Pull-request pipelines are keyed on the PR's SOURCE branch, and Bitbucket
+  # reads bitbucket-pipelines.yml from the SOURCE branch as well. Two
+  # consequences that are easy to get wrong:
+  #
+  #   main -> prod   uses MAIN's copy of this file, matched against `main`
+  #   prod -> main   uses PROD's copy of this file, matched against `prod`
+  #
+  # So a `prod -> main` back-merge only builds if PROD's copy of this file has a
+  # matching `pull-requests` entry. Keep the two branches' copies in sync — see
+  # note 5 at the end of this file.
+  # ------------------------------------------------------------------
+  pull-requests:
+    # Source branch `prod`: a back-merge, bringing a production hotfix back into
+    # main so the branches don't drift. The promotion guard is deliberately not
+    # here — it only polices PRs whose DESTINATION is prod, so on this route it
+    # would do nothing but print "not applicable". The test gate is the check
+    # that matters: it proves the merged result still builds.
+    prod:
+      - step: *test
+
+    '**':
+      - step: *guard
+      - step: *test
+
   branches:
+    # Any push to main runs the gate and deploys to TEST. This includes the merge
+    # commit produced by a `prod -> main` back-merge, so that direction already
+    # deploys without needing its own branch entry.
     main:
+      - step: *test
       - step:
           <<: *deploy
-          name: Deploy to Development
+          name: Deploy to Test environment
           deployment: test
+
+    # Merging main -> prod is the production release trigger. The test gate re-runs
+    # on the merge commit first; production deploys only if it passes.
     prod:
+      - step: *test
       - step:
           <<: *deploy
           name: Deploy to Production
           deployment: production
+
+# ----------------------------------------------------------------------
+# Repo housekeeping this file depends on:
+#
+#  1. Branch keys here are CASE-SENSITIVE: `main` does not match a push to
+#     `Main`. The stray `Main` branch this repo used to carry has been deleted,
+#     so the remote now holds only `main` and `prod` — keep it that way. A local
+#     clone may still have a stale `origin/HEAD -> origin/Main` symref; fix it
+#     with:
+#       git remote set-head origin -a
+#
+#  2. Enable in Repository settings -> Branch restrictions, for `main` and `prod`:
+#       - Require passing builds before merge (minimum 1)
+#       - Prevent direct pushes (forces changes through a PR)
+#     Without these, Bitbucket still allows merging a red build. The step
+#     ordering above is what guarantees a failed gate blocks the deploy.
+#
+#  3. The `test` and `production` deployment environments must define distinct
+#     SSH_HOST / DEPLOY_PATH / VITE_BACKEND_URL values.
+#
+#  4. Both deployment environments must also define SSH_PRIVATE_KEY_B64 (masked)
+#     and KNOWN_HOSTS_B64. These are deployment-scoped, so they are only visible
+#     to steps declaring `deployment:`. Clear the key under Repository settings
+#     -> Pipelines -> SSH keys, or it will collide with the one written here.
+#
+#  5. THE `prod` BRANCH MUST CARRY THIS SAME FILE.
+#     Bitbucket always reads bitbucket-pipelines.yml from the branch being built,
+#     and for a pull request that means the PR's SOURCE branch. So:
+#
+#       - a `prod -> main` PR is governed by PROD's copy of this file;
+#       - a push/merge to `prod` is governed by PROD's copy;
+#       - only pushes and PRs originating from `main` are governed by this copy.
+#
+#     If prod's copy has no `pull-requests` section, a `prod -> main` PR runs
+#     nothing at all — no gate, no report, no failure. That is not a
+#     misconfiguration you can fix from this branch; prod's copy has to be
+#     updated. Whenever this file changes on main, promote it to prod.
+# ----------------------------------------------------------------------
