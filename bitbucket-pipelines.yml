@@ -227,12 +227,35 @@ definitions:
             docker image prune -f"
 
 pipelines:
+  # ------------------------------------------------------------------
+  # Pull-request pipelines are keyed on the PR's SOURCE branch, and Bitbucket
+  # reads bitbucket-pipelines.yml from the SOURCE branch as well. Two
+  # consequences that are easy to get wrong:
+  #
+  #   main -> prod   uses MAIN's copy of this file, matched against `main`
+  #   prod -> main   uses PROD's copy of this file, matched against `prod`
+  #
+  # So a `prod -> main` back-merge only builds if PROD's copy of this file has a
+  # matching `pull-requests` entry. Keep the two branches' copies in sync — see
+  # note 5 at the end of this file.
+  # ------------------------------------------------------------------
   pull-requests:
+    # Source branch `prod`: a back-merge, bringing a production hotfix back into
+    # main so the branches don't drift. The promotion guard is deliberately not
+    # here — it only polices PRs whose DESTINATION is prod, so on this route it
+    # would do nothing but print "not applicable". The test gate is the check
+    # that matters: it proves the merged result still builds.
+    prod:
+      - step: *test
+
     '**':
       - step: *guard
       - step: *test
 
   branches:
+    # Any push to main runs the gate and deploys to TEST. This includes the merge
+    # commit produced by a `prod -> main` back-merge, so that direction already
+    # deploys without needing its own branch entry.
     main:
       - step: *test
       - step:
@@ -252,10 +275,12 @@ pipelines:
 # ----------------------------------------------------------------------
 # Repo housekeeping this file depends on:
 #
-#  1. This repo has BOTH `main` and `Main` on the remote, and origin/HEAD points
-#     at `Main`. Only lowercase `main` triggers the test+TEST-deploy pipeline
-#     above. Delete the `Main` branch and repoint origin/HEAD to `main`, or
-#     pushes will silently deploy nothing.
+#  1. Branch keys here are CASE-SENSITIVE: `main` does not match a push to
+#     `Main`. The stray `Main` branch this repo used to carry has been deleted,
+#     so the remote now holds only `main` and `prod` — keep it that way. A local
+#     clone may still have a stale `origin/HEAD -> origin/Main` symref; fix it
+#     with:
+#       git remote set-head origin -a
 #
 #  2. Enable in Repository settings -> Branch restrictions, for `main` and `prod`:
 #       - Require passing builds before merge (minimum 1)
@@ -270,4 +295,17 @@ pipelines:
 #     and KNOWN_HOSTS_B64. These are deployment-scoped, so they are only visible
 #     to steps declaring `deployment:`. Clear the key under Repository settings
 #     -> Pipelines -> SSH keys, or it will collide with the one written here.
+#
+#  5. THE `prod` BRANCH MUST CARRY THIS SAME FILE.
+#     Bitbucket always reads bitbucket-pipelines.yml from the branch being built,
+#     and for a pull request that means the PR's SOURCE branch. So:
+#
+#       - a `prod -> main` PR is governed by PROD's copy of this file;
+#       - a push/merge to `prod` is governed by PROD's copy;
+#       - only pushes and PRs originating from `main` are governed by this copy.
+#
+#     If prod's copy has no `pull-requests` section, a `prod -> main` PR runs
+#     nothing at all — no gate, no report, no failure. That is not a
+#     misconfiguration you can fix from this branch; prod's copy has to be
+#     updated. Whenever this file changes on main, promote it to prod.
 # ----------------------------------------------------------------------

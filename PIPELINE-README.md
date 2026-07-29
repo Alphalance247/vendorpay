@@ -32,6 +32,8 @@
 - [Part 5 — Run it for the first time](#part-5--run-it-for-the-first-time)
 - [Part 6 — Day-to-day: how to ship a change](#part-6--day-to-day-how-to-ship-a-change)
 - [Part 7 — Troubleshooting: every error and its fix](#part-7--troubleshooting-every-error-and-its-fix)
+  - [7.1a Deciding between "config not read" and "key not registered"](#71a-deciding-between-config-not-read-and-key-not-registered)
+  - [7.7 When the deployer and the pipeline owner are different people](#77-when-the-deployer-and-the-pipeline-owner-are-different-people)
 - [Part 8 — Other ways Atlassian supports (and why we didn't use them)](#part-8--other-ways-atlassian-supports-and-why-we-didnt-use-them)
 - [Part 9 — Security, rotation, and housekeeping](#part-9--security-rotation-and-housekeeping)
 - [Appendix A — One-page copy/paste command sheet](#appendix-a--one-page-copypaste-command-sheet)
@@ -489,6 +491,22 @@ origin  git@bitbucket.org:goalluvium/vendorpay-frontend.git (fetch)
 origin  git@bitbucket.org:goalluvium/vendorpay-frontend.git (push)
 ```
 
+### What an HTTPS remote looks like when it fails in the pipeline
+
+Worth recognising on sight, because the message names neither git nor SSH:
+
+```
+fatal: could not read Password for 'https://azeez4@bitbucket.org': No such device or address
+```
+
+`No such device or address` is git failing to **open a terminal** to prompt for a
+password. Interactively you would simply be asked for one; inside a pipeline there is
+no TTY, so it dies instead. No password will ever fix this — the remote has to be SSH
+so it authenticates with Key B. The username baked into the URL (`azeez4` above) is a
+good clue that the clone was made by a person, by hand, over HTTPS.
+
+### Switching an existing clone from HTTPS to SSH
+
 **If you already have a clone that uses HTTPS** — that is, `git remote -v` shows
 `https://<user>@bitbucket.org/...` — you do not need to re-clone. Just switch the
 URL:
@@ -499,6 +517,42 @@ git remote set-url origin git@bitbucket.org:goalluvium/vendorpay-frontend.git
 git remote -v          # confirm it changed
 git fetch --all --prune
 ```
+
+Check the shape of the new URL carefully: `git@bitbucket.org:` with a **colon** before
+the workspace, no `https://`, no username, no `//` after the host.
+
+### Audit every clone on the box, not just this one
+
+One server often hosts several deploy directories, and they get converted one at a
+time — so the next pipeline fails the same way a week later. List them all at once:
+
+```bash
+for d in /home/ubuntu/*/; do
+  [ -d "$d.git" ] && printf '%-45s %s\n' "$d" "$(git -C "$d" remote get-url origin)"
+done
+```
+
+Anything still printing `https://` will fail as soon as its pipeline runs. Fix them now.
+
+### Verify the way the pipeline does it — not interactively
+
+An interactive `git fetch` can succeed while the pipeline still fails, because your
+session has a terminal and can fall back to prompting. Reproduce the real conditions
+**from your laptop**, so there is no TTY on the far end:
+
+```bash
+ssh -i ~/.ssh/bb_pipeline_deploy -o IdentitiesOnly=yes -o BatchMode=yes \
+    ubuntu@<SSH_HOST> \
+    "cd /home/ubuntu/frontend_vp && git fetch --all --prune && echo FETCH_OK"
+```
+
+`FETCH_OK`, with no prompt and no error, is the only result that proves the deploy step
+will get past this line.
+
+> **`~/.ssh/config`, Key B and `known_hosts` all belong to one Linux user.** If the
+> pipeline logs in as a different user than the one you just configured, none of this
+> applies to it. See
+> [7.7](#77-when-the-deployer-and-the-pipeline-owner-are-different-people).
 
 That `git fetch` must complete **with no password prompt**. If it prompts, Key B
 or `~/.ssh/config` is still wrong — go back to 1.4.
@@ -967,14 +1021,56 @@ is why the deploy logic is written once but used by both `main` and `prod`.
 
 | Trigger | What runs | Result |
 |---|---|---|
-| Open a PR into any branch | promotion guard + test gate | reports pass/fail on the PR |
+| Open a PR from a feature branch into `main` | promotion guard + test gate | reports pass/fail on the PR |
 | Push or merge to `main` | test gate → deploy | ships to **test** environment |
 | Open a PR `main` → `prod` | promotion guard + test gate | guard proves the commit already went through test |
 | Merge `main` → `prod` | test gate → deploy | ships to **production** |
+| Open a PR `prod` → `main` (back-merge) | test gate only | proves the merged result still builds; the guard is skipped because it only polices PRs *into* prod |
+| Merge `prod` → `main` | test gate → deploy | ships to **test**, via the `branches: main` entry |
 
 Steps run in order and a failed step aborts the pipeline. That single property is
 what guarantees a deploy step can never run unless the gate ahead of it passed
 **on that exact commit**.
+
+### Which branch's YAML decides — the rule that catches everyone
+
+Bitbucket always reads `bitbucket-pipelines.yml` **from the branch being built**, and
+for a pull request that is the PR's **source** branch. `pull-requests:` keys are
+matched against the source branch too.
+
+| Event | File that governs it | Key matched |
+|---|---|---|
+| PR `main` → `prod` | **main's** copy | `'**'` (source is `main`) |
+| PR `prod` → `main` | **prod's** copy | `prod` (source is `prod`) |
+| PR `feature/x` → `main` | **feature/x's** copy | `'**'` |
+| Push/merge to `main` | **main's** copy | `branches: main` |
+| Push/merge to `prod` | **prod's** copy | `branches: prod` |
+
+The consequence is worth stating bluntly: **you cannot fix a `prod` → `main` PR
+pipeline by editing `main`.** If prod's copy of the file has no `pull-requests`
+section, that PR runs *nothing* — no gate, no report, no red build, no error
+message anywhere. It just silently has no checks.
+
+This repo hit exactly that. prod's copy of the file was an older revision with only
+a `branches:` section, which is why merges `main` → `prod` built but PRs `prod` →
+`main` appeared to do nothing.
+
+**So: whenever `bitbucket-pipelines.yml` changes on `main`, promote it to `prod`.**
+Treat the two copies as one file that happens to live in two places. To check
+whether they have drifted:
+
+```bash
+git fetch --all --prune
+git diff origin/main:bitbucket-pipelines.yml origin/prod:bitbucket-pipelines.yml
+```
+
+No output means they are in sync. Any output is a latent difference in what your two
+branches will actually do.
+
+> Note that the **merge** `prod` → `main` always built, even before this fix — a
+> merge is a push to `main`, so `branches: main` in main's own copy handles it. Only
+> the PR *preview* was missing. If you have been merging back-merges without seeing a
+> build on the PR, the deploy to test still happened afterwards.
 
 ## 4.3 Step 1 — the promotion guard
 
@@ -1216,6 +1312,36 @@ Find your exact message. The left column is what you see in the log.
 | `FAIL: ssh-keygen could not read the private key` | The key has a passphrase. | Regenerate with `-N ""`. A pipeline cannot type a passphrase. |
 | `Permission denied (publickey)` **when connecting to EC2** | Key A's public half is missing/mangled in `authorized_keys`, or the wrong `SSH_USER`. | On EC2: `ssh-keygen -lf ~/.ssh/authorized_keys` and compare with the `deploy key:` fingerprint in the pipeline log. Check `SSH_USER=ubuntu`. Check permissions: `chmod 700 ~/.ssh; chmod 600 ~/.ssh/authorized_keys`. |
 | `Permission denied (publickey)` **on the `git fetch` line inside the SSH session** | That's **Key B**, not Key A. Key B isn't registered as an Access Key, or `~/.ssh/config` is missing. | On EC2 run `ssh -vT git@bitbucket.org` and follow [1.4](#14-create-key-b-and-register-it-as-an-access-key). |
+| `Permission denied (publickey)` from `ssh -T git@bitbucket.org` **even after creating `~/.ssh/config`** | The config is being read and the key is offered — Bitbucket just doesn't recognise it. The key is **not registered as an Access Key on this repo**, or it was generated on a *different server*. | See the decision table in [7.1a](#71a-deciding-between-config-not-read-and-key-not-registered) directly below. |
+| `Permission denied (publickey)` from `sudo ssh -T git@bitbucket.org` | Not a real test. `sudo` runs as root and reads `/root/.ssh/config`, not yours. | Drop the `sudo`. Never use it for these checks — see [7.7](#77-when-the-deployer-and-the-pipeline-owner-are-different-people). |
+| `fatal: could not read Password for 'https://<user>@bitbucket.org': No such device or address` | The clone's remote is **HTTPS**, so git wants a password, and there is no TTY in a pipeline session to prompt on. | `git remote set-url origin git@bitbucket.org:goalluvium/vendorpay-frontend.git`. Full procedure and the all-clones audit in [1.5](#15-clone-the-repository-over-ssh). |
+| `Host key verification failed` **on the `git fetch` line** (not on the connection to EC2) | That user's `~/.ssh/known_hosts` has no entry for **bitbucket.org**, and non-interactively git cannot ask you to accept it. | As that user: `ssh-keyscan bitbucket.org >> ~/.ssh/known_hosts && sort -u ~/.ssh/known_hosts -o ~/.ssh/known_hosts` |
+
+### 7.1a Deciding between "config not read" and "key not registered"
+
+Both produce an identical `Permission denied (publickey)`. This tells them apart:
+
+```bash
+ssh -vT git@bitbucket.org 2>&1 | grep -E 'Reading configuration data|Offering public key|Permissions .* too open'
+```
+
+| Output | Meaning | Fix |
+|---|---|---|
+| Both `Reading configuration data /home/ubuntu/.ssh/config` **and** `Offering public key: ...bitbucket_deploy` appear, yet access is denied | Config works; the key is offered and **rejected**. It is not registered on this repository. | Add `~/.ssh/bitbucket_deploy.pub` under *Repository settings → Security → **Access keys*** for `goalluvium/vendorpay-frontend`. Then compare the fingerprint Bitbucket shows against `ssh-keygen -lf ~/.ssh/bitbucket_deploy.pub` — a mismatch means the paste was mangled. |
+| No `Offering public key: ...bitbucket_deploy` line at all | Either `~/.ssh/config` isn't being read, or the **private** half is missing. With `IdentitiesOnly yes` and no private key, SSH has nothing to offer. | `ls -l ~/.ssh/bitbucket_deploy` — you need the private file (~464 bytes), not only the `.pub`. Regenerate the pair if it's absent. |
+| `Permissions ... are too open` | SSH refuses to use a key others can read. | `chmod 700 ~/.ssh && chmod 600 ~/.ssh/bitbucket_deploy` |
+
+**Then check which machine the key came from.** `ssh-keygen` stamps `<user>@<hostname>`
+into the public key as a comment:
+
+```bash
+cat ~/.ssh/bitbucket_deploy.pub    # ... ubuntu@ip-172-31-20-251   <- made on THAT box
+hostname                           # ip-172-31-2-254               <- you are on THIS box
+```
+
+A mismatch means the Access Key registered in Bitbucket belongs to a different server.
+Keys are not portable between machines in this setup — generate a fresh Key B here and
+register it ([1.4](#14-create-key-b-and-register-it-as-an-access-key)).
 
 ## 7.2 Host-key and connectivity errors
 
@@ -1235,6 +1361,8 @@ Find your exact message. The left column is what you see in the log.
 | `MISSING: <NAME> is empty — set it on the '<env>' deployment environment` | Not defined, misspelled, or defined at the wrong scope. | Add it to the named deployment environment. Case-sensitive. Remember: deployment variables reach **only** steps that declare `deployment:`. |
 | Variables work on test but not production | You filled in only the Test environment. | Every variable must be set on **both** environments, separately. |
 | Value looks right but behaves as empty | Trailing whitespace or invisible characters from copy/paste; or quotes were included. | Re-enter it. Do **not** wrap values in quotes in the Bitbucket UI — quotes become part of the value. |
+| The deploy fails on `cd`, or reports a missing file that you can see is present | **A trailing space in `DEPLOY_PATH`.** `cd '/home/ubuntu/frontend_vp '` fails, and the space is invisible in the build log. | Open the variable, click into the field, press `End`: the cursor must land immediately after the last character of the path. No trailing space, no trailing slash, no quotes. |
+| `SSH_HOST` / `KNOWN_HOSTS_B64` were correct and suddenly aren't | The app moved to a new EC2 instance, or the instance was rebuilt. Host keys are **per machine**. | Regenerate: `ssh-keyscan -H <new SSH_HOST> \| base64 -w0`. See [7.7](#77-when-the-deployer-and-the-pipeline-owner-are-different-people). |
 
 ## 7.4 Pipeline-doesn't-run errors
 
@@ -1274,6 +1402,121 @@ of cause:
    repository. `SSH_HOST`, not `SSH_HOSTS`.
 6. **Re-run with SSH debug.** Temporarily add `-vvv` to the `ssh` command in the
    deploy step, push, read which key was offered and rejected. Remove it afterwards.
+
+## 7.7 When the deployer and the pipeline owner are different people
+
+The most confusing failures in this setup happen when **the person who set up the server
+is not the person configuring the pipeline** — or when the app has moved to a new instance
+since the keys were made. Nothing is broken in an obvious way; each piece just belongs to
+a user or a machine that is no longer the one in play.
+
+### What is per-user, what is per-machine, and what it looks like when it's wrong
+
+| Thing | Scope | Lives at | Symptom when it belongs to the wrong user/machine |
+|---|---|---|---|
+| Key B, private half | per **user** | `~/.ssh/bitbucket_deploy` | `Permission denied (publickey)` on the `git fetch` line |
+| `~/.ssh/config` | per **user** | `~/.ssh/config` | SSH silently offers the default key instead; same error |
+| bitbucket.org in `known_hosts` | per **user** | `~/.ssh/known_hosts` | `Host key verification failed` on `git fetch` |
+| Key A, public half | per **user** | `~/.ssh/authorized_keys` | `Permission denied (publickey)` connecting to EC2 |
+| The server's own host key | per **machine** | `KNOWN_HOSTS_B64` | `Host key verification failed` before the session even opens |
+| `SSH_HOST`, `DEPLOY_PATH` | per **machine** | Bitbucket deployment variables | `Connection timed out`, or a `cd` failure |
+
+Two consequences people trip over constantly:
+
+1. **`sudo` shares none of it.** `sudo ssh -T git@bitbucket.org` runs as root, reads
+   `/root/.ssh/config` — which almost certainly doesn't exist — and offers root's keys. It
+   fails even when the `ubuntu` setup is flawless, and it tells you nothing. **Never use
+   `sudo` for any check in this document.**
+2. **Keys don't travel between servers.** A key generated on one box is registered in
+   Bitbucket as *that box's* Access Key. Standing up a second instance means generating and
+   registering a new Key B, and regenerating `KNOWN_HOSTS_B64`.
+
+### The key comment tells you which machine a key was made on
+
+`ssh-keygen` stamps `<user>@<hostname>` into the public key as a comment. Compare it with
+where you actually are:
+
+```bash
+cat ~/.ssh/bitbucket_deploy.pub
+# ssh-ed25519 AAAA... ubuntu@ip-172-31-20-251     <-- generated on THAT box
+hostname
+# ip-172-31-2-254                                  <-- you are on THIS box
+```
+
+A mismatch is your answer: the Access Key in Bitbucket belongs to the other server.
+Generate a fresh Key B here and register it
+([1.4](#14-create-key-b-and-register-it-as-an-access-key)).
+
+### One-shot audit
+
+Get `SSH_USER` from *Repository settings → Pipelines → Deployments →* the environment you
+are debugging, log in as **that exact user** (no `sudo`), and run this. Remember this repo
+has **two** environments, so run it against whichever server is failing:
+
+```bash
+echo "user:     $(whoami)"
+echo "home:     $HOME"
+echo "hostname: $(hostname)"
+
+echo; echo "--- keys and config this user has ---"
+ls -l ~/.ssh/ 2>/dev/null || echo "no ~/.ssh at all"
+
+echo; echo "--- ~/.ssh/config ---"
+cat ~/.ssh/config 2>/dev/null || echo "MISSING — SSH will offer the default key, not Key B"
+
+echo; echo "--- Key B: fingerprint and originating machine ---"
+ssh-keygen -lf ~/.ssh/bitbucket_deploy.pub 2>/dev/null || echo "no bitbucket_deploy.pub for this user"
+
+echo; echo "--- is bitbucket.org pinned for this user? ---"
+ssh-keygen -F bitbucket.org >/dev/null 2>&1 \
+  && echo "yes" \
+  || echo "NO — git fetch will fail non-interactively"
+
+echo; echo "--- can this user authenticate to Bitbucket? ---"
+ssh -o BatchMode=yes -T git@bitbucket.org 2>&1 | head -2
+
+echo; echo "--- deploy directory ---"
+cd /home/ubuntu/frontend_vp 2>/dev/null \
+  && { pwd; git remote get-url origin; git log -1 --oneline; } \
+  || echo "cannot cd — check DEPLOY_PATH"
+
+echo; echo "--- every clone on this box, and its remote ---"
+for d in /home/ubuntu/*/; do
+  [ -d "$d.git" ] && printf '%-45s %s\n' "$d" "$(git -C "$d" remote get-url origin)"
+done
+```
+
+Read it against this: the user and hostname should be the ones the pipeline targets,
+`config` should point at `bitbucket_deploy`, the Key B comment should name **this** host,
+bitbucket.org should be pinned, Bitbucket should say `authenticated via ssh key`, and the
+remote should start `git@bitbucket.org:`.
+
+### Handover checklist — when ownership or the server changes
+
+| # | Action | Why |
+|---|---|---|
+| 1 | **Do not copy private keys between people or machines.** Generate a new one. | A key that has been emailed or pasted into chat is no longer a secret. |
+| 2 | Generate a new **Key A**, append its public half to `authorized_keys`, update `SSH_PRIVATE_KEY_B64`, confirm a green deploy, **then** remove the old line. | Rotating in that order means a mistake never locks the pipeline out. Full steps in [9.2](#92-rotating-key-a-do-this-when-someone-leaves-or-every-612-months). |
+| 3 | Generate a new **Key B** *on the server*, register the public half under *Security → Access keys*, and delete the departing key. | Key B never leaves the box, so it must be created there. |
+| 4 | Re-run `ssh-keyscan -H <SSH_HOST> \| base64 -w0` and update `KNOWN_HOSTS_B64` — **on both environments**. | Host keys are per machine. Skipping this is the classic "it worked yesterday" failure. |
+| 5 | Confirm `SSH_USER`, `SSH_HOST`, `DEPLOY_PATH` and `VITE_BACKEND_URL` describe the server that is actually live, **for each environment separately**. | These drift silently when infrastructure is rebuilt, and it is easy to fix Test and forget Production. |
+| 6 | Run the all-clones loop above and convert any HTTPS remote to SSH. | Directories get converted one at a time and the rest fail later. |
+| 7 | Record, somewhere findable: which instance, which user, which directory, who holds which key, per environment. | This document cannot tell you which server is current. Only you can. |
+
+### The only test that counts
+
+Whoever now owns the pipeline should finish by proving it end to end **without a terminal
+on the far side**, because a TTY lets git fall back to prompting and can make a broken
+setup look healthy:
+
+```bash
+ssh -i ~/.ssh/bb_pipeline_deploy -o IdentitiesOnly=yes -o BatchMode=yes \
+    <SSH_USER>@<SSH_HOST> \
+    "cd <DEPLOY_PATH> && git fetch --all --prune && echo READY"
+```
+
+`READY` means Key A, Key B, the remote URL and the path are all correct together. Any
+other output names the piece that still needs work. Run it once per environment.
 
 ---
 
