@@ -15,18 +15,18 @@ export default function ProtectedRoute({ children, role: requiredRole }) {
   }
 
   if (!token || !role) {
-    return <Navigate to="/vendorpay/login" replace />;
+    return <Navigate to="/login" replace />;
   }
 
   if (role !== requiredRole) {
     const fallback = role === 'admin'
-      ? '/vendorpay/admin/dashboard'
-      : '/vendorpay/vendor/dashboard';
+      ? '/admin/dashboard'
+      : '/vendor/dashboard';
     return <Navigate to={fallback} replace />;
   }
 
   if (requiredRole === 'vendor' && isOnboarded === false) {
-    return <Navigate to="/vendorpay/onboarding" replace />;
+    return <Navigate to="/onboarding" replace />;
   }
 
   return children;

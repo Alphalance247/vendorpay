@@ -6,16 +6,10 @@ import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Select from '../../components/ui/Select';
-import { cn, extractErrorMessage } from '../../lib/utils';
+import { cn, extractErrorMessage, CURRENCY_SYMBOLS } from '../../lib/utils';
 import { invoiceService, extractInvoiceWithAI } from '../../lib/services/invoiceService';
+import { vendorService } from '../../lib/services/vendorService';
 import TutorialCard from '../../components/ui/TutorialCard';
-
-const CURRENCY_SYMBOLS = {
-  USD: '$', EUR: '€', GBP: '£', CAD: 'C$',
-  KES: 'KSh', NGN: '₦', ZAR: 'R', GHS: 'GH₵',
-  UGX: 'USh', TZS: 'TSh', RWF: 'FRw', ETB: 'Br',
-  XOF: 'CFA', XAF: 'FCFA', EGP: 'E£', MAD: 'DH',
-};
 
 const workflowSteps = [
   { icon: Upload, label: 'Submission', desc: 'Drafting details & uploading file', done: true },
@@ -79,6 +73,16 @@ export default function SubmitInvoice() {
       if (previewUrl) URL.revokeObjectURL(previewUrl);
     };
   }, [previewUrl]);
+
+  useEffect(() => {
+    vendorService.getProfile()
+      .then((profile) => {
+        if (profile?.currency) {
+          setForm((f) => (f.currency ? f : { ...f, currency: profile.currency }));
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   function handleChange(e) {
     const { name, value } = e.target;
@@ -180,7 +184,7 @@ export default function SubmitInvoice() {
       });
 
       setSubmitted(true);
-      setTimeout(() => navigate('/vendorpay/vendor/invoices'), 1500);
+      setTimeout(() => navigate('/vendor/invoices'), 1500);
     } catch (err) {
       setError(extractErrorMessage(err));
       setLoading(false);
@@ -207,7 +211,7 @@ export default function SubmitInvoice() {
     <AppLayout role="vendor">
       <div className="space-y-4">
         <button
-          onClick={() => navigate('/vendorpay/vendor/invoices')}
+          onClick={() => navigate('/vendor/invoices')}
           className="flex items-center gap-1.5 text-sm text-on-surface-variant hover:text-on-surface transition-colors"
         >
           <ArrowLeft size={15} /> Back to Invoices

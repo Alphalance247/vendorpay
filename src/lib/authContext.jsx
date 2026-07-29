@@ -36,6 +36,20 @@ export function AuthProvider({ children }) {
     setLoading(false);
   }, []);
 
+  useEffect(() => {
+    function handlePageShow(event) {
+      // Back/forward navigation can restore the page from bfcache with
+      // stale in-memory auth state (e.g. right after sign-out). Force a
+      // fresh reload so the app re-checks localStorage from scratch.
+      if (event.persisted) {
+        window.location.reload();
+      }
+    }
+
+    window.addEventListener('pageshow', handlePageShow);
+    return () => window.removeEventListener('pageshow', handlePageShow);
+  }, []);
+
   const login = async (email, password) => {
     const data = await authService.login(email, password);
 

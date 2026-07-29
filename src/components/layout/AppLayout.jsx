@@ -1,11 +1,25 @@
+import { useState, useEffect } from 'react';
 import Sidebar from './Sidebar';
 import TopBar from './TopBar';
-
-const demoVendorUser = { name: 'Alex Sterling', role: 'Vendor' };
-const demoAdminUser = { name: 'Admin User', role: 'Firm Administrator' };
+import { vendorService } from '../../lib/services/vendorService';
 
 export default function AppLayout({ children, role = 'vendor', searchPlaceholder }) {
-  const user = role === 'admin' ? demoAdminUser : demoVendorUser;
+  const [profile, setProfile] = useState(null);
+
+  useEffect(() => {
+    if (role === 'vendor') {
+      vendorService.getProfile().then(setProfile).catch(() => {});
+    }
+  }, [role]);
+
+  const user = role === 'admin'
+    ? { name: 'Administrator', role: 'Firm Administrator' }
+    : {
+        name: profile
+          ? [profile.contact_first_name, profile.contact_last_name].filter(Boolean).join(' ') || profile.company_name || 'Vendor'
+          : '—',
+        role: 'Vendor',
+      };
 
   return (
     <div className="min-h-screen bg-surface flex">

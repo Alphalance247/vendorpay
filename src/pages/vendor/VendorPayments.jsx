@@ -145,7 +145,7 @@ export default function VendorPayments() {
                     </td>
                   </tr>
                 ) : invoices.map((inv) => (
-                  <tr key={inv.id} className="hover:bg-surface-low/50 transition-colors cursor-pointer" onClick={() => navigate(`/vendorpay/vendor/invoices/${inv.id}`)}>
+                  <tr key={inv.id} className="hover:bg-surface-low/50 transition-colors cursor-pointer" onClick={() => navigate(`/vendor/invoices/${inv.id}`)}>
                     <td className="px-4 py-3 text-sm font-semibold text-on-surface">{inv.invoice_number}</td>
                     <td className="px-4 py-3 text-sm text-on-surface-variant">
                       {inv.payment_date ? formatDate(inv.payment_date) : '—'}

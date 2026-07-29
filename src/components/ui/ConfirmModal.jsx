@@ -1,23 +1,26 @@
 import { useEffect } from 'react';
-import { AlertTriangle, Trash2, XCircle } from 'lucide-react';
+import { AlertTriangle, LogOut, Trash2, XCircle } from 'lucide-react';
 import Button from './Button';
 
 const ICONS = {
   danger: Trash2,
   warning: AlertTriangle,
   reject: XCircle,
+  neutral: LogOut,
 };
 
 const ICON_COLORS = {
   danger: 'bg-red-50 text-error',
   warning: 'bg-amber-50 text-amber-600',
   reject: 'bg-red-50 text-error',
+  neutral: 'bg-navy/5 text-navy',
 };
 
 const CONFIRM_VARIANTS = {
   danger: 'bg-error text-white hover:bg-error/90',
   warning: 'bg-amber-500 text-white hover:bg-amber-600',
   reject: 'bg-error text-white hover:bg-error/90',
+  neutral: 'bg-navy text-white hover:bg-navy/90',
 };
 
 export default function ConfirmModal({

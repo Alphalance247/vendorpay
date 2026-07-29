@@ -144,7 +144,7 @@ export default function AdminVendors() {
                   </tr>
                 )}
                 {filtered.map((vendor) => (
-                  <tr key={vendor.id} className="hover:bg-surface-low/50 transition-colors cursor-pointer" onClick={() => navigate(`/vendorpay/admin/vendors/${vendor.id}`)}>
+                  <tr key={vendor.id} className="hover:bg-surface-low/50 transition-colors cursor-pointer" onClick={() => navigate(`/admin/vendors/${vendor.id}`)}>
                     <td className="px-6 py-4">
                       <p className="text-sm font-semibold text-on-surface">{vendor.company_name ?? '—'}</p>
                       <p className="text-xs text-on-surface-variant mt-0.5">{vendor.business_type ?? ''}</p>

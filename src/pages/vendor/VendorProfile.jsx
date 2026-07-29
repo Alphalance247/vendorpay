@@ -7,7 +7,7 @@ import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import TutorialCard from '../../components/ui/TutorialCard';
 import { vendorService } from '../../lib/services/vendorService';
-import { extractErrorMessage } from '../../lib/utils';
+import { extractErrorMessage, CURRENCY_SYMBOLS } from '../../lib/utils';
 
 const BUSINESS_TYPES = ['LLC', 'Corporation', 'Sole Proprietorship', 'Partnership', 'Non-Profit', 'Other'];
 const INDUSTRIES = [
@@ -34,6 +34,7 @@ export default function VendorProfile() {
     website: '',
     industry: '',
     tax_id: '',
+    currency: '',
   });
 
   useEffect(() => {
@@ -52,6 +53,7 @@ export default function VendorProfile() {
           website:            data.website            ?? '',
           industry:           data.industry           ?? '',
           tax_id:             data.tax_id             ?? '',
+          currency:           data.currency           ?? '',
         });
       })
       .catch(() => setError('Failed to load profile.'))
@@ -162,7 +164,7 @@ export default function VendorProfile() {
                     className="w-full rounded border border-outline-variant bg-surface-container px-3 py-2 text-sm text-on-surface-variant cursor-not-allowed select-none"
                   />
                 </div>
-                <p className="text-[11px] text-outline">To update, <button type="button" onClick={() => navigate('/vendorpay/vendor/support')} className="text-amber underline hover:no-underline">contact support</button>.</p>
+                <p className="text-[11px] text-outline">To update, <button type="button" onClick={() => navigate('/vendor/support')} className="text-amber underline hover:no-underline">contact support</button>.</p>
               </div>
               <div className="flex flex-col gap-1">
                 <label className="text-xs font-semibold tracking-wide text-on-surface-variant uppercase">Phone</label>
@@ -173,7 +175,7 @@ export default function VendorProfile() {
                     className="w-full rounded border border-outline-variant bg-surface-container px-3 py-2 text-sm text-on-surface-variant cursor-not-allowed select-none"
                   />
                 </div>
-                <p className="text-[11px] text-outline">To update, <button type="button" onClick={() => navigate('/vendorpay/vendor/support')} className="text-amber underline hover:no-underline">contact support</button>.</p>
+                <p className="text-[11px] text-outline">To update, <button type="button" onClick={() => navigate('/vendor/support')} className="text-amber underline hover:no-underline">contact support</button>.</p>
               </div>
 
               <Input label="Job Title"   name="job_title"   value={form.job_title}   onChange={handleChange} placeholder="Finance Manager" />
@@ -212,6 +214,20 @@ export default function VendorProfile() {
               </div>
               <Input label="Tax ID" name="tax_id" value={form.tax_id} onChange={handleChange} placeholder="12-3456789" />
               <Input label="Website" name="website" type="url" value={form.website} onChange={handleChange} placeholder="https://acme.com" />
+              <div className="flex flex-col gap-1">
+                <label className="text-xs font-semibold tracking-wide text-on-surface-variant uppercase">Preferred Currency</label>
+                <select
+                  name="currency"
+                  value={form.currency}
+                  onChange={handleChange}
+                  className="w-full rounded border border-outline-variant bg-white px-3 py-2 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-amber focus:border-amber transition-colors"
+                >
+                  <option value="">Select currency</option>
+                  {Object.keys(CURRENCY_SYMBOLS).map((code) => (
+                    <option key={code} value={code}>{code} ({CURRENCY_SYMBOLS[code]})</option>
+                  ))}
+                </select>
+              </div>
               <Input label="Business Address" name="business_address" value={form.business_address} onChange={handleChange} placeholder="123 Main St, City, Country" className="col-span-2" />
             </div>
           </Card>

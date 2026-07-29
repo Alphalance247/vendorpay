@@ -80,6 +80,25 @@ function CompanyStep({ data, onChange }) {
           <option>Healthcare</option>
           <option>Other</option>
         </Select>
+        <Select label="Preferred Currency" name="currency" value={data.currency} onChange={onChange} required>
+          <option value="">Select currency</option>
+          <option value="USD">USD – US Dollar ($)</option>
+          <option value="EUR">EUR – Euro (€)</option>
+          <option value="GBP">GBP – British Pound (£)</option>
+          <option value="CAD">CAD – Canadian Dollar (C$)</option>
+          <option value="KES">KES – Kenyan Shilling (KSh)</option>
+          <option value="NGN">NGN – Nigerian Naira (₦)</option>
+          <option value="ZAR">ZAR – South African Rand (R)</option>
+          <option value="GHS">GHS – Ghanaian Cedi (GH₵)</option>
+          <option value="UGX">UGX – Ugandan Shilling (USh)</option>
+          <option value="TZS">TZS – Tanzanian Shilling (TSh)</option>
+          <option value="RWF">RWF – Rwandan Franc (FRw)</option>
+          <option value="ETB">ETB – Ethiopian Birr (Br)</option>
+          <option value="XOF">XOF – West African CFA (CFA)</option>
+          <option value="XAF">XAF – Central African CFA (FCFA)</option>
+          <option value="EGP">EGP – Egyptian Pound (E£)</option>
+          <option value="MAD">MAD – Moroccan Dirham (DH)</option>
+        </Select>
       </div>
     </div>
   );
@@ -231,6 +250,16 @@ function BankingStep({ data, onChange }) {
           "grid grid-cols-2 gap-4 transition-opacity duration-200",
           !countrySelected && "opacity-40 pointer-events-none select-none"
         )}>
+          <Input
+            label="Account Name"
+            name="accountName"
+            value={data.accountName}
+            onChange={onChange}
+            placeholder="Name on the bank account"
+            hint="Must match the name on file with your bank"
+            disabled={!countrySelected}
+          />
+
           {profile.fields.map((field) => (
             <div key={field.name} className={profile.fields.length % 2 === 1 && field === profile.fields[profile.fields.length - 1] ? 'col-span-2' : ''}>
               <Input
@@ -329,8 +358,10 @@ function ReviewStep({ data }) {
     { label: 'Address', value: data.address },
     { label: 'Website', value: data.website },
     { label: 'Industry', value: data.industry },
+    { label: 'Preferred Currency', value: data.currency },
     { label: 'Country', value: COUNTRY_PROFILES[data.country]?.label || data.country },
     { label: 'Bank Name', value: data.bankName },
+    { label: 'Account Name', value: data.accountName },
     { label: 'Account Type', value: data.accountType },
     { label: 'Account Number', value: data.accountNumber },
     { label: 'Contact', value: `${data.firstName} ${data.lastName}` },
@@ -381,8 +412,10 @@ export default function Onboarding() {
     address: '',
     website: '',
     industry: '',
+    currency: '',
     country: '',
     bankName: '',
+    accountName: '',
     accountType: '',
     accountNumber: '',
     confirmAccount: '',
@@ -409,9 +442,9 @@ export default function Onboarding() {
   const validateStep = () => {
     switch (step) {
       case 0:
-        return data.companyName && data.taxId;
+        return data.companyName && data.taxId && data.currency;
       case 1:
-        return data.country && data.bankName && data.accountType && data.accountNumber && data.accountNumber === data.confirmAccount;
+        return data.country && data.bankName && data.accountName && data.accountType && data.accountNumber && data.accountNumber === data.confirmAccount;
       case 2:
         return data.firstName && data.lastName && data.email && data.phone;
       default:
@@ -444,6 +477,7 @@ export default function Onboarding() {
       business_type: data.businessType,
       business_address: data.address,
       industry: data.industry,
+      currency: data.currency,
       contact_first_name: data.firstName,
       contact_last_name: data.lastName,
       contact_email: data.email,
@@ -460,11 +494,12 @@ export default function Onboarding() {
       data.transitNumber ||
       '';
 
-    const COUNTRY_TYPE_MAP = { US: 'ACH', NG: 'NIP', KE: 'PESALINK' };
+    const COUNTRY_TYPE_MAP = { US: 'ACH', GB: 'FASTER_PAYMENTS', NG: 'NIP', KE: 'PESALINK' };
     const countryType = COUNTRY_TYPE_MAP[data.country] ?? 'SWIFT';
 
     await vendorService.setupBanking({
       bank_name: data.bankName,
+      account_name: data.accountName,
       account_type: data.accountType,
       account_number: data.accountNumber,
       routing_number: routingNumber,
@@ -475,7 +510,7 @@ export default function Onboarding() {
     });
 
     completeOnboarding();
-    navigate('/vendorpay/vendor/dashboard');
+    navigate('/vendor/dashboard');
   } catch (err) {
     console.error(err);
     setError(extractErrorMessage(err));

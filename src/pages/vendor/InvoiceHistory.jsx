@@ -7,7 +7,7 @@ import AppLayout from '../../components/layout/AppLayout';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import StatusChip from '../../components/ui/StatusChip';
-import { formatCurrency, formatDate, extractErrorMessage } from '../../lib/utils';
+import { formatCurrency, formatDate, extractErrorMessage, getCurrencySymbol } from '../../lib/utils';
 import { invoiceService } from '../../lib/services/invoiceService';
 import { vendorService } from '../../lib/services/vendorService';
 
@@ -29,6 +29,7 @@ export default function InvoiceHistory() {
   const navigate = useNavigate();
   const [invoices, setInvoices] = useState([]);
   const [dash, setDash] = useState(null);
+  const [profile, setProfile] = useState(null);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
@@ -69,6 +70,10 @@ export default function InvoiceHistory() {
     return () => { cancelled = true; };
   }, [statusFilter, search, page]);
 
+  useEffect(() => {
+    vendorService.getProfile().then(setProfile).catch(() => {});
+  }, []);
+
   async function handleDownload(invoiceId) {
     if (downloadingId) return;
     setDownloadingId(invoiceId);
@@ -82,7 +87,7 @@ export default function InvoiceHistory() {
   }
 
   function formatByCurrency(map) {
-    if (!map || Object.keys(map).length === 0) return [{ label: formatCurrency(0), key: 'USD' }];
+    if (!map || Object.keys(map).length === 0) return [{ label: formatCurrency(0, profile?.currency ?? 'USD'), key: profile?.currency ?? 'USD' }];
     return Object.entries(map).map(([currency, amount]) => ({
       key: currency,
       label: formatCurrency(amount, currency),
@@ -90,8 +95,8 @@ export default function InvoiceHistory() {
   }
 
   const trendRaw = dash?.payment_trends ?? [];
-  const histPrimaryCurrency = trendRaw.flatMap((pt) => Object.keys(pt.submitted_by_currency ?? {}))[0] ?? 'USD';
-  const histCurrSymbol = histPrimaryCurrency === 'NGN' ? '₦' : histPrimaryCurrency === 'GBP' ? '£' : histPrimaryCurrency === 'EUR' ? '€' : '$';
+  const histPrimaryCurrency = trendRaw.flatMap((pt) => Object.keys(pt.submitted_by_currency ?? {}))[0] ?? profile?.currency ?? 'USD';
+  const histCurrSymbol = getCurrencySymbol(histPrimaryCurrency);
 
   const trendData = trendRaw.map((pt) => ({
     month: pt.month?.split(' ')[0] ?? pt.month,
@@ -110,7 +115,7 @@ export default function InvoiceHistory() {
             <h1 className="text-2xl font-semibold text-on-surface">Invoice History</h1>
             <p className="text-sm text-on-surface-variant mt-0.5">Review and manage your accounts receivable and outgoing billing.</p>
           </div>
-          <Button onClick={() => navigate('/vendorpay/vendor/invoices/new')}>
+          <Button onClick={() => navigate('/vendor/invoices/new')}>
             + Submit New Invoice
           </Button>
         </div>
@@ -238,7 +243,7 @@ export default function InvoiceHistory() {
                     </td>
                   </tr>
                 ) : invoices.map((inv) => (
-                  <tr key={inv.id} className="hover:bg-surface-low/50 transition-colors cursor-pointer" onClick={() => navigate(`/vendorpay/vendor/invoices/${inv.id}`)}>
+                  <tr key={inv.id} className="hover:bg-surface-low/50 transition-colors cursor-pointer" onClick={() => navigate(`/vendor/invoices/${inv.id}`)}>
                     <td className="px-6 py-4 text-sm font-semibold text-on-surface">{inv.invoice_number}</td>
                     <td className="px-6 py-4 text-sm text-on-surface-variant">{formatDate(inv.submitted_at)}</td>
                     <td className="px-6 py-4 text-sm text-on-surface-variant">{inv.due_date ? formatDate(inv.due_date) : '—'}</td>

@@ -20,7 +20,7 @@ export default function ResetPassword() {
       <div className="max-w-sm mx-auto p-6 text-center space-y-3">
         <h2 className="text-xl font-semibold">Invalid Link</h2>
         <p className="text-sm text-gray-500">This password reset link is missing a token. Please request a new one.</p>
-        <Button variant="secondary" onClick={() => navigate('/vendorpay/forgot-password')}>
+        <Button variant="secondary" onClick={() => navigate('/forgot-password')}>
           Request New Link
         </Button>
       </div>
@@ -57,7 +57,7 @@ export default function ResetPassword() {
       <div className="max-w-sm mx-auto p-6 text-center space-y-3">
         <h2 className="text-xl font-semibold">Password Updated</h2>
         <p className="text-sm text-gray-500">Your password has been reset. You can now log in.</p>
-        <Button onClick={() => navigate('/vendorpay/login')}>Go to Login</Button>
+        <Button onClick={() => navigate('/login')}>Go to Login</Button>
       </div>
     );
   }
@@ -90,7 +90,7 @@ export default function ResetPassword() {
       </Button>
 
       <p className="text-center text-sm text-gray-500">
-        <button type="button" className="underline" onClick={() => navigate('/vendorpay/login')}>
+        <button type="button" className="underline" onClick={() => navigate('/login')}>
           Back to login
         </button>
       </p>

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
@@ -8,6 +9,8 @@ import {
   Users,
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
+import { useAuth } from '../../lib/authContext';
+import ConfirmModal from '../ui/ConfirmModal';
 
 function NavItem({ to, icon: Icon, label }) {
   return (
@@ -30,18 +33,26 @@ function NavItem({ to, icon: Icon, label }) {
 
 export default function Sidebar({ role = 'vendor', user }) {
   const navigate = useNavigate();
+  const { logout } = useAuth();
+  const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
+
+  async function handleSignOut() {
+    setShowSignOutConfirm(false);
+    await logout();
+    navigate('/login', { replace: true });
+  }
 
   const vendorNav = [
-    { to: '/vendorpay/vendor/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-    { to: '/vendorpay/vendor/invoices', icon: FileText, label: 'Invoices' },
-    { to: '/vendorpay/vendor/payments', icon: CreditCard, label: 'Payments' },
+    { to: '/vendor/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+    { to: '/vendor/invoices', icon: FileText, label: 'Invoices' },
+    { to: '/vendor/payments', icon: CreditCard, label: 'Payments' },
   ];
 
   const adminNav = [
-    { to: '/vendorpay/admin/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-    { to: '/vendorpay/admin/vendors', icon: Users, label: 'Vendors' },
-    { to: '/vendorpay/admin/invoices', icon: FileText, label: 'Invoices' },
-    { to: '/vendorpay/admin/payments', icon: CreditCard, label: 'Payments' },
+    { to: '/admin/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+    { to: '/admin/vendors', icon: Users, label: 'Vendors' },
+    { to: '/admin/invoices', icon: FileText, label: 'Invoices' },
+    { to: '/admin/payments', icon: CreditCard, label: 'Payments' },
   ];
 
   const navItems = role === 'admin' ? adminNav : vendorNav;
@@ -68,9 +79,9 @@ export default function Sidebar({ role = 'vendor', user }) {
 
       {/* Bottom section: Support + Sign out + User */}
       <div className="px-2 pb-4 border-t border-white/10 pt-3 space-y-1">
-        <NavItem to={role === 'admin' ? '/vendorpay/admin/support' : '/vendorpay/vendor/support'} icon={HelpCircle} label="Support" />
+        <NavItem to={role === 'admin' ? '/admin/support' : '/vendor/support'} icon={HelpCircle} label="Support" />
         <button
-          onClick={() => navigate('/vendorpay/login')}
+          onClick={() => setShowSignOutConfirm(true)}
           className="flex items-center gap-3 px-3 py-2 rounded text-sm font-medium text-slate-300 hover:bg-white/10 w-full text-left transition-colors"
         >
           <LogOut size={18} />
@@ -89,6 +100,16 @@ export default function Sidebar({ role = 'vendor', user }) {
           </div>
         </div>
       )}
+
+      <ConfirmModal
+        open={showSignOutConfirm}
+        variant="neutral"
+        title="Sign out of VendorPay?"
+        message="You'll need to sign in again to access your dashboard."
+        confirmLabel="Sign out"
+        onConfirm={handleSignOut}
+        onCancel={() => setShowSignOutConfirm(false)}
+      />
     </aside>
   );
 }
