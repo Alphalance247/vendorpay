@@ -1,8 +1,16 @@
-# Deploying VendorPay Frontend with Bitbucket Pipelines — Complete Guide
+# Bitbucket Pipelines — Complete Guide
+
+*A general guide to building a Bitbucket pipeline, with the VendorPay frontend as the worked example.*
 
 **Repository:** `goalluvium/vendorpay-frontend`
 **Target:** an Ubuntu EC2 instance on AWS, running the app with Docker Compose
 **Audience:** anyone. No prior experience with CI/CD, SSH, Docker, or AWS is assumed.
+
+> **Setting up a pipeline for a *different* app?** Read
+> [Part 0](#part-0--understand-the-system-before-touching-it) for the concepts, then
+> **[Part G](#part-g--build-a-pipeline-for-any-app-generic-recipe)** — a language- and
+> host-agnostic recipe with fill-in-the-blank templates and starter files. Everything after
+> it is then a complete worked example of that same recipe.
 
 > **How to use this document.** Read Part 0 once so the words mean something. Then
 > do Part 1 → Part 2 → Part 3 → Part 4 **in order**, copying each command exactly.
@@ -22,6 +30,12 @@
   - [0.3 Glossary in plain English](#03-glossary-in-plain-english)
   - [0.4 THE MOST IMPORTANT CONCEPT: there are TWO different SSH keys](#04-the-most-important-concept-there-are-two-different-ssh-keys)
   - [0.5 Why the private key "won't parse" — and the fix](#05-why-the-private-key-wont-parse--and-the-fix)
+- [Part G — Build a pipeline for ANY app (generic recipe)](#part-g--build-a-pipeline-for-any-app-generic-recipe)
+  - [G.1 The five questions you must answer first](#g1-the-five-questions-you-must-answer-first)
+  - [G.4 Write the test gate for your stack](#g4-write-the-test-gate-for-your-stack)
+  - [G.6 The variable worksheet](#g6-the-variable-worksheet)
+  - [G.7 Starter templates you can paste today](#g7-starter-templates-you-can-paste-today)
+  - [G.11 The mistakes that cause most failures](#g11-the-mistakes-that-cause-most-failures)
 - [Prerequisites checklist](#prerequisites-checklist)
 - [Part 1 — Prepare the EC2 server](#part-1--prepare-the-ec2-server)
 - [Part 2 — Create Key A (Pipeline ➜ EC2)](#part-2--create-key-a-pipeline--ec2)
@@ -226,6 +240,509 @@ There is a second, sneakier cause of `error in libcrypto`, and it bit this proje
 >
 > **Therefore: the SSH key field under Repository settings → Pipelines → SSH keys
 > must be EMPTY for this pipeline.** See [3.6](#36-clear-the-repository-ssh-key-mandatory).
+
+---
+
+# Part G — Build a pipeline for ANY app (generic recipe)
+
+Everything from *Prerequisites* onward is a **worked example**: the VendorPay frontend — a React + Vite app deployed to an Ubuntu EC2 instance with
+Docker Compose.
+
+This Part is the **general recipe** — no language, framework, or hosting assumed. Read it
+if you are setting up a pipeline for a *different* app. Then read the rest of this document
+as one filled-in instance of exactly this recipe.
+
+You do not need to have used a terminal, Docker, or AWS before. Every step says what to
+type and what "it worked" looks like.
+
+## G.0 Absolute basics — read this if you have never done this before
+
+**What you are creating.** One text file, named exactly `bitbucket-pipelines.yml`, in the
+top folder of your repository. Bitbucket looks for that filename and nothing else. Not in a
+subfolder. Not `bitbucket-pipeline.yml` (singular). Not `.yaml`.
+
+**You can create it without a terminal.** In Bitbucket: open your repository → **Source** →
+**Add file** → name it `bitbucket-pipelines.yml` → paste → **Commit**. That is enough to get
+a first pipeline running. You only need a terminal later, for generating SSH keys.
+
+**The file is YAML.** Three rules cover almost every mistake beginners make:
+
+1. **Indent with spaces. Never press Tab.** A single tab character anywhere makes the whole
+   file invalid. Most editors can be set to insert spaces when you press Tab.
+2. **Indentation means "belongs to".** Things indented under `script:` are the commands that
+   step runs. Getting the indent wrong changes the meaning, not just the looks.
+3. **`-` starts a list item.** `- npm ci` is one command in a list of commands.
+
+**Check the file before you trust it.** Paste it into
+<https://bitbucket-pipelines.atlassian.io/validator>, or use your repo's
+**Pipelines → Validator**. This catches tabs and indentation errors in seconds, and costs
+you nothing.
+
+**A "build minute" is real money.** Bitbucket bills the time your steps run. A pipeline that
+fails fast is cheaper than one that hangs, which is why several settings in this guide exist
+purely to make things fail immediately rather than wait.
+
+## G.1 The five questions you must answer first
+
+Answer these five, on paper, before writing anything. Every line of your pipeline follows
+from them. Most people who get stuck skipped this and started pasting YAML.
+
+| # | Question | What it decides | Example answer |
+|---|---|---|---|
+| 1 | **What kind of app is it?** | Which `image:` your steps run on, and the install/build commands | "A React site", "a Python API", "a PHP app" |
+| 2 | **How do you prove it isn't broken?** | The commands in your test gate | "It builds, and `npm test` passes" |
+| 3 | **Where does it need to end up?** | Your deploy method | "A Linux server I can SSH into" |
+| 4 | **Which branch means 'release this'?** | Your `branches:` keys | "`main` goes to test, `prod` goes to live" |
+| 5 | **What does the deploy need to know that isn't in the code?** | Your variables list | "Server address, login user, folder, SSH key" |
+
+> **If you can't answer #2, stop and answer it first.** A pipeline whose only job is to
+> deploy will happily deploy something broken, faster than you could by hand. The value is
+> in the gate, not the deploy.
+
+> **If you can't answer #3 by doing it manually, do that first.** A pipeline is only an
+> automation of a process that already works. Deploy your app by hand, once, writing down
+> every command. Those commands *are* your deploy step. This single habit prevents most of
+> the hard debugging sessions.
+
+## G.2 The universal shape of the file
+
+Every Bitbucket pipeline, however complex, is this shape:
+
+```yaml
+# OPTIONAL: reusable pieces, so you write things once
+definitions:
+  steps:
+    - step: &build          # `&build` gives this block a name you can reuse
+        name: Build         # what you'll see in the Bitbucket UI
+        image: node:22      # the machine this runs on
+        script:             # the commands, in order
+          - npm ci
+          - npm run build
+
+# REQUIRED: what runs, and when
+pipelines:
+  branches:                 # triggered by a PUSH to a branch
+    main:
+      - step: *build        # `*build` reuses the block defined above
+
+  pull-requests:            # triggered by opening/updating a PR
+    '**':                   # '**' means "from any branch"
+      - step: *build
+```
+
+Five ideas, and that is genuinely all of them:
+
+| Idea | Meaning |
+|---|---|
+| `pipelines:` | The only required section. Everything else is optional convenience. |
+| `branches:` / `pull-requests:` | **When** to run. Keys are branch names; `'**'` matches any. |
+| `step:` | One unit of work. Each step gets a **brand-new empty machine**. |
+| `image:` | Which machine. `node:22` = a Linux box with Node 22 pre-installed. |
+| `script:` | The commands. If any command fails, the step fails and everything after it is skipped. |
+
+Two behaviours that surprise people, and cause real bugs:
+
+- **Steps do not share files.** Step 2 cannot see what step 1 built, unless you explicitly
+  pass it along with `artifacts:`. Each step starts empty.
+- **All commands *within* one step share one shell.** So `cd somewhere` on one line still
+  applies on the next line — and so does an `export`. That is convenient, and it is also a
+  trap: a variable exported for one command leaks into every command after it in that step.
+
+## G.3 Pick the machine your steps run on
+
+`image:` is a Docker image name. If you don't set one, Bitbucket gives you a general-purpose
+Linux box. Pick the smallest image that has what you need — smaller images start faster.
+
+| Your app | Use | Notes |
+|---|---|---|
+| Node / React / Vue / Next | `node:22` | Use a current version. Old Node in CI hides problems you'll hit later. |
+| Python / Django / FastAPI / Flask | `python:3.12` | Match the version your app actually runs on. |
+| PHP / Laravel | `php:8.3-cli` | You'll usually add Composer in the script. |
+| Ruby / Rails | `ruby:3.3` | |
+| Go | `golang:1.23` | |
+| Java / Spring | `maven:3.9-eclipse-temurin-21` | |
+| .NET | `mcr.microsoft.com/dotnet/sdk:8.0` | |
+| Static HTML/CSS only | `alpine:3.22` | Tiny and fast. Nothing to build. |
+| Only running `ssh`, `curl`, or `rsync` | `alpine:3.22` | Add tools with `apk add --no-cache <tool>`. |
+| Building Docker images | `atlassian/default-image:4` | Also needs `services: [docker]` in the step. |
+
+> **Alpine is small because it omits things.** If a command is "not found" on Alpine, install
+> it: `apk add --no-cache openssh-client git curl`. On the Debian-based images the equivalent
+> is `apt-get update && apt-get install -y <tool>`.
+
+## G.4 Write the test gate for your stack
+
+The gate answers question #2. Pick your row, paste the commands, adjust names.
+
+| Stack | Install | Prove it isn't broken |
+|---|---|---|
+| Node | `npm ci` | `npm run build` then `npm test` |
+| Python | `pip install -r requirements.txt` | `python -m compileall -q .` then `pytest` |
+| Django | `pip install -r requirements.txt` | `python manage.py check` then `pytest` |
+| PHP / Laravel | `composer install --no-interaction` | `php artisan config:clear` then `vendor/bin/phpunit` |
+| Ruby / Rails | `bundle install` | `bundle exec rake test` |
+| Go | *(none needed)* | `go build ./...` then `go test ./...` |
+| Java / Maven | *(none needed)* | `mvn -B verify` |
+| Static site | *(none needed)* | check the files exist: `test -f index.html` |
+
+Three rules that matter more than which commands you pick:
+
+1. **Use the "clean install" command, not the everyday one.** `npm ci` instead of
+   `npm install`; `composer install` instead of `composer update`. The everyday commands are
+   allowed to quietly upgrade your dependencies, so CI would test a different set of
+   libraries than you did.
+2. **A build *is* a test.** For most compiled or bundled apps, the build resolves every
+   import in the project and fails on anything broken. Even with no test suite at all, a
+   build step catches a large share of real mistakes.
+3. **Say so out loud when you're testing nothing.** If you have no tests yet, `echo` a
+   warning in the step. A green tick that proves nothing is worse than a visible gap,
+   because people trust it.
+
+**If your tests need a database**, Bitbucket can start one beside your step:
+
+```yaml
+definitions:
+  services:
+    postgres:                       # you name it; this name is used below
+      image: postgres:15
+      variables:
+        POSTGRES_DB: test_db
+        POSTGRES_USER: test_user
+        POSTGRES_PASSWORD: test_pass
+
+pipelines:
+  branches:
+    main:
+      - step:
+          name: Test
+          image: python:3.12
+          services:
+            - postgres              # attaches the database defined above
+          script:
+            - pip install -r requirements.txt
+            # The database is at `localhost` from inside the step —
+            # NOT at `postgres`, even though that is what you called it.
+            - export DATABASE_URL="postgresql://test_user:test_pass@localhost:5432/test_db"
+            - pytest
+```
+
+Two things to know: the service is reachable at **`localhost`** from your step (not by the
+service's name), and it is **destroyed with the step**, so it is always empty and always
+safe to write to.
+
+## G.5 Pick how you deliver the app
+
+This answers question #3. Pick the row that matches where your app lives.
+
+| Method | Use when | What the pipeline needs |
+|---|---|---|
+| **SSH to a server** (this guide's method) | You have a Linux VM — EC2, DigitalOcean, Hetzner, a company box | An SSH key, the server address, a username, a folder |
+| **`rsync` / `scp` files up** | A static site, or any app that is just files | Same as above |
+| **Push a container image** | You run Kubernetes, ECS, or a registry-based host | Registry address + registry username/token |
+| **Platform CLI** (Netlify, Vercel, Heroku, Firebase, Cloudflare) | You use a hosting platform | Usually a single API token |
+| **Cloud provider CLI** (`aws`, `gcloud`, `az`) | Serverless, S3, App Engine, Functions | Cloud credentials, or better, OIDC |
+
+**The lowest-effort route by far is a platform token.** If your app is on Netlify, Vercel,
+Heroku or similar, your whole deploy step can be three lines and one variable:
+
+```yaml
+    - step:
+        name: Deploy
+        image: node:22
+        deployment: production
+        script:
+          - npm ci
+          - npm run build
+          - npx netlify-cli deploy --prod --dir=dist --auth=$NETLIFY_AUTH_TOKEN --site=$NETLIFY_SITE_ID
+```
+
+**SSH is the most flexible and the most fiddly.** It needs two separate keys and understanding
+which is which — the single biggest source of confusion in this whole subject. If you are
+going that route, read [0.4](#04-the-most-important-concept-there-are-two-different-ssh-keys)
+and [0.5](#05-why-the-private-key-wont-parse--and-the-fix) carefully; they exist because of
+real failures, and they will save you hours.
+
+## G.6 The variable worksheet
+
+This answers question #5. A **variable** is a setting or secret you store in Bitbucket
+instead of in your code, so it never gets committed. Your script reads it as `$NAME`.
+
+### Where to put each one
+
+Bitbucket has three places. Pick with this:
+
+```
+Does the value differ between environments (test vs live)?
+├── YES ─────────────────────────────► DEPLOYMENT variable
+└── NO
+    └── Do several repositories need it?
+        ├── YES ─────────────────────► WORKSPACE variable
+        └── NO ──────────────────────► REPOSITORY variable
+```
+
+Then, separately: **would it be bad if a colleague read it in a build log?** If yes, tick
+**Secured**.
+
+| Kind | Where you set it | Reaches |
+|---|---|---|
+| Repository | Repository settings → **Repository variables** | Every step in this repo |
+| Deployment | Repository settings → Pipelines → **Deployments** → *(pick an environment)* | **Only** steps that declare `deployment:` |
+| Workspace | Workspace settings → **Workspace variables** | Every repo in the workspace |
+
+> **The single most common variable mistake:** setting a value as a *Repository* variable
+> while the step that needs it declares `deployment:`. Deployment-scoped values are only
+> injected into deployment steps — but the reverse is not the problem; the problem is people
+> put deploy secrets at repo scope, where *every* step can see them. Put per-environment
+> values on the environment. It's both safer and clearer.
+
+Three facts about **Secured** to know before ticking the box:
+
+1. **You can never read the value back.** It shows as `*****` forever. Keep the real value in
+   a password manager.
+2. Bitbucket tries to blank secured values out of logs, but this is **unreliable for
+   multi-line values** — which is why long secrets like SSH keys should be stored base64
+   encoded as a single line (see [0.5](#05-why-the-private-key-wont-parse--and-the-fix)).
+3. Secured values are **not** given to pipelines from forked pull requests.
+
+### Fill this in for your app
+
+| Variable | Value / format | How to get it | Scope | Secured |
+|---|---|---|---|---|
+| | | | | |
+
+Common ones, with the command that produces each:
+
+| Variable | Format | How to derive it |
+|---|---|---|
+| `SSH_HOST` | bare hostname or IP — no `https://`, no port, no slash | Your hosting panel, or AWS Console → EC2 → *Public IPv4 DNS* |
+| `SSH_USER` | a Linux username | The name before `@` in your own SSH prompt (`ubuntu`, `ec2-user`, `root`) |
+| `DEPLOY_PATH` | absolute path, no `~`, no trailing slash | Run `pwd` in that folder on the server |
+| `SSH_PRIVATE_KEY_B64` | one line of base64 | `ssh-keygen -t ed25519 -f ~/.ssh/deploy -N ""` then `base64 -w0 ~/.ssh/deploy` |
+| `KNOWN_HOSTS_B64` | one line of base64 | `ssh-keyscan -H <SSH_HOST> \| base64 -w0` |
+| Registry token | a long string | Your registry's UI (Docker Hub → Security → New access token) |
+| Platform token | a long string | Netlify/Vercel/Heroku account settings |
+| `AWS_ACCESS_KEY_ID` | 20 chars, starts `AKIA` | IAM → Users → Security credentials → Create access key |
+| `AWS_SECRET_ACCESS_KEY` | 40 chars | Shown **once**, at creation. Save it immediately. |
+
+> On macOS, `base64 -w0` is rejected — use `base64 -i <file> | tr -d '\n'`.
+> On Windows, run all of these in **Git Bash**, not PowerShell.
+
+## G.7 Starter templates you can paste today
+
+Each is complete and valid on its own. Start with the closest one and change the details.
+
+### Template 1 — Just test, don't deploy anything (start here)
+
+The safest possible first pipeline. It cannot break anything, and it immediately starts
+catching broken code. Many teams should run only this for the first week.
+
+```yaml
+pipelines:
+  branches:
+    main:
+      - step:
+          name: Test gate
+          image: node:22            # change to match your app
+          caches:
+            - node                  # reuse downloads between runs; saves build minutes
+          script:
+            - npm ci
+            - npm run build
+            - npm test
+
+  pull-requests:
+    '**':
+      - step:
+          name: Test gate
+          image: node:22
+          caches:
+            - node
+          script:
+            - npm ci
+            - npm run build
+            - npm test
+```
+
+### Template 2 — Test, then deploy to a server over SSH
+
+The pattern this repository uses. `&test` / `*test` avoids writing the gate twice.
+
+```yaml
+definitions:
+  steps:
+    - step: &test
+        name: Test gate
+        image: node:22
+        caches:
+          - node
+        script:
+          - npm ci
+          - npm run build
+          - npm test
+
+    - step: &deploy
+        name: Deploy over SSH
+        image: alpine:3.22
+        clone:
+          enabled: false            # this step only runs ssh; don't waste time cloning
+        script:
+          - apk add --no-cache openssh-client openssh-keygen
+          - |
+            set -e
+            mkdir -p ~/.ssh && chmod 700 ~/.ssh
+
+            # Fail with a clear message if a variable is missing, instead of
+            # failing obscurely three commands later.
+            for v in SSH_PRIVATE_KEY_B64 KNOWN_HOSTS_B64 SSH_HOST SSH_USER DEPLOY_PATH; do
+              [ -n "$(printenv "$v")" ] || { echo "MISSING: $v"; exit 1; }
+            done
+
+            printf '%s' "$SSH_PRIVATE_KEY_B64" | tr -d '\n\r \t' | base64 -d > ~/.ssh/id_ed25519
+            chmod 600 ~/.ssh/id_ed25519
+            printf '%s' "$KNOWN_HOSTS_B64"    | tr -d '\n\r \t' | base64 -d > ~/.ssh/known_hosts
+            chmod 644 ~/.ssh/known_hosts
+          - >
+            ssh -i ~/.ssh/id_ed25519
+            -o IdentitiesOnly=yes
+            -o StrictHostKeyChecking=yes
+            -o BatchMode=yes
+            -o ConnectTimeout=15
+            "$SSH_USER@$SSH_HOST"
+            "set -e &&
+            cd '$DEPLOY_PATH' &&
+            git fetch --all --prune &&
+            git reset --hard 'origin/$BITBUCKET_BRANCH' &&
+            docker compose up -d --build"
+
+pipelines:
+  pull-requests:
+    '**':
+      - step: *test
+
+  branches:
+    main:
+      - step: *test
+      - step:
+          <<: *deploy
+          name: Deploy to test
+          deployment: test
+```
+
+Why each `ssh` option is there — copy them all, they are not decoration:
+
+| Option | Reason |
+|---|---|
+| `-o IdentitiesOnly=yes` | Offer only this key. Otherwise SSH offers others first and can be rejected before reaching the right one. |
+| `-o StrictHostKeyChecking=yes` | Refuse unknown servers. This is what makes `KNOWN_HOSTS_B64` a real protection rather than decoration. |
+| `-o BatchMode=yes` | Never prompt. A prompt in CI is a hang, and a hang burns build minutes until timeout. |
+| `-o ConnectTimeout=15` | Give up in 15 seconds instead of hanging. |
+
+### Template 3 — Build a Docker image and push it to a registry
+
+```yaml
+pipelines:
+  branches:
+    main:
+      - step:
+          name: Build and push image
+          image: atlassian/default-image:4
+          services:
+            - docker              # required to build images
+          script:
+            - echo "$REGISTRY_PASSWORD" | docker login -u "$REGISTRY_USER" --password-stdin "$REGISTRY_URL"
+            - docker build -t "$REGISTRY_URL/myapp:$BITBUCKET_COMMIT" -t "$REGISTRY_URL/myapp:latest" .
+            - docker push "$REGISTRY_URL/myapp:$BITBUCKET_COMMIT"
+            - docker push "$REGISTRY_URL/myapp:latest"
+```
+
+Tagging with `$BITBUCKET_COMMIT` as well as `latest` means every build is identifiable and
+you can roll back to an exact commit. `latest` alone gives you no way back.
+
+## G.8 Variables Bitbucket gives you free
+
+You never define these; they are always present. They are what let one written-once step
+behave correctly on different branches.
+
+| Variable | Contains |
+|---|---|
+| `BITBUCKET_BRANCH` | The branch being built |
+| `BITBUCKET_COMMIT` | The full commit ID — ideal as an image tag or release marker |
+| `BITBUCKET_BUILD_NUMBER` | A number that increases every run |
+| `BITBUCKET_REPO_SLUG` | The repository name |
+| `BITBUCKET_WORKSPACE` | The workspace/organisation name |
+| `BITBUCKET_PR_DESTINATION_BRANCH` | For a PR, the branch being merged *into* |
+| `BITBUCKET_DEPLOYMENT_ENVIRONMENT` | `test` / `staging` / `production`, in deployment steps only |
+| `BITBUCKET_CLONE_DIR` | Where your code was checked out |
+| `CI` | Always `true`. Many test tools use this to run once instead of watching. |
+
+## G.9 Switch it on
+
+1. **Repository settings → Pipelines → Settings → Enable Pipelines.**
+2. Commit `bitbucket-pipelines.yml` to your repository root.
+3. If you deploy: **Repository settings → Pipelines → Deployments**, and fill in the
+   variables for each environment you use.
+4. If you deploy over SSH: **Repository settings → Pipelines → SSH keys must be EMPTY** when
+   you supply your own key through a variable. A key configured there is injected into every
+   build as `~/.ssh/id_rsa`, and having two keys present produces a misleading corrupt-key
+   error. Pick one mechanism.
+5. **Repository settings → Branch restrictions**, for every branch that deploys:
+   - *Require passing builds before merge* — **minimum 1**
+   - *Prevent a direct push*
+
+   Step 5 is not optional if the gate is meant to mean anything. Your pipeline can refuse to
+   *deploy*, but only Bitbucket can refuse a *merge*. Without this, someone can merge a red
+   build and it ships.
+
+## G.10 First run: what to look at
+
+Push a commit, then open **Pipelines** in your repo and click the run. Click a step to watch
+its log live.
+
+Read the log from the **top**, not the bottom. The first error is the real one; everything
+after it is usually a consequence. When something fails, the useful question is "what is the
+earliest line that isn't what I expected?"
+
+Three checks worth doing on the very first successful run, because a green tick alone can be
+misleading:
+
+1. **Did the gate actually test anything?** If you have no test suite, it didn't. Read the
+   log and confirm what really ran.
+2. **Did the deploy reach the right place?** Log in and confirm the new version is live —
+   don't infer it from a green tick.
+3. **Force a failure once, on purpose.** Break something trivially, push it, and confirm the
+   pipeline goes red and does *not* deploy. An untested safety net isn't a safety net. This
+   takes two minutes and is the single most valuable thing you can do after setup.
+
+## G.11 The mistakes that cause most failures
+
+In rough order of how often they occur:
+
+| # | Mistake | What you see | Fix |
+|---|---|---|---|
+| 1 | A tab character in the YAML | `Configuration error` / invalid YAML | Spaces only. Run the validator. |
+| 2 | Wrong filename or location | No pipeline runs at all, no error | Exactly `bitbucket-pipelines.yml`, in the repo root |
+| 3 | Branch name case | Nothing runs on push, silently | Keys are case-sensitive: `main` ≠ `Main` |
+| 4 | Pasting a multi-line secret directly | `invalid format` / `error in libcrypto` | Store it base64-encoded on one line ([0.5](#05-why-the-private-key-wont-parse--and-the-fix)) |
+| 5 | Truncated copy-paste of a long secret | `base64: truncated input` | Pipe to the clipboard rather than selecting with the mouse |
+| 6 | Variable at the wrong scope | Value behaves as empty | Deployment variables reach only steps declaring `deployment:` |
+| 7 | Trailing space in a variable | A path "doesn't exist" that clearly does | Click into the field, press `End`, check the cursor position |
+| 8 | Expecting files to carry between steps | "No such file or directory" | Each step starts empty. Use `artifacts:` to pass files on. |
+| 9 | An interactive command | The step hangs until timeout | Add the non-interactive flag: `-y`, `--no-input`, `BatchMode=yes` |
+| 10 | Assuming `docker compose` exists on the server | `not a docker command` | Install the Compose plugin, and add the deploy user to the `docker` group |
+| 11 | Deploying without a gate in front | Broken code ships faster than before | Put the test step **before** the deploy step in the same pipeline |
+| 12 | No branch restrictions | A red build gets merged and shipped | Enable *Require passing builds before merge* |
+
+## G.12 Where to go next in this document
+
+| You want to | Read |
+|---|---|
+| Understand the concepts properly | [Part 0](#part-0--understand-the-system-before-touching-it) |
+| See a real, complete, working example | Everything from *Prerequisites* onward |
+| Set up SSH deployment correctly | [Part 1](#part-1--prepare-the-ec2-server) and [Part 2](#part-2--create-key-a-pipeline--ec2) |
+| Get the variables right | [Part 3](#part-3--configure-bitbucket) |
+| Fix an error you are seeing right now | [Part 7](#part-7--troubleshooting-every-error-and-its-fix) |
+| Hand the pipeline over to someone else | [7.7](#77-when-the-deployer-and-the-pipeline-owner-are-different-people) |
+| Read Atlassian's own documentation | [Appendix B](#appendix-b--official-atlassian-documentation) |
 
 ---
 
