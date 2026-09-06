@@ -228,6 +228,23 @@ export default function Login() {
               Create an account
             </button>
           </p>
+
+          <div className="flex items-center gap-3 my-6">
+            <div className="flex-1 h-px bg-outline-variant" />
+            <span className="text-xs text-outline uppercase tracking-wider">or</span>
+            <div className="flex-1 h-px bg-outline-variant" />
+          </div>
+
+          <p className="text-center text-sm text-on-surface-variant">
+            New company?{' '}
+            <button
+              type="button"
+              onClick={() => navigate('/signup-company')}
+              className="text-emerald font-medium hover:underline"
+            >
+              Set up your own workspace
+            </button>
+          </p>
         </div>
       </div>
     </div>
