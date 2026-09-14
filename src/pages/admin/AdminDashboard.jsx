@@ -37,9 +37,9 @@ export default function AdminDashboard() {
   return (
     <AppLayout role="admin" searchPlaceholder="Search vendors, invoices, or transactions...">
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-semibold text-on-surface">Finance Dashboard</h1>
+            <h1 className="font-headline-lg text-headline-lg text-on-surface">Finance Dashboard</h1>
             <p className="text-sm text-on-surface-variant mt-0.5">Manage your organization&apos;s outgoing capital and vendor relations.</p>
           </div>
           <div className="flex gap-2">
@@ -63,12 +63,12 @@ export default function AdminDashboard() {
           ]}
         />
 
-        <div className="grid grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {stats.map(({ label, value, values, sub, subColor, highlight }) => (
             <Card key={label} className={highlight ? 'border-error/30 bg-error/5' : ''}>
               <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant">{label}</p>
               {loading ? (
-                <Loader2 size={20} className="animate-spin text-emerald mt-2" />
+                <Loader2 size={20} className="animate-spin text-secondary mt-2" />
               ) : values ? (
                 <div className="space-y-0.5 mt-1">
                   {values.map((v, i) => (
@@ -83,22 +83,8 @@ export default function AdminDashboard() {
           ))}
         </div>
 
-        {dash?.status_breakdown && (
-          <Card>
-            <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant mb-3">Invoice Status Breakdown</p>
-            <div className="flex gap-4 flex-wrap">
-              {Object.entries(dash.status_breakdown).map(([key, count]) => (
-                <div key={key} className="flex flex-col items-center gap-1 min-w-[60px]">
-                  <span className="text-xl font-bold text-on-surface tnum">{count}</span>
-                  <span className="text-xs text-on-surface-variant capitalize">{key}</span>
-                </div>
-              ))}
-            </div>
-          </Card>
-        )}
-
-        <div className="grid grid-cols-3 gap-4">
-          <Card className="col-span-2">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <Card className="lg:col-span-2">
             <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant mb-4">Invoice Status Breakdown</p>
             {dash?.status_breakdown ? (
               <div className="space-y-3">

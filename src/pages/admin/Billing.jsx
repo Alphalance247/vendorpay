@@ -44,7 +44,7 @@ function ChangePlanModal({ open, onClose, currentPlanId, onConfirm }) {
         </>
       }
     >
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {PLANS.map((plan) => {
           const isSelected = selected === plan.id;
           const isCurrent = plan.id === currentPlanId;
@@ -55,11 +55,11 @@ function ChangePlanModal({ open, onClose, currentPlanId, onConfirm }) {
               onClick={() => setSelected(plan.id)}
               className={cn(
                 'relative text-left rounded-xl border-2 p-4 transition-all flex flex-col',
-                isSelected ? 'border-emerald bg-emerald/5' : 'border-outline-variant bg-white hover:border-outline'
+                isSelected ? 'border-secondary bg-secondary/5' : 'border-outline-variant bg-white hover:border-outline'
               )}
             >
               {isCurrent && (
-                <span className="absolute -top-2.5 left-4 bg-navy text-white text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full">
+                <span className="absolute -top-2.5 left-4 bg-inverse-surface text-inverse-on-surface text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full">
                   Current Plan
                 </span>
               )}
@@ -79,7 +79,7 @@ function ChangePlanModal({ open, onClose, currentPlanId, onConfirm }) {
               </ul>
               <div className={cn(
                 'mt-3 w-5 h-5 rounded-full border-2 flex items-center justify-center self-end',
-                isSelected ? 'bg-emerald border-emerald' : 'border-outline-variant'
+                isSelected ? 'bg-secondary border-secondary' : 'border-outline-variant'
               )}>
                 {isSelected && <Check size={12} className="text-white" />}
               </div>
@@ -204,7 +204,7 @@ export default function Billing() {
 
       <div className="space-y-6">
         <div>
-          <h1 className="text-2xl font-semibold text-on-surface">Billing & Subscription</h1>
+          <h1 className="font-headline-lg text-headline-lg text-on-surface">Billing & Subscription</h1>
           <p className="text-sm text-on-surface-variant mt-0.5">Manage your VendorPay plan, payment method, and billing history.</p>
         </div>
 
@@ -219,9 +219,9 @@ export default function Billing() {
           ]}
         />
 
-        <div className="grid grid-cols-3 gap-4">
-          <Card className="col-span-2">
-            <div className="flex items-start justify-between">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <Card className="lg:col-span-2">
+            <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
               <div>
                 <div className="flex items-center gap-2">
                   <p className="text-lg font-semibold text-on-surface">{plan.name} Plan</p>
@@ -273,40 +273,66 @@ export default function Billing() {
           <div className="px-6 py-4 border-b border-outline-variant">
             <p className="text-sm font-semibold text-on-surface">Billing History</p>
           </div>
-          <table className="w-full">
-            <thead>
-              <tr className="bg-surface-low border-b border-outline-variant">
-                {['Date', 'Description', 'Amount', 'Status', ''].map((h) => (
-                  <th key={h} className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-on-surface-variant">
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-outline-variant">
-              {history.map((row) => (
-                <tr key={row.id} className="hover:bg-surface-low/50 transition-colors">
-                  <td className="px-6 py-4 text-sm text-on-surface-variant">{formatDate(row.date)}</td>
-                  <td className="px-6 py-4 text-sm text-on-surface">{row.description}</td>
-                  <td className="px-6 py-4 text-sm font-semibold tnum text-on-surface">{formatCurrency(row.amount, 'USD')}</td>
-                  <td className="px-6 py-4"><StatusChip status={row.status} /></td>
-                  <td className="px-6 py-4">
-                    <button
-                      onClick={handleReceiptClick}
-                      title="Download receipt"
-                      className="p-1.5 rounded hover:bg-surface-container transition-colors"
-                    >
-                      <Receipt size={14} className="text-on-surface-variant" />
-                    </button>
-                  </td>
+          {/* Desktop / tablet: table */}
+          <div className="hidden md:block overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="bg-surface-low border-b border-outline-variant">
+                  {['Date', 'Description', 'Amount', 'Status', ''].map((h) => (
+                    <th key={h} className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-on-surface-variant">
+                      {h}
+                    </th>
+                  ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-outline-variant">
+                {history.map((row) => (
+                  <tr key={row.id} className="hover:bg-surface-low/50 transition-colors">
+                    <td className="px-6 py-4 text-sm text-on-surface-variant">{formatDate(row.date)}</td>
+                    <td className="px-6 py-4 text-sm text-on-surface">{row.description}</td>
+                    <td className="px-6 py-4 text-sm font-semibold tnum text-on-surface">{formatCurrency(row.amount, 'USD')}</td>
+                    <td className="px-6 py-4"><StatusChip status={row.status} /></td>
+                    <td className="px-6 py-4">
+                      <button
+                        onClick={handleReceiptClick}
+                        title="Download receipt"
+                        className="p-1.5 rounded hover:bg-surface-container transition-colors"
+                      >
+                        <Receipt size={14} className="text-on-surface-variant" />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Phone: stacked cards */}
+          <div className="md:hidden divide-y divide-outline-variant">
+            {history.map((row) => (
+              <div key={row.id} className="px-4 py-4 flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-sm text-on-surface">{row.description}</p>
+                  <p className="text-xs text-on-surface-variant mt-0.5">{formatDate(row.date)}</p>
+                  <div className="mt-1.5"><StatusChip status={row.status} /></div>
+                </div>
+                <div className="text-right flex-shrink-0">
+                  <p className="text-sm font-semibold tnum text-on-surface">{formatCurrency(row.amount, 'USD')}</p>
+                  <button
+                    onClick={handleReceiptClick}
+                    title="Download receipt"
+                    className="p-1.5 rounded hover:bg-surface-container transition-colors mt-1 -mr-1.5"
+                  >
+                    <Receipt size={14} className="text-on-surface-variant" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
         </Card>
 
         <Card className="border-error/30 bg-red-50/30">
-          <div className="flex items-start gap-3">
+          <div className="flex flex-col sm:flex-row items-start gap-3">
             <div className="w-9 h-9 rounded-lg bg-error/10 flex items-center justify-center flex-shrink-0">
               <AlertTriangle size={17} className="text-error" />
             </div>

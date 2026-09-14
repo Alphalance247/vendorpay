@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bell, Settings, Search, X, LogOut, ChevronRight, FileText, User } from 'lucide-react';
+import { Bell, Settings, Search, X, LogOut, ChevronRight, FileText, User, Menu } from 'lucide-react';
 import { useAuth } from '../../lib/authContext';
 import { invoiceService, adminInvoiceService } from '../../lib/services/invoiceService';
 import { vendorService } from '../../lib/services/vendorService';
@@ -52,7 +52,7 @@ function useOutsideClick(ref, onClose) {
   }, [ref, onClose]);
 }
 
-export default function TopBar({ searchPlaceholder = 'Search invoices, payments, or vendors...' }) {
+export default function TopBar({ searchPlaceholder = 'Search invoices, payments, or vendors...', onMenuClick }) {
   const navigate = useNavigate();
   const { role, logout } = useAuth();
 
@@ -143,7 +143,15 @@ export default function TopBar({ searchPlaceholder = 'Search invoices, payments,
   const displayEmail = profile?.contact_email || profile?.user_email || '';
 
   return (
-    <header className="h-14 bg-white border-b border-outline-variant flex items-center px-6 gap-4 z-20 relative">
+    <header className="h-14 bg-white border-b border-outline-variant flex items-center px-4 sm:px-6 gap-3 sm:gap-4 z-20 relative">
+      <button
+        onClick={onMenuClick}
+        className="lg:hidden p-2 -ml-2 rounded hover:bg-surface-container text-on-surface-variant transition-colors flex-shrink-0"
+        aria-label="Open menu"
+      >
+        <Menu size={20} />
+      </button>
+
       {/* Search */}
       <form onSubmit={handleSearch} className="flex-1 relative max-w-md">
         <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-outline pointer-events-none" />
@@ -152,7 +160,7 @@ export default function TopBar({ searchPlaceholder = 'Search invoices, payments,
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder={searchPlaceholder}
-          className="w-full pl-9 pr-8 py-1.5 text-sm bg-surface-low rounded border border-outline-variant focus:outline-none focus:ring-2 focus:ring-amber focus:border-amber placeholder:text-outline transition-colors"
+          className="w-full pl-9 pr-8 py-1.5 text-sm bg-surface-low rounded border border-outline-variant focus:outline-none focus:ring-2 focus:ring-secondary focus:border-secondary placeholder:text-outline transition-colors"
         />
         {query && (
           <button type="button" onClick={() => setQuery('')}
@@ -178,7 +186,7 @@ export default function TopBar({ searchPlaceholder = 'Search invoices, payments,
           </button>
 
           {showBell && (
-            <div className="absolute right-0 top-full mt-2 w-80 bg-white rounded-xl shadow-dropdown border border-outline-variant overflow-hidden">
+            <div className="absolute right-0 top-full mt-2 w-80 max-w-[90vw] bg-white rounded-xl shadow-dropdown border border-outline-variant overflow-hidden">
               <div className="px-4 py-3 border-b border-outline-variant">
                 <p className="text-sm font-semibold text-on-surface">Notifications</p>
                 <p className="text-xs text-on-surface-variant mt-0.5">Recent invoice activity</p>
@@ -218,7 +226,7 @@ export default function TopBar({ searchPlaceholder = 'Search invoices, payments,
               <div className="border-t border-outline-variant px-4 py-2.5">
                 <button
                   onClick={() => { setShowBell(false); navigate(role === 'admin' ? '/admin/invoices' : '/vendor/invoices'); }}
-                  className="text-xs text-amber font-medium hover:underline"
+                  className="text-xs text-secondary font-medium hover:underline"
                 >
                   View all invoices →
                 </button>
@@ -237,10 +245,10 @@ export default function TopBar({ searchPlaceholder = 'Search invoices, payments,
           </button>
 
           {showSettings && (
-            <div className="absolute right-0 top-full mt-2 w-64 bg-white rounded-xl shadow-dropdown border border-outline-variant overflow-hidden">
+            <div className="absolute right-0 top-full mt-2 w-64 max-w-[90vw] bg-white rounded-xl shadow-dropdown border border-outline-variant overflow-hidden">
               {/* User info */}
               <div className="px-4 py-3 border-b border-outline-variant flex items-center gap-3">
-                <div className="w-9 h-9 rounded-full bg-amber flex items-center justify-center flex-shrink-0">
+                <div className="w-9 h-9 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
                   <User size={15} className="text-white" />
                 </div>
                 <div className="min-w-0">

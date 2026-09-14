@@ -39,7 +39,7 @@ const SEED_TEAM = [
 
 function RoleLegend() {
   return (
-    <div className="grid grid-cols-3 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
       {ROLES.map(({ id, icon: Icon, description }) => (
         <Card key={id} className="flex items-start gap-3">
           <div className="w-9 h-9 rounded-lg bg-emerald/10 flex items-center justify-center flex-shrink-0">
@@ -148,9 +148,9 @@ export default function TeamRoles() {
       <InviteModal open={inviteOpen} onClose={() => setInviteOpen(false)} onInvite={handleInvite} />
 
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-semibold text-on-surface">Team & Roles</h1>
+            <h1 className="font-headline-lg text-headline-lg text-on-surface">Team & Roles</h1>
             <p className="text-sm text-on-surface-variant mt-0.5">Manage who has access to your company's VendorPay workspace.</p>
           </div>
           <Button onClick={() => setInviteOpen(true)} className="flex items-center gap-2">
@@ -181,80 +181,137 @@ export default function TeamRoles() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search by name or email..."
-                className="w-full pl-8 pr-3 py-1.5 text-sm bg-surface-low rounded border border-outline-variant focus:outline-none focus:ring-2 focus:ring-emerald"
+                className="w-full pl-8 pr-3 py-1.5 text-sm bg-surface-low rounded border border-outline-variant focus:outline-none focus:ring-2 focus:ring-secondary"
               />
             </div>
           </div>
 
-          <table className="w-full">
-            <thead>
-              <tr className="bg-surface-low border-b border-outline-variant">
-                {['Name', 'Email', 'Role', 'Status', ''].map((h) => (
-                  <th key={h} className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-on-surface-variant">
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-outline-variant">
-              {filtered.length === 0 && (
-                <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center text-sm text-on-surface-variant">
-                    No team members found.
-                  </td>
-                </tr>
-              )}
-              {filtered.map((member) => {
-                const isOwner = member.role === 'Owner';
-                return (
-                  <tr key={member.id} className="hover:bg-surface-low/50 transition-colors">
-                    <td className="px-6 py-4 text-sm font-semibold text-on-surface">{member.name}</td>
-                    <td className="px-6 py-4 text-sm text-on-surface-variant">{member.email}</td>
-                    <td className="px-6 py-4">
-                      {isOwner ? (
-                        <span className="text-sm text-on-surface-variant flex items-center gap-1.5">
-                          <Crown size={13} className="text-amber" /> Owner
-                        </span>
-                      ) : (
-                        <Select
-                          value={member.role}
-                          onChange={(e) => handleRoleChange(member, e.target.value)}
-                          className="!py-1 text-xs w-32"
-                        >
-                          {INVITABLE_ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
-                        </Select>
-                      )}
-                    </td>
-                    <td className="px-6 py-4">
-                      <StatusChip status={member.status} />
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center justify-end gap-1.5">
-                        {member.status === 'Pending' && (
-                          <button
-                            onClick={() => handleResend(member)}
-                            title="Resend invite"
-                            className="p-1.5 rounded hover:bg-surface-container transition-colors"
-                          >
-                            <Mail size={14} className="text-on-surface-variant" />
-                          </button>
-                        )}
-                        {!isOwner && (
-                          <button
-                            onClick={() => handleRemove(member)}
-                            title="Remove teammate"
-                            className="p-1.5 rounded hover:bg-red-50 transition-colors"
-                          >
-                            <Trash2 size={14} className="text-error" />
-                          </button>
-                        )}
+          {filtered.length === 0 ? (
+            <p className="px-6 py-12 text-center text-sm text-on-surface-variant">No team members found.</p>
+          ) : (
+            <>
+              {/* Desktop / tablet: table */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="bg-surface-low border-b border-outline-variant">
+                      {['Name', 'Email', 'Role', 'Status', ''].map((h) => (
+                        <th key={h} className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-on-surface-variant">
+                          {h}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-outline-variant">
+                    {filtered.map((member) => {
+                      const isOwner = member.role === 'Owner';
+                      return (
+                        <tr key={member.id} className="hover:bg-surface-low/50 transition-colors">
+                          <td className="px-6 py-4 text-sm font-semibold text-on-surface">{member.name}</td>
+                          <td className="px-6 py-4 text-sm text-on-surface-variant">{member.email}</td>
+                          <td className="px-6 py-4">
+                            {isOwner ? (
+                              <span className="text-sm text-on-surface-variant flex items-center gap-1.5">
+                                <Crown size={13} className="text-amber" /> Owner
+                              </span>
+                            ) : (
+                              <Select
+                                value={member.role}
+                                onChange={(e) => handleRoleChange(member, e.target.value)}
+                                className="!py-1 text-xs w-32"
+                              >
+                                {INVITABLE_ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
+                              </Select>
+                            )}
+                          </td>
+                          <td className="px-6 py-4">
+                            <StatusChip status={member.status} />
+                          </td>
+                          <td className="px-6 py-4">
+                            <div className="flex items-center justify-end gap-1.5">
+                              {member.status === 'Pending' && (
+                                <button
+                                  onClick={() => handleResend(member)}
+                                  title="Resend invite"
+                                  className="p-1.5 rounded hover:bg-surface-container transition-colors"
+                                >
+                                  <Mail size={14} className="text-on-surface-variant" />
+                                </button>
+                              )}
+                              {!isOwner && (
+                                <button
+                                  onClick={() => handleRemove(member)}
+                                  title="Remove teammate"
+                                  className="p-1.5 rounded hover:bg-red-50 transition-colors"
+                                >
+                                  <Trash2 size={14} className="text-error" />
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Phone: stacked cards */}
+              <div className="md:hidden divide-y divide-outline-variant">
+                {filtered.map((member) => {
+                  const isOwner = member.role === 'Owner';
+                  return (
+                    <div key={member.id} className="px-4 py-4">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="text-sm font-semibold text-on-surface truncate">{member.name}</p>
+                          <p className="text-xs text-on-surface-variant truncate">{member.email}</p>
+                        </div>
+                        <StatusChip status={member.status} className="flex-shrink-0" />
                       </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+
+                      <div className="flex items-center justify-between mt-3 gap-3">
+                        {isOwner ? (
+                          <span className="text-sm text-on-surface-variant flex items-center gap-1.5">
+                            <Crown size={13} className="text-amber" /> Owner
+                          </span>
+                        ) : (
+                          <Select
+                            value={member.role}
+                            onChange={(e) => handleRoleChange(member, e.target.value)}
+                            className="!py-1.5 text-xs flex-1 max-w-[140px]"
+                          >
+                            {INVITABLE_ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
+                          </Select>
+                        )}
+
+                        <div className="flex items-center gap-1.5">
+                          {member.status === 'Pending' && (
+                            <button
+                              onClick={() => handleResend(member)}
+                              title="Resend invite"
+                              className="p-1.5 rounded hover:bg-surface-container transition-colors"
+                            >
+                              <Mail size={14} className="text-on-surface-variant" />
+                            </button>
+                          )}
+                          {!isOwner && (
+                            <button
+                              onClick={() => handleRemove(member)}
+                              title="Remove teammate"
+                              className="p-1.5 rounded hover:bg-red-50 transition-colors"
+                            >
+                              <Trash2 size={14} className="text-error" />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          )}
         </Card>
       </div>
     </AppLayout>

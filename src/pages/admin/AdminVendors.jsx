@@ -76,9 +76,9 @@ export default function AdminVendors() {
     <AppLayout role="admin" searchPlaceholder="Search vendors...">
       {confirmEl}
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-semibold text-on-surface">Vendors</h1>
+            <h1 className="font-headline-lg text-headline-lg text-on-surface">Vendors</h1>
             <p className="text-sm text-on-surface-variant mt-0.5">Manage all registered vendor accounts.</p>
           </div>
           <div className="flex items-center gap-2 text-on-surface-variant">
@@ -114,89 +114,149 @@ export default function AdminVendors() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search by name, email, or industry..."
-                className="w-full pl-8 pr-3 py-1.5 text-sm bg-surface-low rounded border border-outline-variant focus:outline-none focus:ring-2 focus:ring-emerald"
+                className="w-full pl-8 pr-3 py-1.5 text-sm bg-surface-low rounded border border-outline-variant focus:outline-none focus:ring-2 focus:ring-secondary"
               />
             </div>
           </div>
 
           {loading ? (
             <div className="flex items-center justify-center py-16">
-              <Loader2 size={24} className="animate-spin text-emerald" />
+              <Loader2 size={24} className="animate-spin text-secondary" />
               <span className="ml-2 text-sm text-on-surface-variant">Loading vendors...</span>
             </div>
+          ) : filtered.length === 0 ? (
+            <p className="px-6 py-12 text-center text-sm text-on-surface-variant">No vendors found.</p>
           ) : (
-            <table className="w-full">
-              <thead>
-                <tr className="bg-surface-low border-b border-outline-variant">
-                  {['Company', 'Contact', 'Industry', 'Status', ''].map((h) => (
-                    <th key={h} className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-on-surface-variant">
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-outline-variant">
-                {filtered.length === 0 && (
-                  <tr>
-                    <td colSpan={5} className="px-6 py-12 text-center text-sm text-on-surface-variant">
-                      No vendors found.
-                    </td>
-                  </tr>
-                )}
+            <>
+              {/* Desktop / tablet: table */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="bg-surface-low border-b border-outline-variant">
+                      {['Company', 'Contact', 'Industry', 'Status', ''].map((h) => (
+                        <th key={h} className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-on-surface-variant">
+                          {h}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-outline-variant">
+                    {filtered.map((vendor) => (
+                      <tr key={vendor.id} className="hover:bg-surface-low/50 transition-colors cursor-pointer" onClick={() => navigate(`/admin/vendors/${vendor.id}`)}>
+                        <td className="px-6 py-4">
+                          <p className="text-sm font-semibold text-on-surface">{vendor.company_name ?? '—'}</p>
+                          <p className="text-xs text-on-surface-variant mt-0.5">{vendor.business_type ?? ''}</p>
+                        </td>
+                        <td className="px-6 py-4">
+                          <p className="text-sm text-on-surface">
+                            {vendor.contact_first_name || vendor.contact_last_name
+                              ? `${vendor.contact_first_name ?? ''} ${vendor.contact_last_name ?? ''}`.trim()
+                              : '—'}
+                          </p>
+                          <p className="text-xs text-on-surface-variant">
+                            {vendor.contact_email ?? vendor.user_email ?? '—'}
+                          </p>
+                        </td>
+                        <td className="px-6 py-4 text-sm text-on-surface-variant">{vendor.industry ?? '—'}</td>
+                        <td className="px-6 py-4">
+                          <StatusChip status={vendor.is_active ? 'Active' : 'Inactive'} />
+                        </td>
+                        <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => handleToggleStatus(vendor)}
+                              disabled={actionLoading === `status-${vendor.id}`}
+                              title={vendor.is_active ? 'Deactivate vendor' : 'Activate vendor'}
+                              className="p-1.5 rounded hover:bg-surface-container transition-colors disabled:opacity-50"
+                            >
+                              {actionLoading === `status-${vendor.id}` ? (
+                                <Loader2 size={14} className="animate-spin text-on-surface-variant" />
+                              ) : vendor.is_active ? (
+                                <PowerOff size={14} className="text-amber-600" />
+                              ) : (
+                                <Power size={14} className="text-emerald" />
+                              )}
+                            </button>
+                            <button
+                              onClick={() => handleDelete(vendor)}
+                              disabled={actionLoading === `delete-${vendor.id}`}
+                              title="Delete vendor"
+                              className="p-1.5 rounded hover:bg-red-50 transition-colors disabled:opacity-50"
+                            >
+                              {actionLoading === `delete-${vendor.id}` ? (
+                                <Loader2 size={14} className="animate-spin text-error" />
+                              ) : (
+                                <Trash2 size={14} className="text-error" />
+                              )}
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Phone: stacked cards */}
+              <div className="md:hidden divide-y divide-outline-variant">
                 {filtered.map((vendor) => (
-                  <tr key={vendor.id} className="hover:bg-surface-low/50 transition-colors cursor-pointer" onClick={() => navigate(`/admin/vendors/${vendor.id}`)}>
-                    <td className="px-6 py-4">
-                      <p className="text-sm font-semibold text-on-surface">{vendor.company_name ?? '—'}</p>
-                      <p className="text-xs text-on-surface-variant mt-0.5">{vendor.business_type ?? ''}</p>
-                    </td>
-                    <td className="px-6 py-4">
-                      <p className="text-sm text-on-surface">
-                        {vendor.contact_first_name || vendor.contact_last_name
-                          ? `${vendor.contact_first_name ?? ''} ${vendor.contact_last_name ?? ''}`.trim()
-                          : '—'}
-                      </p>
-                      <p className="text-xs text-on-surface-variant">
-                        {vendor.contact_email ?? vendor.user_email ?? '—'}
-                      </p>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-on-surface-variant">{vendor.industry ?? '—'}</td>
-                    <td className="px-6 py-4">
-                      <StatusChip status={vendor.is_active ? 'Active' : 'Inactive'} />
-                    </td>
-                    <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => handleToggleStatus(vendor)}
-                          disabled={actionLoading === `status-${vendor.id}`}
-                          title={vendor.is_active ? 'Deactivate vendor' : 'Activate vendor'}
-                          className="p-1.5 rounded hover:bg-surface-container transition-colors disabled:opacity-50"
-                        >
-                          {actionLoading === `status-${vendor.id}` ? (
-                            <Loader2 size={14} className="animate-spin text-on-surface-variant" />
-                          ) : vendor.is_active ? (
-                            <PowerOff size={14} className="text-amber-600" />
-                          ) : (
-                            <Power size={14} className="text-emerald" />
-                          )}
-                        </button>
-                        <button
-                          onClick={() => handleDelete(vendor)}
-                          disabled={actionLoading === `delete-${vendor.id}`}
-                          title="Delete vendor"
-                          className="p-1.5 rounded hover:bg-red-50 transition-colors disabled:opacity-50"
-                        >
-                          {actionLoading === `delete-${vendor.id}` ? (
-                            <Loader2 size={14} className="animate-spin text-error" />
-                          ) : (
-                            <Trash2 size={14} className="text-error" />
-                          )}
-                        </button>
+                  <div
+                    key={vendor.id}
+                    onClick={() => navigate(`/admin/vendors/${vendor.id}`)}
+                    className="px-4 py-4 active:bg-surface-low/50 transition-colors cursor-pointer"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold text-on-surface truncate">{vendor.company_name ?? '—'}</p>
+                        <p className="text-xs text-on-surface-variant mt-0.5">{vendor.business_type ?? ''}</p>
                       </div>
-                    </td>
-                  </tr>
+                      <StatusChip status={vendor.is_active ? 'Active' : 'Inactive'} className="flex-shrink-0" />
+                    </div>
+
+                    <div className="mt-2.5 text-sm text-on-surface">
+                      {vendor.contact_first_name || vendor.contact_last_name
+                        ? `${vendor.contact_first_name ?? ''} ${vendor.contact_last_name ?? ''}`.trim()
+                        : '—'}
+                    </div>
+                    <div className="text-xs text-on-surface-variant truncate">
+                      {vendor.contact_email ?? vendor.user_email ?? '—'}
+                    </div>
+                    {vendor.industry && (
+                      <div className="text-xs text-on-surface-variant mt-1">{vendor.industry}</div>
+                    )}
+
+                    <div className="flex items-center gap-2 mt-3" onClick={(e) => e.stopPropagation()}>
+                      <button
+                        onClick={() => handleToggleStatus(vendor)}
+                        disabled={actionLoading === `status-${vendor.id}`}
+                        className="flex-1 inline-flex items-center justify-center gap-1.5 py-2 rounded border border-outline-variant text-xs font-medium text-on-surface-variant hover:bg-surface-low transition-colors disabled:opacity-50"
+                      >
+                        {actionLoading === `status-${vendor.id}` ? (
+                          <Loader2 size={13} className="animate-spin" />
+                        ) : vendor.is_active ? (
+                          <PowerOff size={13} className="text-amber-600" />
+                        ) : (
+                          <Power size={13} className="text-emerald" />
+                        )}
+                        {vendor.is_active ? 'Deactivate' : 'Activate'}
+                      </button>
+                      <button
+                        onClick={() => handleDelete(vendor)}
+                        disabled={actionLoading === `delete-${vendor.id}`}
+                        className="flex-1 inline-flex items-center justify-center gap-1.5 py-2 rounded border border-outline-variant text-xs font-medium text-error hover:bg-red-50 transition-colors disabled:opacity-50"
+                      >
+                        {actionLoading === `delete-${vendor.id}` ? (
+                          <Loader2 size={13} className="animate-spin" />
+                        ) : (
+                          <Trash2 size={13} />
+                        )}
+                        Delete
+                      </button>
+                    </div>
+                  </div>
                 ))}
-              </tbody>
-            </table>
+              </div>
+            </>
           )}
         </Card>
       </div>
