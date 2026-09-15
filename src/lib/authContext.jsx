@@ -80,6 +80,24 @@ export function AuthProvider({ children }) {
     return userRole;
   };
 
+  // For flows that already have tokens from somewhere other than the login
+  // endpoint (e.g. completing company sign-up) — same bookkeeping as login(),
+  // minus the API call.
+  const loginWithTokens = (accessToken, refreshToken) => {
+    localStorage.setItem('access_token', accessToken);
+    localStorage.setItem('refresh_token', refreshToken);
+
+    const payload = parseJwt(accessToken);
+    const userRole = payload?.role ?? 'admin';
+
+    localStorage.setItem('user_role', userRole);
+    setRole(userRole);
+    setIsOnboarded(true);
+    localStorage.setItem('is_onboarded', 'true');
+
+    return userRole;
+  };
+
   const completeOnboarding = () => {
     setIsOnboarded(true);
     localStorage.setItem('is_onboarded', 'true');
@@ -93,7 +111,7 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, role, isOnboarded, loading, login, logout, completeOnboarding }}>
+    <AuthContext.Provider value={{ user, role, isOnboarded, loading, login, loginWithTokens, logout, completeOnboarding }}>
       {children}
     </AuthContext.Provider>
   );

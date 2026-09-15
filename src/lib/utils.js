@@ -64,12 +64,19 @@ export function downloadCSV(filename, rows) {
   URL.revokeObjectURL(url);
 }
 
+// Only accept plain, non-empty strings — backend error shapes vary (a missing
+// response/data, or a `detail`/`message`/`error` that's an object or an array,
+// e.g. FastAPI validation errors) and none of those are safe to render directly.
+function asMessage(value) {
+  return typeof value === 'string' && value.trim() ? value : null;
+}
+
 export function extractErrorMessage(error) {
   return (
-    error?.response?.data?.detail ||
-    error?.response?.data?.message ||
-    error?.response?.data?.error ||
-    error?.message ||
+    asMessage(error?.response?.data?.detail) ||
+    asMessage(error?.response?.data?.message) ||
+    asMessage(error?.response?.data?.error) ||
+    asMessage(error?.message) ||
     'An unexpected error occurred'
   );
 }
