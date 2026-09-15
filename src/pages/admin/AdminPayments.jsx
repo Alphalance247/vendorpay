@@ -65,9 +65,9 @@ export default function AdminPayments() {
   return (
     <AppLayout role="admin" searchPlaceholder="Search payments, vendors, or transactions...">
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-semibold text-on-surface">Payments</h1>
+            <h1 className="font-headline-lg text-headline-lg text-on-surface">Payments</h1>
             <p className="text-sm text-on-surface-variant mt-0.5">Track vendor disbursements across every status.</p>
           </div>
           <Button variant="secondary" size="sm">
@@ -87,7 +87,7 @@ export default function AdminPayments() {
           ]}
         />
 
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {TABS.map(({ key, icon: Icon, accent }) => (
             <Card key={key}>
               <div className="flex items-center justify-between">
@@ -95,7 +95,7 @@ export default function AdminPayments() {
                 <Icon size={16} className={accent} />
               </div>
               {loading ? (
-                <Loader2 size={18} className="animate-spin text-emerald mt-2" />
+                <Loader2 size={18} className="animate-spin text-secondary mt-2" />
               ) : (
                 <>
                   <p className="text-2xl font-bold tnum text-on-surface mt-1">{counts[key] ?? 0}</p>
@@ -114,7 +114,7 @@ export default function AdminPayments() {
                 onClick={() => setActiveTab(key)}
                 className={`flex items-center gap-2 px-5 py-3 text-sm font-medium border-b-2 transition-colors ${
                   activeTab === key
-                    ? 'border-emerald text-emerald bg-emerald/5'
+                    ? 'border-secondary text-secondary bg-secondary/5'
                     : 'border-transparent text-on-surface-variant hover:text-on-surface'
                 }`}
               >
@@ -134,67 +134,111 @@ export default function AdminPayments() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Filter by vendor, invoice, or rail..."
-                className="w-full pl-8 pr-3 py-1.5 text-sm bg-surface-low rounded border border-outline-variant focus:outline-none focus:ring-2 focus:ring-emerald"
+                className="w-full pl-8 pr-3 py-1.5 text-sm bg-surface-low rounded border border-outline-variant focus:outline-none focus:ring-2 focus:ring-secondary"
               />
             </div>
           </div>
 
           {loading ? (
             <div className="flex items-center justify-center py-16">
-              <Loader2 size={24} className="animate-spin text-emerald" />
+              <Loader2 size={24} className="animate-spin text-secondary" />
               <span className="ml-2 text-sm text-on-surface-variant">Loading payments...</span>
             </div>
           ) : error ? (
             <p className="px-6 py-10 text-center text-sm text-error">{error}</p>
+          ) : filtered.length === 0 ? (
+            <p className="px-6 py-10 text-center text-sm text-on-surface-variant">
+              No {activeTab.toLowerCase()} payments{search ? ' match your search' : ''}.
+            </p>
           ) : (
-            <table className="w-full">
-              <thead>
-                <tr className="bg-surface-low border-b border-outline-variant">
-                  {['Vendor', 'Invoice #', 'Rail', 'Amount', 'Date', 'Status', 'Action'].map((h) => (
-                    <th key={h} className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-on-surface-variant">
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-outline-variant">
+            <>
+              {/* Desktop / tablet: table */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="bg-surface-low border-b border-outline-variant">
+                      {['Vendor', 'Invoice #', 'Rail', 'Amount', 'Date', 'Status', 'Action'].map((h) => (
+                        <th key={h} className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-on-surface-variant">
+                          {h}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-outline-variant">
+                    {filtered.map((p) => (
+                      <tr key={p.id} className="hover:bg-surface-low/50 transition-colors cursor-pointer" onClick={() => navigate(`/admin/invoices/${p.id}`)}>
+                        <td className="px-6 py-4">
+                          <p className="text-sm font-semibold text-on-surface">{p.vendor_name ?? '—'}</p>
+                        </td>
+                        <td className="px-6 py-4 text-sm text-on-surface-variant">{p.invoice_number}</td>
+                        <td className="px-6 py-4 text-sm text-on-surface-variant">{p.payment_rail ?? '—'}</td>
+                        <td className="px-6 py-4 text-sm font-semibold tnum text-on-surface">
+                          {formatCurrency(p.amount, p.currency)}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-on-surface-variant">
+                          {formatDate(p.payment_date ?? p.submitted_at)}
+                        </td>
+                        <td className="px-6 py-4">
+                          <StatusChip status={STATUS_MAP[p.status] ?? p.status} />
+                        </td>
+                        <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
+                          {p.status === 'paid' && (
+                            <Button variant="ghost" size="sm" className="p-1.5" title="Receipt">
+                              <Receipt size={15} />
+                            </Button>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Phone: stacked cards */}
+              <div className="md:hidden divide-y divide-outline-variant">
                 {filtered.map((p) => (
-                  <tr key={p.id} className="hover:bg-surface-low/50 transition-colors cursor-pointer" onClick={() => navigate(`/admin/invoices/${p.id}`)}>
-                    <td className="px-6 py-4">
-                      <p className="text-sm font-semibold text-on-surface">{p.vendor_name ?? '—'}</p>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-on-surface-variant">{p.invoice_number}</td>
-                    <td className="px-6 py-4 text-sm text-on-surface-variant">{p.payment_rail ?? '—'}</td>
-                    <td className="px-6 py-4 text-sm font-semibold tnum text-on-surface">
-                      {formatCurrency(p.amount, p.currency)}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-on-surface-variant">
-                      {formatDate(p.payment_date ?? p.submitted_at)}
-                    </td>
-                    <td className="px-6 py-4">
-                      <StatusChip status={STATUS_MAP[p.status] ?? p.status} />
-                    </td>
-                    <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
-                      {p.status === 'paid' && (
-                        <Button variant="ghost" size="sm" className="p-1.5" title="Receipt">
-                          <Receipt size={15} />
-                        </Button>
+                  <div
+                    key={p.id}
+                    onClick={() => navigate(`/admin/invoices/${p.id}`)}
+                    className="px-4 py-4 active:bg-surface-low/50 transition-colors cursor-pointer"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold text-on-surface truncate">{p.vendor_name ?? '—'}</p>
+                        <p className="text-xs text-on-surface-variant mt-0.5">{p.invoice_number}</p>
+                      </div>
+                      <StatusChip status={STATUS_MAP[p.status] ?? p.status} className="flex-shrink-0" />
+                    </div>
+                    <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 mt-3 text-xs">
+                      <div>
+                        <span className="text-on-surface-variant">Amount: </span>
+                        <span className="font-semibold tnum text-on-surface">{formatCurrency(p.amount, p.currency)}</span>
+                      </div>
+                      {p.payment_rail && (
+                        <div>
+                          <span className="text-on-surface-variant">Rail: </span>
+                          <span className="text-on-surface font-medium">{p.payment_rail}</span>
+                        </div>
                       )}
-                    </td>
-                  </tr>
+                      <div>
+                        <span className="text-on-surface-variant">Date: </span>
+                        <span className="text-on-surface">{formatDate(p.payment_date ?? p.submitted_at)}</span>
+                      </div>
+                    </div>
+                    {p.status === 'paid' && (
+                      <div onClick={(e) => e.stopPropagation()}>
+                        <Button variant="secondary" size="sm" className="w-full mt-3 flex items-center justify-center gap-1.5">
+                          <Receipt size={13} /> Receipt
+                        </Button>
+                      </div>
+                    )}
+                  </div>
                 ))}
-                {filtered.length === 0 && (
-                  <tr>
-                    <td colSpan={7} className="px-6 py-10 text-center text-sm text-on-surface-variant">
-                      No {activeTab.toLowerCase()} payments{search ? ' match your search' : ''}.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+              </div>
+            </>
           )}
 
-          <div className="px-6 py-3 border-t border-outline-variant flex items-center justify-between">
+          <div className="px-6 py-3 border-t border-outline-variant flex flex-col sm:flex-row items-center gap-1 sm:justify-between">
             <p className="text-xs text-on-surface-variant">
               Showing {filtered.length} of {counts[activeTab] ?? 0} {activeTab.toLowerCase()} payments
             </p>

@@ -18,11 +18,8 @@ const Select = forwardRef(function Select(
         ref={ref}
         className={cn(
           'w-full rounded border border-outline-variant bg-white px-3 py-2 text-sm text-on-surface appearance-none cursor-pointer',
-          // 'focus:outline-none focus:ring-2 focus:ring-amber focus:border-amber transition-colors',
-          error
-            ? "border-error focus:outline-none focus:ring-2 focus:ring-error focus:border-error"
-            : "focus:outline-none focus:ring-2 focus:ring-amber focus:border-amber transition-colors",
-
+          'focus:outline-none focus:ring-2 focus:ring-secondary focus:border-secondary transition-colors',
+          error && 'border-error',
           className
         )}
         {...props}
