@@ -3,6 +3,7 @@ import { Loader2 } from 'lucide-react';
 import Register from './pages/auth/Register';
 import ForgotPassword from './pages/auth/ForgotPassword';
 import ResetPassword from './pages/auth/ResetPassword';
+import AcceptInvite from './pages/auth/AcceptInvite';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import Login from './pages/auth/Login';
@@ -59,6 +60,7 @@ export default function App() {
           <Route path="/signup-company" element={<CompanySignup />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/accept-invite" element={<AcceptInvite />} />
           <Route path="/onboarding" element={<Onboarding />} />
 
           {/* Vendor routes */}
