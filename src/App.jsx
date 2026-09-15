@@ -9,6 +9,7 @@ import ProtectedRoute from './components/auth/ProtectedRoute';
 import Login from './pages/auth/Login';
 import { useAuth } from './lib/authContext';
 import { resolveTenant } from './lib/tenantResolver';
+import { dashboardPathForRole } from './lib/utils';
 import WorkspaceNotFound from './pages/marketing/WorkspaceNotFound';
 import Onboarding from './pages/onboarding/Onboarding';
 import VendorDashboard from './pages/vendor/VendorDashboard';
@@ -46,7 +47,7 @@ export default function App() {
         <Loader2 size={28} className="animate-spin text-emerald" />
       </div>
     ) :
-    token && role ? <Navigate to={role === 'admin' ? '/admin/dashboard' : '/vendor/dashboard'} replace /> :
+    token && role ? <Navigate to={dashboardPathForRole(role)} replace /> :
     <Navigate to="/login" replace />;
 
   return (

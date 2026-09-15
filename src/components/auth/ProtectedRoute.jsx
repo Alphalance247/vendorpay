@@ -1,6 +1,7 @@
 import { Navigate } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import { useAuth } from '../../lib/authContext';
+import { isVendorRole, dashboardPathForRole } from '../../lib/utils';
 
 export default function ProtectedRoute({ children, role: requiredRole }) {
   const { role, loading, isOnboarded } = useAuth();
@@ -18,11 +19,13 @@ export default function ProtectedRoute({ children, role: requiredRole }) {
     return <Navigate to="/login" replace />;
   }
 
-  if (role !== requiredRole) {
-    const fallback = role === 'admin'
-      ? '/admin/dashboard'
-      : '/vendor/dashboard';
-    return <Navigate to={fallback} replace />;
+  // Vendor is the only role gated to /vendor/*; every other role (admin,
+  // owner, staff, member, ...) belongs on /admin/*.
+  const hasAccess = isVendorRole(role)
+    ? requiredRole === 'vendor'
+    : requiredRole === 'admin';
+  if (!hasAccess) {
+    return <Navigate to={dashboardPathForRole(role)} replace />;
   }
 
   if (requiredRole === 'vendor' && isOnboarded === false) {

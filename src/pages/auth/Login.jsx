@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, ArrowRight, ShieldCheck, Zap } from 'lucide-react';
 import { useAuth } from '../../lib/authContext';
-import { extractErrorMessage } from '../../lib/utils';
+import { extractErrorMessage, dashboardPathForRole } from '../../lib/utils';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 
@@ -40,11 +40,7 @@ export default function Login() {
 
       localStorage.setItem('user_role', role);
 
-      if (role === 'admin') {
-        navigate('/admin/dashboard');
-      } else {
-        navigate('/vendor/dashboard');
-      }
+      navigate(dashboardPathForRole(role));
     } catch (err) {
       setError(extractErrorMessage(err));
     } finally {

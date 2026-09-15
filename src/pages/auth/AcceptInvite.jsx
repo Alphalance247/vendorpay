@@ -7,12 +7,14 @@ import {
   Check,
   PartyPopper,
   AlertTriangle,
+  Loader2,
 } from "lucide-react";
 import Button from "../../components/ui/Button";
 import Input from "../../components/ui/Input";
 import Select from "../../components/ui/Select";
 import Card from "../../components/ui/Card";
 import { useAcceptInvite } from "../../hooks/useQueries/companyAuth/useAcceptInvite";
+import { useInviteDetails } from "../../hooks/useQueries/companyAuth/useInviteDetails";
 
 const INDUSTRIES = [
   "Technology",
@@ -25,18 +27,6 @@ const INDUSTRIES = [
 ];
 
 const DEPARTMENTS = ["Finance", "Accounting", "Operations", "Legal", "Other"];
-
-// The invite token is a JWT (same shape as our access tokens), so the role
-// it was issued for can be read straight off it — no extra lookup endpoint
-// needed to know whether to show the vendor-specific fields.
-function decodeInviteRole(token) {
-  try {
-    const payload = JSON.parse(atob(token.split(".")[1]));
-    return payload?.role ?? payload?.user_type ?? null;
-  } catch {
-    return null;
-  }
-}
 
 function Brand() {
   return (
@@ -74,6 +64,18 @@ function InvalidInvite({ reason }) {
   );
 }
 
+function LoadingInvite() {
+  return (
+    <div className="min-h-screen bg-surface flex flex-col items-center justify-center px-6 py-12">
+      <Brand />
+      <Loader2 size={24} className="animate-spin text-emerald" />
+      <p className="text-sm text-on-surface-variant mt-3">
+        Loading your invite...
+      </p>
+    </div>
+  );
+}
+
 function SuccessScreen() {
   const navigate = useNavigate();
   return (
@@ -104,8 +106,6 @@ function SuccessScreen() {
 export default function AcceptInvite() {
   const [searchParams] = useSearchParams();
   const token = searchParams.get("token") || "";
-  const role = decodeInviteRole(token);
-  const isVendor = role === "vendor";
 
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
@@ -114,7 +114,6 @@ export default function AcceptInvite() {
     password: "",
     confirmPassword: "",
     fullName: "",
-    companyName: "",
     taxId: "",
     businessType: "",
     businessAddress: "",
@@ -129,6 +128,10 @@ export default function AcceptInvite() {
   });
 
   const acceptInvite = useAcceptInvite();
+  const inviteQuery = useInviteDetails(token);
+  const invite = inviteQuery.data;
+  const role = (invite?.role || "").toLowerCase();
+  const isVendor = role === "vendor";
 
   function handleChange(e) {
     const { name, value } = e.target;
@@ -145,6 +148,16 @@ export default function AcceptInvite() {
     return <SuccessScreen />;
   }
 
+  if (inviteQuery.isLoading) {
+    return <LoadingInvite />;
+  }
+
+  if (inviteQuery.isError) {
+    return (
+      <InvalidInvite reason="This invite link is invalid or has expired. Ask whoever invited you to resend the invitation." />
+    );
+  }
+
   const mismatch =
     form.password &&
     form.confirmPassword &&
@@ -156,8 +169,7 @@ export default function AcceptInvite() {
       !form.password ||
       form.password.length < 8 ||
       form.password !== form.confirmPassword ||
-      !form.fullName ||
-      !form.companyName
+      !form.fullName
     ) {
       return false;
     }
@@ -187,7 +199,6 @@ export default function AcceptInvite() {
       token,
       password: form.password,
       full_name: form.fullName,
-      company_name: form.companyName,
     };
 
     if (isVendor) {
@@ -195,6 +206,7 @@ export default function AcceptInvite() {
         tax_id: form.taxId,
         business_type: form.businessType,
         business_address: form.businessAddress,
+        company_name: invite?.company_name,
         website: form.website,
         industry: form.industry,
         contact_first_name: form.contactFirstName,
@@ -225,6 +237,30 @@ export default function AcceptInvite() {
           </p>
         </div>
 
+        <div className="bg-surface-low border border-outline-variant rounded-lg px-4 py-3 mb-6">
+          <p className="text-sm text-on-surface-variant">
+            {invite?.invited_by_name && (
+              <span className="font-medium text-on-surface">
+                {invite.invited_by_name}
+              </span>
+            )}{" "}
+            invited you to join{" "}
+            <span className="font-semibold text-on-surface">
+              {invite?.company_name}
+            </span>
+          </p>
+          <div className="flex items-center gap-2 mt-2">
+            <span className="inline-flex items-center rounded-full bg-emerald/10 text-emerald text-xs font-semibold px-2.5 py-1 capitalize">
+              {role || "Member"}
+            </span>
+            {invite?.email && (
+              <span className="text-xs text-on-surface-variant">
+                Invited as {invite.email}
+              </span>
+            )}
+          </div>
+        </div>
+
         {error && (
           <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded text-red-600 text-sm">
             {error}
@@ -249,16 +285,6 @@ export default function AcceptInvite() {
                   placeholder="Jane Smith"
                   required
                   autoFocus
-                />
-              </div>
-              <div className="col-span-2">
-                <Input
-                  label="Company Name"
-                  name="companyName"
-                  value={form.companyName}
-                  onChange={handleChange}
-                  placeholder="e.g. Acme Corporation"
-                  required
                 />
               </div>
               <Input
