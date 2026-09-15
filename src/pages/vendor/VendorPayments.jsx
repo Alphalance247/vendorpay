@@ -68,8 +68,8 @@ export default function VendorPayments() {
 
   const totals = groupByCurrency(invoices);
   const confirmedCount = invoices.filter((i) => i.status === 'payment_confirmed').length;
-  const disputedCount  = invoices.filter((i) => i.status === 'payment_disputed').length;
-  const lastPayment    = invoices.find((i) => i.payment_date)?.payment_date ?? null;
+  const disputedCount = invoices.filter((i) => i.status === 'payment_disputed').length;
+  const lastPayment = invoices.find((i) => i.payment_date)?.payment_date ?? null;
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
@@ -92,7 +92,7 @@ export default function VendorPayments() {
           ]}
         />
 
-        <div className="grid grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <Card className="py-4">
             <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant">Total Received</p>
             <CurrencyLines map={totals} />
@@ -127,40 +127,42 @@ export default function VendorPayments() {
           ) : error ? (
             <p className="px-4 py-8 text-center text-sm text-error">{error}</p>
           ) : (
-            <table className="w-full">
-              <thead>
-                <tr className="bg-surface-low border-b border-outline-variant">
-                  {['Invoice #', 'Date Paid', 'Amount', 'Currency', 'Status'].map((h) => (
-                    <th key={h} className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-on-surface-variant">
-                      {h}
-                    </th>
+            <div className="w-full ">
+              <table className="w-full min-w-[900px]">
+                <thead>
+                  <tr className="bg-surface-low border-b border-outline-variant">
+                    {['Invoice #', 'Date Paid', 'Amount', 'Currency', 'Status'].map((h) => (
+                      <th key={h} className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-on-surface-variant whitespace-nowrap">
+                        {h}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="">
+                  {invoices.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="px-4 py-12 text-center text-sm text-on-surface-variant">
+                        No payments yet. Invoices marked &quot;Paid&quot; by your admin will appear here.
+                      </td>
+                    </tr>
+                  ) : invoices.map((inv) => (
+                    <tr key={inv.id} className="hover:bg-surface-low/50 transition-colors cursor-pointer " onClick={() => navigate(`/vendor/invoices/${inv.id}`)}>
+                      <td className="px-4 py-3 text-sm font-semibold text-on-surface">{inv.invoice_number}</td>
+                      <td className="px-4 py-3 text-sm text-on-surface-variant">
+                        {inv.payment_date ? formatDate(inv.payment_date) : '—'}
+                      </td>
+                      <td className="px-4 py-3 text-sm font-semibold tnum text-on-surface">
+                        {formatCurrency(inv.amount, inv.currency)}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-on-surface-variant">{inv.currency ?? 'USD'}</td>
+                      <td className="px-4 py-3">
+                        <StatusChip status={STATUS_LABEL[inv.status] ?? inv.status} />
+                      </td>
+                    </tr>
                   ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-outline-variant">
-                {invoices.length === 0 ? (
-                  <tr>
-                    <td colSpan={5} className="px-4 py-12 text-center text-sm text-on-surface-variant">
-                      No payments yet. Invoices marked &quot;Paid&quot; by your admin will appear here.
-                    </td>
-                  </tr>
-                ) : invoices.map((inv) => (
-                  <tr key={inv.id} className="hover:bg-surface-low/50 transition-colors cursor-pointer" onClick={() => navigate(`/vendor/invoices/${inv.id}`)}>
-                    <td className="px-4 py-3 text-sm font-semibold text-on-surface">{inv.invoice_number}</td>
-                    <td className="px-4 py-3 text-sm text-on-surface-variant">
-                      {inv.payment_date ? formatDate(inv.payment_date) : '—'}
-                    </td>
-                    <td className="px-4 py-3 text-sm font-semibold tnum text-on-surface">
-                      {formatCurrency(inv.amount, inv.currency)}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-on-surface-variant">{inv.currency ?? 'USD'}</td>
-                    <td className="px-4 py-3">
-                      <StatusChip status={STATUS_LABEL[inv.status] ?? inv.status} />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                </tbody>
+              </table>
+            </div>
           )}
 
           <div className="px-4 py-3 border-t border-outline-variant flex items-center justify-between">

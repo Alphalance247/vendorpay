@@ -2,15 +2,16 @@ import { forwardRef } from 'react';
 import { cn } from '../../lib/utils';
 
 const Input = forwardRef(function Input(
-  { label, error, hint, className, prefix, suffix, ...props },
+  { label, error, hint, className, required, prefix, suffix, ...props },
   ref
 ) {
   return (
     <div className="flex flex-col gap-1">
       {label && (
-        <label className="text-xs font-semibold tracking-wide text-on-surface-variant uppercase">
-          {label}
+        <label className="text-xs font-semibold tracking-wide text-on-surface-variant uppercase flex gap-1">
+          {label}<span>  {required && <div className="text-error">*</div>}</span>
         </label>
+
       )}
       <div className="relative flex items-center">
         {prefix && (
@@ -22,8 +23,11 @@ const Input = forwardRef(function Input(
           ref={ref}
           className={cn(
             'w-full rounded border bg-white px-3 py-2 text-sm text-on-surface placeholder:text-outline transition-colors',
-            'border-outline-variant focus:outline-none focus:ring-2 focus:ring-amber focus:border-amber',
-            error && 'border-error focus:ring-error',
+            // 'border-outline-variant focus:outline-none focus:ring-2 focus:ring-amber focus:border-amber',
+            error
+              ? "border-error focus:outline-none focus:ring-2 focus:ring-error focus:border-error"
+              : "border-outline-variant focus:outline-none focus:ring-2 focus:ring-amber focus:border-amber",
+
             prefix && 'pl-7',
             suffix && 'pr-10',
             className

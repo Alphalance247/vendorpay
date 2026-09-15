@@ -1,24 +1,50 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
-  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend,
-  PieChart, Pie, Cell,
-} from 'recharts';
-import { Plus, Loader2 } from 'lucide-react';
-import TutorialCard from '../../components/ui/TutorialCard';
-import AppLayout from '../../components/layout/AppLayout';
-import Card from '../../components/ui/Card';
-import { formatCurrency, getCurrencySymbol } from '../../lib/utils';
-import { vendorService } from '../../lib/services/vendorService';
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  Legend,
+  PieChart,
+  Pie,
+  Cell,
+} from "recharts";
+import { Plus, Loader2 } from "lucide-react";
+import TutorialCard from "../../components/ui/TutorialCard";
+import AppLayout from "../../components/layout/AppLayout";
+import Card from "../../components/ui/Card";
+import { formatCurrency, getCurrencySymbol } from "../../lib/utils";
+import { vendorService } from "../../lib/services/vendorService";
+import { FiPieChart } from "react-icons/fi";
+import { BiBarChartAlt2 } from "react-icons/bi";
+// import Button from "../../components/ui/Button";
+import { MdOutlineArrowOutward } from "react-icons/md";
 
-function StatCard({ label, value, values, sub, subColor = 'text-emerald', badge }) {
+function StatCard({
+  label,
+  value,
+  values,
+  sub,
+  subColor = "text-emerald",
+  badge,
+}) {
   return (
     <Card className="flex flex-col gap-1">
-      <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant">{label}</p>
+      <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant">
+        {label}
+      </p>
       {values ? (
         <div className="space-y-0.5">
           {values.map((v, i) => (
-            <p key={i} className="text-2xl font-bold text-on-surface tnum leading-tight">{v}</p>
+            <p
+              key={i}
+              className="text-2xl font-bold text-on-surface tnum leading-tight"
+            >
+              {v}
+            </p>
           ))}
         </div>
       ) : (
@@ -34,28 +60,37 @@ function StatCard({ label, value, values, sub, subColor = 'text-emerald', badge 
   );
 }
 
-function currencyValues(map, fallbackCurrency = 'USD') {
-  if (!map || Object.keys(map).length === 0) return [formatCurrency(0, fallbackCurrency)];
-  return Object.entries(map).map(([currency, amount]) => formatCurrency(amount, currency));
+function currencyValues(map, fallbackCurrency = "USD") {
+  if (!map || Object.keys(map).length === 0)
+    return [formatCurrency(0, fallbackCurrency)];
+  return Object.entries(map).map(([currency, amount]) =>
+    formatCurrency(amount, currency),
+  );
 }
-
 export default function VendorDashboard() {
   const navigate = useNavigate();
   const [data, setData] = useState(null);
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
 
-  const today = new Date().toLocaleDateString('en-US', {
-    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+  const today = new Date().toLocaleDateString("en-US", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
   });
 
   useEffect(() => {
-    vendorService.getDashboard()
+    vendorService
+      .getDashboard()
       .then(setData)
-      .catch(() => setError('Failed to load dashboard data.'))
+      .catch(() => setError("Failed to load dashboard data."))
       .finally(() => setLoading(false));
-    vendorService.getProfile().then(setProfile).catch(() => {});
+    vendorService
+      .getProfile()
+      .then(setProfile)
+      .catch(() => {});
   }, []);
 
   if (loading) {
@@ -80,34 +115,42 @@ export default function VendorDashboard() {
 
   // Determine primary currency from first trend bucket
   const trendRaw = data.payment_trends ?? [];
-  const allCurrencies = trendRaw.flatMap((pt) => Object.keys(pt.submitted_by_currency ?? {}));
-  const primaryCurrency = allCurrencies[0] ?? profile?.currency ?? 'USD';
+  const allCurrencies = trendRaw.flatMap((pt) =>
+    Object.keys(pt.submitted_by_currency ?? {}),
+  );
+  const primaryCurrency = allCurrencies[0] ?? profile?.currency ?? "USD";
 
   const trendData = trendRaw.map((pt) => ({
-    month: pt.month?.split(' ')[0] ?? pt.month,
+    month: pt.month?.split(" ")[0] ?? pt.month,
     submitted: pt.submitted_by_currency?.[primaryCurrency] ?? 0,
-    settled:   pt.settled_by_currency?.[primaryCurrency]   ?? 0,
-    rejected:  pt.rejected_by_currency?.[primaryCurrency]  ?? 0,
-    currency:  primaryCurrency,
+    settled: pt.settled_by_currency?.[primaryCurrency] ?? 0,
+    rejected: pt.rejected_by_currency?.[primaryCurrency] ?? 0,
+    currency: primaryCurrency,
   }));
 
   // All amounts derived from trend data so slices + centre label are consistent
   const totalSubmittedAmt = trendData.reduce((sum, t) => sum + t.submitted, 0);
-  const totalSettledAmt   = trendData.reduce((sum, t) => sum + t.settled, 0);
-  const totalRejectedAmt  = trendData.reduce((sum, t) => sum + t.rejected, 0);
-  const totalPendingAmt   = Math.max(0, totalSubmittedAmt - totalSettledAmt - totalRejectedAmt);
+  const totalSettledAmt = trendData.reduce((sum, t) => sum + t.settled, 0);
+  const totalRejectedAmt = trendData.reduce((sum, t) => sum + t.rejected, 0);
+  const totalPendingAmt = Math.max(
+    0,
+    totalSubmittedAmt - totalSettledAmt - totalRejectedAmt,
+  );
 
-  const settledPct = totalSubmittedAmt > 0 ? Math.round((totalSettledAmt / totalSubmittedAmt) * 100) : 0;
+  const settledPct =
+    totalSubmittedAmt > 0
+      ? Math.round((totalSettledAmt / totalSubmittedAmt) * 100)
+      : 0;
 
   // Pie built from monetary amounts — slices and legend percentages are now value-based
   const rawPie = [
-    { name: 'Settled',  value: totalSettledAmt,  color: '#059669' },
-    { name: 'Rejected', value: totalRejectedAmt, color: '#ba1a1a' },
-    { name: 'Pending',  value: totalPendingAmt,  color: '#74777c' },
+    { name: "Settled", value: totalSettledAmt, color: "#059669" },
+    { name: "Rejected", value: totalRejectedAmt, color: "#ba1a1a" },
+    { name: "Pending", value: totalPendingAmt, color: "#74777c" },
   ].filter((s) => s.value > 0);
 
   const pieTotal = rawPie.reduce((sum, s) => sum + s.value, 0);
-  const pieData  = rawPie.map((s) => ({
+  const pieData = rawPie.map((s) => ({
     ...s,
     pct: pieTotal > 0 ? Math.round((s.value / pieTotal) * 100) : 0,
   }));
@@ -121,9 +164,14 @@ export default function VendorDashboard() {
         <div>
           <p className="text-xs text-on-surface-variant">{today}</p>
           <h1 className="text-2xl font-semibold text-on-surface mt-0.5">
-            Good morning{data.first_name ? `, ${data.first_name}` : ''}
+            Good morning{" "}
+            <span className="capitalize">
+              {data.first_name ? `, ${data.first_name}` : ""}
+            </span>
           </h1>
-          <p className="text-sm text-on-surface-variant mt-0.5">Here is what&apos;s happening with your accounts today.</p>
+          <p className="text-sm text-on-surface-variant mt-0.5">
+            Here is what&apos;s happening with your accounts today.
+          </p>
         </div>
 
         <TutorialCard
@@ -137,69 +185,192 @@ export default function VendorDashboard() {
           ]}
         />
 
-        <div className="grid grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           <StatCard label="Total Invoices" value={data.total_invoices ?? 0} />
           <StatCard
             label="Pending Approval"
             value={data.pending_approval_count ?? 0}
-            badge={data.pending_approval_count > 0 ? 'Action Req.' : undefined}
+            badge={data.pending_approval_count > 0 ? "Action Req." : undefined}
             subColor="text-error"
           />
-          <StatCard label="Paid This Month" values={currencyValues(data.paid_this_month, primaryCurrency)} sub={`${settledPct}% of invoices settled`} />
-          <StatCard label="Total Amount Paid" values={currencyValues(data.total_amount_paid_ytd, primaryCurrency)} sub="YTD" />
+          <StatCard
+            label="Paid This Month"
+            values={currencyValues(data.paid_this_month, primaryCurrency)}
+            sub={`${settledPct}% of invoices settled`}
+          />
+          <StatCard
+            label="Total Amount Paid"
+            values={currencyValues(data.total_amount_paid_ytd, primaryCurrency)}
+            sub="YTD"
+          />
         </div>
 
-        <div className="grid grid-cols-3 gap-4">
-          <Card className="col-span-2">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <Card
+            className="lg:col-span-2"
+            height={window.innerWidth < 640 ? 220 : 180}
+          >
+            {" "}
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-semibold text-on-surface">Payment Trends</h3>
-              <span className="text-xs text-on-surface-variant bg-surface-container px-2 py-1 rounded">Monthly</span>
+              <h3 className="text-sm font-semibold text-on-surface">
+                Payment Trends
+              </h3>
+              <span className="text-xs text-on-surface-variant bg-surface-container px-2 py-1 rounded">
+                Monthly
+              </span>
             </div>
-            <ResponsiveContainer width="100%" height={180}>
-              <BarChart data={trendData} barGap={2} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
-                <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#74777c' }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fontSize: 11, fill: '#74777c' }} axisLine={false} tickLine={false} tickFormatter={axisFormatter} />
-                <Tooltip
-                  formatter={(v, name) => [formatCurrency(v, primaryCurrency), name]}
-                  contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid #c4c6cc' }}
-                />
-                <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 11, paddingTop: 8 }} />
-                <Bar dataKey="submitted" name="Submitted" fill="#c4c6cc" radius={[3, 3, 0, 0]} />
-                <Bar dataKey="settled"   name="Settled"   fill="#006c49" radius={[3, 3, 0, 0]} />
-                <Bar dataKey="rejected"  name="Rejected"  fill="#ba1a1a" radius={[3, 3, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+            {trendRaw.length ? (
+              <ResponsiveContainer
+                width="100%"
+                height={window.innerWidth < 640 ? 220 : 180}
+              >
+                <BarChart
+                  data={trendData}
+                  barGap={2}
+                  margin={{ top: 0, right: 0, left: -20, bottom: 0 }}
+                >
+                  <XAxis
+                    dataKey="month"
+                    tick={{ fontSize: 11, fill: "#74777c" }}
+                    axisLine={false}
+                    tickLine={false}
+                  />
+                  <YAxis
+                    tick={{ fontSize: 11, fill: "#74777c" }}
+                    axisLine={false}
+                    tickLine={false}
+                    tickFormatter={axisFormatter}
+                  />
+                  <Tooltip
+                    formatter={(v, name) => [
+                      formatCurrency(v, primaryCurrency),
+                      name,
+                    ]}
+                    contentStyle={{
+                      fontSize: 12,
+                      borderRadius: 8,
+                      border: "1px solid #c4c6cc",
+                    }}
+                  />
+                  <Legend
+                    iconType="circle"
+                    iconSize={8}
+                    wrapperStyle={{ fontSize: 11, paddingTop: 8 }}
+                  />
+                  <Bar
+                    dataKey="submitted"
+                    name="Submitted"
+                    fill="#c4c6cc"
+                    radius={[3, 3, 0, 0]}
+                  />
+                  <Bar
+                    dataKey="settled"
+                    name="Settled"
+                    fill="#006c49"
+                    radius={[3, 3, 0, 0]}
+                  />
+                  <Bar
+                    dataKey="rejected"
+                    name="Rejected"
+                    fill="#ba1a1a"
+                    radius={[3, 3, 0, 0]}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div
+                className="flex flex-col gap-1 items-center justify-center"
+                style={{
+                  height: window.innerWidth < 640 ? 220 : 180,
+                }}
+              >
+                <BiBarChartAlt2 size={24} color="gray" />
+                <h3 className="text-sm font-semibold text-on-surface ">
+                  No payment activity yet
+                </h3>
+                <p className="text-sm text-on-surface-variant text-center font-semibold ">
+                  Trends appear once invoices move through approval.
+                </p>
+                <div className="w-full mt-2">
+                  <button
+                    onClick={() => navigate("/vendor/invoices/new")}
+                    className="w-full border border-orange-600 text-on-surface-variant py-2  rounded-[5px] flex justify-center gap-1 "
+                  >
+                    Submit an Invoice
+                    <span>
+                      <MdOutlineArrowOutward />
+                    </span>
+                  </button>
+                </div>
+              </div>
+            )}
           </Card>
 
-          <Card>
-            <h3 className="text-sm font-semibold text-on-surface mb-3">Status Distribution</h3>
+          <Card height={window.innerWidth < 640 ? 220 : 180} className="w-full">
+            <h3 className="text-sm font-semibold text-on-surface mb-3">
+              Status Distribution
+            </h3>
             {pieData.length === 0 ? (
-              <p className="text-sm text-on-surface-variant text-center py-8">No invoices yet.</p>
+              <div
+                className="flex flex-col gap-1 items-center justify-center"
+                style={{
+                  height: window.innerWidth < 640 ? 220 : 180,
+                }}
+              >
+                <FiPieChart size={24} color="gray" />
+                <h3 className="text-sm  text-on-surface font-bold">
+                  Status Distribution
+                </h3>
+                <p className="text-sm text-on-surface-variant text-center font-semibold ">
+                  No invoices yet.
+                </p>
+              </div>
             ) : (
               <>
                 <div className="flex justify-center mb-2">
                   <div className="relative">
                     <PieChart width={130} height={130}>
-                      <Pie data={pieData} cx={60} cy={60} innerRadius={38} outerRadius={56} dataKey="value" startAngle={90} endAngle={-270}>
+                      <Pie
+                        data={pieData}
+                        cx={60}
+                        cy={60}
+                        innerRadius={38}
+                        outerRadius={56}
+                        dataKey="value"
+                        startAngle={90}
+                        endAngle={-270}
+                      >
                         {pieData.map((entry) => (
                           <Cell key={entry.name} fill={entry.color} />
                         ))}
                       </Pie>
                     </PieChart>
                     <div className="absolute inset-0 flex flex-col items-center justify-center">
-                      <span className="text-lg font-bold text-on-surface leading-none">{settledPct}%</span>
-                      <span className="text-[10px] text-on-surface-variant mt-0.5">settled</span>
+                      <span className="text-lg font-bold text-on-surface leading-none">
+                        {settledPct}%
+                      </span>
+                      <span className="text-[10px] text-on-surface-variant mt-0.5">
+                        settled
+                      </span>
                     </div>
                   </div>
                 </div>
                 <div className="space-y-1">
                   {pieData.map(({ name, pct, color }) => (
-                    <div key={name} className="flex items-center justify-between text-xs">
+                    <div
+                      key={name}
+                      className="flex items-center justify-between text-xs"
+                    >
                       <div className="flex items-center gap-1.5">
-                        <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
+                        <div
+                          className="w-2 h-2 rounded-full flex-shrink-0"
+                          style={{ backgroundColor: color }}
+                        />
                         <span className="text-on-surface-variant">{name}</span>
                       </div>
-                      <span className="font-semibold text-on-surface">{pct}%</span>
+                      <span className="font-semibold text-on-surface">
+                        {pct}%
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -210,7 +381,7 @@ export default function VendorDashboard() {
       </div>
 
       <button
-        onClick={() => navigate('/vendor/invoices/new')}
+        onClick={() => navigate("/vendor/invoices/new")}
         className="fixed bottom-8 right-8 w-12 h-12 bg-navy rounded-full flex items-center justify-center text-white shadow-dropdown hover:bg-navy/90 transition-colors z-20"
       >
         <Plus size={20} />
