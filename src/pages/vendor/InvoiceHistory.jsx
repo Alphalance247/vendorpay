@@ -16,10 +16,6 @@ import {
   Loader2,
   ChevronLeft,
   ChevronRight,
-  AlertCircle,
-  Receipt,
-  Pencil,
-  RotateCcw,
 } from "lucide-react";
 import TutorialCard from "../../components/ui/TutorialCard";
 import AppLayout from "../../components/layout/AppLayout";
@@ -660,105 +656,6 @@ export default function InvoiceHistory() {
                                         Delete
                                       </span>
                                     </div>
-                                    {inv.status === "flagged" && (
-                                      <>
-                                        <div
-                                          className="cursor-pointer"
-                                          // onClick={() =>
-                                          //   handleFixAndResubmit(inv)
-                                          // }
-                                        >
-                                          <span className="flex items-center gap-1.5">
-                                            <RotateCcw size={15} />
-                                            <p className="text-sm text-on-surface-variant font-medium">
-                                              Fix & Resubmit
-                                            </p>
-                                          </span>
-                                        </div>
-                                      </>
-                                    )}
-
-                                    {/* REJECTED */}
-                                    {inv.status === "rejected" && (
-                                      <>
-                                        <div
-                                          className="cursor-pointer"
-                                          // onClick={() =>
-                                          //   handleViewRejectReason(inv)
-                                          // }
-                                        >
-                                          <span className="flex items-center gap-1.5">
-                                            <AlertCircle size={15} />
-                                            <p className="text-sm text-on-surface-variant font-medium">
-                                              View Rejection Reason
-                                            </p>
-                                          </span>
-                                        </div>
-
-                                        <div
-                                          className="cursor-pointer"
-                                          // onClick={() =>
-                                          //   handleEditAndResubmit(inv)
-                                          // }
-                                        >
-                                          <span className="flex items-center gap-1.5">
-                                            <Pencil size={15} />
-                                            <p className="text-sm text-on-surface-variant font-medium">
-                                              Edit & Resubmit
-                                            </p>
-                                          </span>
-                                        </div>
-                                      </>
-                                    )}
-
-                                    {/* PAID */}
-                                    {inv.status === "paid" && (
-                                      <div
-                                        className="cursor-pointer"
-                                        // onClick={() =>
-                                        //   handleDownloadReceipt(inv.id)
-                                        // }
-                                      >
-                                        <span className="flex items-center gap-1.5">
-                                          <Receipt size={15} />
-                                          <p className="text-sm text-on-surface-variant font-medium">
-                                            Download Receipt
-                                          </p>
-                                        </span>
-                                      </div>
-                                    )}
-
-                                    {/* PAYMENT CONFIRMED */}
-                                    {inv.status === "payment_confirmed" && (
-                                      <div
-                                        className="cursor-pointer"
-                                        // onClick={() =>
-                                        //   handleDownloadReceipt(inv.id)
-                                        // }
-                                      >
-                                        <span className="flex items-center gap-1.5">
-                                          <Receipt size={15} />
-                                          <p className="text-sm text-on-surface-variant font-medium">
-                                            Download Receipt
-                                          </p>
-                                        </span>
-                                      </div>
-                                    )}
-
-                                    {/* PAYMENT DISPUTED */}
-                                    {inv.status === "payment_disputed" && (
-                                      <div
-                                        className="cursor-pointer"
-                                        // onClick={() => handleViewDispute(inv)}
-                                      >
-                                        <span className="flex items-center gap-1.5">
-                                          <AlertCircle size={15} />
-                                          <p className="text-sm text-on-surface-variant font-medium">
-                                            View Dispute
-                                          </p>
-                                        </span>
-                                      </div>
-                                    )}
                                   </div>
                                 </div>
                               )}

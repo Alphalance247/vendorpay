@@ -5,7 +5,7 @@ import TutorialCard from '../../components/ui/TutorialCard';
 import { formatCurrency, formatDate, extractErrorMessage } from '../../lib/utils';
 import AppLayout from '../../components/layout/AppLayout';
 import Card from '../../components/ui/Card';
-import Button from '../../components/ui/Button';
+// import Button from '../../components/ui/Button';
 import StatusChip from '../../components/ui/StatusChip';
 import { invoiceService } from '../../lib/services/invoiceService';
 
@@ -127,7 +127,7 @@ export default function VendorPayments() {
           ) : error ? (
             <p className="px-4 py-8 text-center text-sm text-error">{error}</p>
           ) : (
-            <div className="w-full ">
+            <div className="w-full overflow-x-auto">
               <table className="w-full min-w-[900px]">
                 <thead>
                   <tr className="bg-surface-low border-b border-outline-variant">

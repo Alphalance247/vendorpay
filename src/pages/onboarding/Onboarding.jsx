@@ -862,8 +862,8 @@ const SECTIONS = [
       {
         key: "accountType",
         label: "Account type",
-        type: "select",
-        options: ["Savings", "Current", "Business"],
+        type: "accountType",
+        // options: ["Savings", "Current", "Business"],
       },
       {
         key: "accountNumber",
@@ -879,13 +879,18 @@ const SECTIONS = [
     title: "Contact",
     fields: [
       {
-        key: "contactName",
-        label: "Contact name",
+        key: "firstName",
+        label: "Firstname",
+        type: "text",
+      },
+      {
+        key: "lastName",
+        label: "Lastname",
         type: "text",
       },
       {
         key: "title",
-        label: "Title",
+        label: "Job Title",
         type: "text",
       },
       {
@@ -897,6 +902,12 @@ const SECTIONS = [
         key: "phone",
         label: "Phone",
         type: "text",
+      },
+      {
+        key: "department",
+        label: "Department",
+        type: "select",
+        options: ["Finance", "Accounting", "Operations", "Legal", "Other"],
       },
     ],
   },
@@ -1002,14 +1013,19 @@ function ViewField({ field, value }) {
     </div>
   );
 }
-function EditField({ field, value, onChange }) {
+function EditField({ field, value, onChange, draft }) {
+  const accountTypeOptions =
+    field.type === "accountType"
+      ? COUNTRY_PROFILES[draft?.country]?.accountTypes || []
+      : [];
+
   return (
     <div className="mb-4">
       <label className="mb-1.5 block text-sm font-medium text-stone-700">
         {field.label}
       </label>
 
-      {field.type === "select" ? (
+      {field.type === "select" || field.type === "accountType" ? (
         <select
           value={value || ""}
           onChange={(e) => onChange(field.key, e.target.value)}
@@ -1017,7 +1033,10 @@ function EditField({ field, value, onChange }) {
         >
           <option value="">Select {field.label}</option>
 
-          {field.options?.map((option) => (
+          {(field.type === "accountType"
+            ? accountTypeOptions
+            : field.options || []
+          ).map((option) => (
             <option key={option} value={option}>
               {option}
             </option>
@@ -1280,10 +1299,18 @@ function SectionCard({
                   }
 
                   return (
+                    // <EditField
+                    //   key={field.key}
+                    //   field={field}
+                    //   value={draft[field.key]}
+                    //   draft={draft}
+                    //   onChange={onDraftChange}
+                    // />
                     <EditField
                       key={field.key}
                       field={field}
                       value={draft[field.key]}
+                      draft={draft}
                       onChange={onDraftChange}
                     />
                   );
@@ -1301,10 +1328,37 @@ function SectionCard({
                       hint: field.hint,
                       sensitive: field.name === "accountNumber",
                     }}
+                    // value={draft[field.name] || ""}
                     value={draft[field.name] || ""}
+                    draft={draft}
                     onChange={onDraftChange}
                   />
                 ))}
+                {editBankingProfile?.fields?.some(
+                  (field) => field.name === "accountNumber",
+                ) && (
+                  <div className="col-span-2">
+                    <EditField
+                      field={{
+                        key: "confirmAccount",
+                        label: "Confirm Account Number",
+                        type: "text",
+                        placeholder: "Re-enter account number",
+                      }}
+                      value={draft.confirmAccount || ""}
+                      draft={draft}
+                      onChange={onDraftChange}
+                    />
+
+                    {draft.accountNumber &&
+                      draft.confirmAccount &&
+                      draft.accountNumber !== draft.confirmAccount && (
+                        <p className="mt-1 -translate-y-3 text-xs text-red-600">
+                          Account numbers do not match
+                        </p>
+                      )}
+                  </div>
+                )}
               </>
             ) : (
               section.fields.map((field) => (
@@ -1312,6 +1366,7 @@ function SectionCard({
                   key={field.key}
                   field={field}
                   value={draft[field.key]}
+                  draft={draft}
                   onChange={onDraftChange}
                 />
               ))
@@ -1439,16 +1494,47 @@ function ReviewStep({ data, onBack, onSubmit, loading, onDataChange }) {
       return next;
     });
   }
+  // function handleSave(sectionKey) {
+  //   console.log(sectionKey);
+  //   setValues((prev) => ({ ...prev, ...draft }));
+  //   onDataChange((prev) => ({
+  //     ...prev,
+  //     ...draft,
+  //   }));
+
+  //   setEditingSection(null);
+  //   const messages = {
+  //     banking: "Banking details updated",
+  //     company: "Company details updated",
+  //     contact: "Contact details updated",
+  //   };
+
+  //   setJustSaved(messages[sectionKey] || "Details updated");
+
+  //   setTimeout(() => setJustSaved(null), 3000);
+  // }
   function handleSave(sectionKey) {
-    console.log(sectionKey);
+    if (sectionKey === "banking") {
+      if (!draft.confirmAccount) {
+        setJustSaved("Please confirm your account number");
+        return;
+      }
+
+      if (draft.accountNumber !== draft.confirmAccount) {
+        setJustSaved("Account numbers do not match");
+        return;
+      }
+    }
+
     setValues((prev) => ({ ...prev, ...draft }));
+
     onDataChange((prev) => ({
       ...prev,
       ...draft,
     }));
 
     setEditingSection(null);
-    // setJustSaved(sectionKey);
+
     const messages = {
       banking: "Banking details updated",
       company: "Company details updated",
@@ -1459,7 +1545,6 @@ function ReviewStep({ data, onBack, onSubmit, loading, onDataChange }) {
 
     setTimeout(() => setJustSaved(null), 3000);
   }
-
   return (
     <div className="min-h-screen bg-stone-50 px-5 pb-5 pt-5 text-stone-900">
       <Toast show={!!justSaved} message={justSaved} />

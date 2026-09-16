@@ -23,6 +23,7 @@ import { useToast } from "../../components/ui/Toast";
 import { useCreateInvite } from "../../hooks/useQueries/vendorAdmin/useCreateInvite";
 import { useTeamMembers } from "../../hooks/useQueries/vendorAdmin/useTeamMembers";
 import { useDeleteTeamMember } from "../../hooks/useQueries/vendorAdmin/useDeleteTeamMember";
+import { useResendInvite } from "../../hooks/useQueries/vendorAdmin/useResendInvite";
 
 const ROLES = [
   {
@@ -169,6 +170,7 @@ export default function TeamRoles() {
   const { data: team = [], isLoading, isError } = useTeamMembers();
   const createInvite = useCreateInvite(() => setInviteOpen(false));
   const deleteMember = useDeleteTeamMember();
+  const resendInvite = useResendInvite();
 
   function handleInvite({ email, role }, resetForm) {
     createInvite.mutate(
@@ -183,7 +185,11 @@ export default function TeamRoles() {
   }
 
   function handleResend(member) {
-    toast(`Invitation resent to ${member.email}.`);
+    resendInvite.mutate(member.id, {
+      onSuccess: () => {
+        toast(`Invitation resent to ${member.email}.`);
+      },
+    });
   }
 
   async function handleRemove(member) {
@@ -305,6 +311,9 @@ export default function TeamRoles() {
                       const removing =
                         deleteMember.isPending &&
                         deleteMember.variables === member.id;
+                      const resending =
+                        resendInvite.isPending &&
+                        resendInvite.variables === member.id;
                       return (
                         <tr
                           key={member.id}
@@ -335,13 +344,21 @@ export default function TeamRoles() {
                               {member.status === "pending" && (
                                 <button
                                   onClick={() => handleResend(member)}
+                                  disabled={resending}
                                   title="Resend invite"
-                                  className="p-1.5 rounded hover:bg-surface-container transition-colors"
+                                  className="p-1.5 rounded hover:bg-surface-container transition-colors disabled:opacity-50"
                                 >
-                                  <Mail
-                                    size={14}
-                                    className="text-on-surface-variant"
-                                  />
+                                  {resending ? (
+                                    <Loader2
+                                      size={14}
+                                      className="animate-spin text-on-surface-variant"
+                                    />
+                                  ) : (
+                                    <Mail
+                                      size={14}
+                                      className="text-on-surface-variant"
+                                    />
+                                  )}
                                 </button>
                               )}
                               {!isOwner && (
@@ -374,6 +391,9 @@ export default function TeamRoles() {
                   const removing =
                     deleteMember.isPending &&
                     deleteMember.variables === member.id;
+                  const resending =
+                    resendInvite.isPending &&
+                    resendInvite.variables === member.id;
                   return (
                     <div key={member.id} className="px-4 py-4">
                       <div className="flex items-start justify-between gap-3">
@@ -406,13 +426,21 @@ export default function TeamRoles() {
                           {member.status === "pending" && (
                             <button
                               onClick={() => handleResend(member)}
+                              disabled={resending}
                               title="Resend invite"
-                              className="p-1.5 rounded hover:bg-surface-container transition-colors"
+                              className="p-1.5 rounded hover:bg-surface-container transition-colors disabled:opacity-50"
                             >
-                              <Mail
-                                size={14}
-                                className="text-on-surface-variant"
-                              />
+                              {resending ? (
+                                <Loader2
+                                  size={14}
+                                  className="animate-spin text-on-surface-variant"
+                                />
+                              ) : (
+                                <Mail
+                                  size={14}
+                                  className="text-on-surface-variant"
+                                />
+                              )}
                             </button>
                           )}
                           {!isOwner && (

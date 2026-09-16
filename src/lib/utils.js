@@ -2,6 +2,17 @@ export function cn(...classes) {
   return classes.filter(Boolean).join(' ');
 }
 
+// The backend issues finer-grained roles (admin, owner, staff, member, ...)
+// than the app's two dashboards. Only an explicit "vendor" role belongs on
+// the vendor dashboard — every other role lands on the admin dashboard.
+export function isVendorRole(role) {
+  return role === 'vendor';
+}
+
+export function dashboardPathForRole(role) {
+  return isVendorRole(role) ? '/vendor/dashboard' : '/admin/dashboard';
+}
+
 export const CURRENCY_SYMBOLS = {
   USD: '$', EUR: '€', GBP: '£', CAD: 'C$',
   KES: 'KSh', NGN: '₦', ZAR: 'R', GHS: 'GH₵',
