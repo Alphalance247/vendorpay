@@ -6,6 +6,7 @@ const ROOT_DOMAINS = ['vendorpay.alluvium.net', 'localhost'];
 export const DUMMY_TENANTS = {
   acme: { name: 'Acme Corp' },
   globex: { name: 'Globex Inc' },
+  bestbraininc: { name: 'Best Brain Inc' },
 };
 
 export function parseHost(hostname) {

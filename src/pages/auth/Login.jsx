@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, ArrowRight, ShieldCheck, Zap } from 'lucide-react';
 import { useAuth } from '../../lib/authContext';
 import { extractErrorMessage, dashboardPathForRole } from '../../lib/utils';
+import { parseHost } from '../../lib/tenantResolver';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 
@@ -36,9 +37,27 @@ export default function Login() {
     setError('');
 
     try {
-      const role = await login(form.email, form.password);
+      const { role, companySlug, accessToken, refreshToken } = await login(
+        form.email,
+        form.password,
+      );
 
-      localStorage.setItem('user_role', role);
+      const { slug: currentSlug, rootDomain } = parseHost(window.location.hostname);
+
+      // The company's own subdomain is a different origin — localStorage
+      // (and the tokens we just stored there) won't carry over on a plain
+      // client-side navigate(). Hard-redirect and hand the tokens off via
+      // the URL; authContext picks them up on the other side and scrubs them.
+      if (companySlug && companySlug !== currentSlug) {
+        const port = window.location.port ? `:${window.location.port}` : '';
+        const params = new URLSearchParams({
+          access_token: accessToken,
+          refresh_token: refreshToken,
+          company_slug: companySlug,
+        });
+        window.location.href = `${window.location.protocol}//${companySlug}.${rootDomain}${port}${dashboardPathForRole(role)}?${params}`;
+        return;
+      }
 
       navigate(dashboardPathForRole(role));
     } catch (err) {
