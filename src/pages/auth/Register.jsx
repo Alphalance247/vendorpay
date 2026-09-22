@@ -4,6 +4,7 @@ import { Eye, EyeOff, ShieldCheck, Zap } from 'lucide-react';
 import { authService } from '../../lib/services/authService';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
+import Logo from '../../components/ui/Logo';
 
 export default function Register() {
   const navigate = useNavigate();
@@ -80,15 +81,7 @@ export default function Register() {
         />
 
         <div className="relative z-10 flex flex-col justify-between p-12 w-full">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-emerald rounded flex items-center justify-center">
-              <span className="text-white text-sm font-bold">VP</span>
-            </div>
-
-            <span className="text-white font-semibold text-lg">
-              VendorPay
-            </span>
-          </div>
+          <Logo variant="dark" />
 
           <div className="space-y-6">
             <h1 className="text-white text-4xl font-bold leading-tight tracking-tight">
@@ -122,15 +115,7 @@ export default function Register() {
       {/* Right panel */}
       <div className="flex-1 flex items-center justify-center bg-white px-6 py-12">
         <div className="w-full max-w-sm">
-          <div className="flex items-center gap-2 mb-8 lg:hidden">
-            <div className="w-8 h-8 bg-navy rounded flex items-center justify-center">
-              <span className="text-white text-sm font-bold">VP</span>
-            </div>
-
-            <span className="text-navy font-semibold text-lg">
-              VendorPay
-            </span>
-          </div>
+          <Logo variant="light" className="mb-8 lg:hidden" />
 
           <div className="mb-8">
             <h2 className="text-2xl font-semibold text-on-surface tracking-tight">

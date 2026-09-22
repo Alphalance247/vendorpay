@@ -50,7 +50,7 @@ export const authService = {
         await apiClient.post('/auth/logout', {
           refresh_token: refreshToken,
         });
-      } catch (err) {
+      } catch {
         console.warn('Logout request failed silently');
       }
     }

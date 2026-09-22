@@ -1,41 +1,61 @@
-import { useState } from 'react';
-import { Search, UserPlus, Trash2, Mail, Crown, ShieldCheck, Eye } from 'lucide-react';
-import TutorialCard from '../../components/ui/TutorialCard';
-import AppLayout from '../../components/layout/AppLayout';
-import Card from '../../components/ui/Card';
-import Button from '../../components/ui/Button';
-import Input from '../../components/ui/Input';
-import Select from '../../components/ui/Select';
-import Modal from '../../components/ui/Modal';
-import StatusChip from '../../components/ui/StatusChip';
-import { useConfirm } from '../../hooks/useConfirm';
-import { useToast } from '../../components/ui/Toast';
+import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import {
+  Search,
+  UserPlus,
+  Trash2,
+  Mail,
+  Crown,
+  ShieldCheck,
+  Eye,
+  Loader2,
+} from "lucide-react";
+import TutorialCard from "../../components/ui/TutorialCard";
+import AppLayout from "../../components/layout/AppLayout";
+import Card from "../../components/ui/Card";
+import Button from "../../components/ui/Button";
+import Input from "../../components/ui/Input";
+import Select from "../../components/ui/Select";
+import Modal from "../../components/ui/Modal";
+import StatusChip from "../../components/ui/StatusChip";
+import { useConfirm } from "../../hooks/useConfirm";
+import { useToast } from "../../components/ui/Toast";
+import { useCreateInvite } from "../../hooks/useQueries/vendorAdmin/useCreateInvite";
+import { useTeamMembers } from "../../hooks/useQueries/vendorAdmin/useTeamMembers";
+import { useDeleteTeamMember } from "../../hooks/useQueries/vendorAdmin/useDeleteTeamMember";
+import { useResendInvite } from "../../hooks/useQueries/vendorAdmin/useResendInvite";
 
 const ROLES = [
   {
-    id: 'Owner',
+    id: "Owner",
     icon: Crown,
-    description: 'Full access, including billing and team management. Cannot be removed or reassigned.',
+    description:
+      "Full access, including billing and team management. Cannot be removed or reassigned.",
   },
   {
-    id: 'Admin',
+    id: "Admin",
     icon: ShieldCheck,
-    description: 'Manages vendors, invoices, and payments. No access to billing or removing the Owner.',
+    description:
+      "Manages vendors, invoices, and payments. No access to billing or removing the Owner.",
   },
   {
-    id: 'Reviewer',
+    id: "Reviewer",
     icon: Eye,
-    description: 'Reviews and approves or rejects invoices only. No access to payments, team, or billing.',
+    description:
+      "Reviews and approves or rejects invoices only. No access to payments, team, or billing.",
   },
 ];
 
-const INVITABLE_ROLES = ROLES.filter((r) => r.id !== 'Owner').map((r) => r.id);
+// Roles the backend invite endpoint accepts from this page. "vendor" used to
+// be one of them, but vendor invites now live on the Vendors page instead.
+const INVITE_ROLES = ["admin", "member", "staff"];
 
-const SEED_TEAM = [
-  { id: 1, name: 'Jane Smith', email: 'jane@acmecorp.com', role: 'Owner', status: 'Active' },
-  { id: 2, name: 'Mike Chen', email: 'mike@acmecorp.com', role: 'Admin', status: 'Active' },
-  { id: 3, name: 'Amara Diallo', email: 'amara@acmecorp.com', role: 'Reviewer', status: 'Pending' },
-];
+// The API returns lowercase status values (e.g. "active", "pending");
+// StatusChip's style map is keyed on the capitalized form.
+function statusLabel(status) {
+  if (!status) return status;
+  return status.charAt(0).toUpperCase() + status.slice(1);
+}
 
 function RoleLegend() {
   return (
@@ -47,7 +67,9 @@ function RoleLegend() {
           </div>
           <div className="min-w-0">
             <p className="text-sm font-semibold text-on-surface">{id}</p>
-            <p className="text-xs text-on-surface-variant mt-0.5 leading-relaxed">{description}</p>
+            <p className="text-xs text-on-surface-variant mt-0.5 leading-relaxed">
+              {description}
+            </p>
           </div>
         </Card>
       ))}
@@ -55,8 +77,8 @@ function RoleLegend() {
   );
 }
 
-function InviteModal({ open, onClose, onInvite }) {
-  const [form, setForm] = useState({ name: '', email: '', role: 'Admin' });
+function InviteModal({ open, onClose, onInvite, submitting }) {
+  const [form, setForm] = useState({ email: "", role: INVITE_ROLES[0] });
 
   function handleChange(e) {
     const { name, value } = e.target;
@@ -65,12 +87,11 @@ function InviteModal({ open, onClose, onInvite }) {
 
   function handleSubmit(e) {
     e.preventDefault();
-    if (!form.name || !form.email) return;
-    onInvite(form);
-    setForm({ name: '', email: '', role: 'Admin' });
+    if (!form.email) return;
+    onInvite(form, () => setForm({ email: "", role: INVITE_ROLES[0] }));
   }
 
-  const valid = form.name.trim() && /\S+@\S+\.\S+/.test(form.email);
+  const valid = /\S+@\S+\.\S+/.test(form.email);
 
   return (
     <Modal
@@ -80,18 +101,47 @@ function InviteModal({ open, onClose, onInvite }) {
       subtitle="They'll receive an email invite to join your workspace."
       footer={
         <>
-          <Button variant="ghost" onClick={onClose}>Cancel</Button>
-          <Button onClick={handleSubmit} disabled={!valid} className="flex items-center gap-1.5">
-            <UserPlus size={15} /> Send Invite
+          <Button variant="ghost" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button
+            onClick={handleSubmit}
+            disabled={!valid || submitting}
+            className="flex items-center gap-1.5"
+          >
+            {submitting ? (
+              <Loader2 size={15} className="animate-spin" />
+            ) : (
+              <UserPlus size={15} />
+            )}
+            {submitting ? "Sending..." : "Send Invite"}
           </Button>
         </>
       }
     >
       <form onSubmit={handleSubmit} className="space-y-4">
-        <Input label="Full Name" name="name" value={form.name} onChange={handleChange} placeholder="Jane Smith" autoFocus />
-        <Input label="Work Email" type="email" name="email" value={form.email} onChange={handleChange} placeholder="jane@yourcompany.com" />
-        <Select label="Role" name="role" value={form.role} onChange={handleChange}>
-          {INVITABLE_ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
+        <Input
+          label="Work Email"
+          type="email"
+          name="email"
+          value={form.email}
+          onChange={handleChange}
+          placeholder="jane@yourcompany.com"
+          autoFocus
+          disabled={submitting}
+        />
+        <Select
+          label="Role"
+          name="role"
+          value={form.role}
+          onChange={handleChange}
+          disabled={submitting}
+        >
+          {INVITE_ROLES.map((r) => (
+            <option key={r} value={r}>
+              {r}
+            </option>
+          ))}
         </Select>
       </form>
     </Modal>
@@ -99,61 +149,88 @@ function InviteModal({ open, onClose, onInvite }) {
 }
 
 export default function TeamRoles() {
-  const [team, setTeam] = useState(SEED_TEAM);
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState("");
   const [inviteOpen, setInviteOpen] = useState(false);
 
   const { confirm, confirmEl } = useConfirm();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
-  function handleInvite({ name, email, role }) {
-    setTeam((prev) => [
-      ...prev,
-      { id: Date.now(), name, email, role, status: 'Pending' },
-    ]);
-    setInviteOpen(false);
-    toast(`Invitation sent to ${email} (dummy — no email actually sent).`);
-  }
+  const { data: rawTeam = [], isLoading, isError } = useTeamMembers();
+  // Vendor invites/rows now live on the Vendors page instead of here.
+  const team = rawTeam.filter((m) => m.role?.toLowerCase() !== "vendor");
+  const createInvite = useCreateInvite(() => setInviteOpen(false));
+  const deleteMember = useDeleteTeamMember();
+  const resendInvite = useResendInvite();
 
-  function handleRoleChange(member, role) {
-    setTeam((prev) => prev.map((m) => (m.id === member.id ? { ...m, role } : m)));
-    toast(`${member.name}'s role updated to ${role}.`);
+  function handleInvite({ email, role }, resetForm) {
+    createInvite.mutate(
+      { email, role },
+      {
+        onSuccess: () => {
+          queryClient.invalidateQueries({ queryKey: ["team-members"] });
+          resetForm?.();
+        },
+      },
+    );
   }
 
   function handleResend(member) {
-    toast(`Invitation resent to ${member.email}.`);
+    resendInvite.mutate(member.id, {
+      onSuccess: () => {
+        toast(`Invitation resent to ${member.email}.`);
+      },
+    });
   }
 
   async function handleRemove(member) {
     const ok = await confirm({
-      title: 'Remove Teammate',
-      message: `Remove "${member.name}" from your team? They'll lose access to this workspace immediately.`,
-      confirmLabel: 'Remove',
-      variant: 'danger',
+      title: "Remove Teammate",
+      message: `Remove "${member.full_name}" from your team? They'll lose access to this workspace immediately.`,
+      confirmLabel: "Remove",
+      variant: "danger",
     });
     if (!ok) return;
-    setTeam((prev) => prev.filter((m) => m.id !== member.id));
-    toast(`Removed ${member.name} from the team.`);
+    deleteMember.mutate(member.id, {
+      onSuccess: () => {
+        toast(`Removed ${member.full_name} from the team.`);
+      },
+    });
   }
 
   const filtered = team.filter((m) => {
     if (!search) return true;
     const q = search.toLowerCase();
-    return m.name.toLowerCase().includes(q) || m.email.toLowerCase().includes(q);
+    return (
+      m.full_name?.toLowerCase().includes(q) ||
+      m.email?.toLowerCase().includes(q)
+    );
   });
 
   return (
     <AppLayout role="admin" searchPlaceholder="Search team members...">
       {confirmEl}
-      <InviteModal open={inviteOpen} onClose={() => setInviteOpen(false)} onInvite={handleInvite} />
+      <InviteModal
+        open={inviteOpen}
+        onClose={() => setInviteOpen(false)}
+        onInvite={handleInvite}
+        submitting={createInvite.isPending}
+      />
 
       <div className="space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
-            <h1 className="font-headline-lg text-headline-lg text-on-surface">Team & Roles</h1>
-            <p className="text-sm text-on-surface-variant mt-0.5">Manage who has access to your company's VendorPay workspace.</p>
+            <h1 className="font-headline-lg text-headline-lg text-on-surface">
+              Team & Roles
+            </h1>
+            <p className="text-sm text-on-surface-variant mt-0.5">
+              Manage who has access to your company's VendorPay workspace.
+            </p>
           </div>
-          <Button onClick={() => setInviteOpen(true)} className="flex items-center gap-2">
+          <Button
+            onClick={() => setInviteOpen(true)}
+            className="flex items-center gap-2"
+          >
             <UserPlus size={16} />
             Invite Teammate
           </Button>
@@ -176,7 +253,10 @@ export default function TeamRoles() {
         <Card className="p-0 overflow-hidden">
           <div className="flex items-center gap-3 px-4 py-3 border-b border-outline-variant">
             <div className="relative flex-1 max-w-sm">
-              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-outline" />
+              <Search
+                size={14}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-outline"
+              />
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
@@ -186,8 +266,19 @@ export default function TeamRoles() {
             </div>
           </div>
 
-          {filtered.length === 0 ? (
-            <p className="px-6 py-12 text-center text-sm text-on-surface-variant">No team members found.</p>
+          {isLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 size={24} className="animate-spin text-secondary" />
+              <span className="ml-2 text-sm text-on-surface-variant">Loading team...</span>
+            </div>
+          ) : isError ? (
+            <p className="px-6 py-12 text-center text-sm text-error">
+              Failed to load team members.
+            </p>
+          ) : filtered.length === 0 ? (
+            <p className="px-6 py-12 text-center text-sm text-on-surface-variant">
+              No team members found.
+            </p>
           ) : (
             <>
               {/* Desktop / tablet: table */}
@@ -195,8 +286,11 @@ export default function TeamRoles() {
                 <table className="w-full">
                   <thead>
                     <tr className="bg-surface-low border-b border-outline-variant">
-                      {['Name', 'Email', 'Role', 'Status', ''].map((h) => (
-                        <th key={h} className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-on-surface-variant">
+                      {["Name", "Email", "Role", "Status", ""].map((h) => (
+                        <th
+                          key={h}
+                          className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-on-surface-variant"
+                        >
                           {h}
                         </th>
                       ))}
@@ -204,47 +298,72 @@ export default function TeamRoles() {
                   </thead>
                   <tbody className="divide-y divide-outline-variant">
                     {filtered.map((member) => {
-                      const isOwner = member.role === 'Owner';
+                      const isOwner = member.role?.toLowerCase() === "owner";
+                      const removing =
+                        deleteMember.isPending &&
+                        deleteMember.variables === member.id;
+                      const resending =
+                        resendInvite.isPending &&
+                        resendInvite.variables === member.id;
                       return (
-                        <tr key={member.id} className="hover:bg-surface-low/50 transition-colors">
-                          <td className="px-6 py-4 text-sm font-semibold text-on-surface">{member.name}</td>
-                          <td className="px-6 py-4 text-sm text-on-surface-variant">{member.email}</td>
+                        <tr
+                          key={member.id}
+                          className="hover:bg-surface-low/50 transition-colors"
+                        >
+                          <td className="px-6 py-4 text-sm font-semibold text-on-surface">
+                            {member.full_name}
+                          </td>
+                          <td className="px-6 py-4 text-sm text-on-surface-variant">
+                            {member.email}
+                          </td>
                           <td className="px-6 py-4">
                             {isOwner ? (
                               <span className="text-sm text-on-surface-variant flex items-center gap-1.5">
                                 <Crown size={13} className="text-amber" /> Owner
                               </span>
                             ) : (
-                              <Select
-                                value={member.role}
-                                onChange={(e) => handleRoleChange(member, e.target.value)}
-                                className="!py-1 text-xs w-32"
-                              >
-                                {INVITABLE_ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
-                              </Select>
+                              <span className="text-sm text-on-surface-variant capitalize">
+                                {member.role}
+                              </span>
                             )}
                           </td>
                           <td className="px-6 py-4">
-                            <StatusChip status={member.status} />
+                            <StatusChip status={statusLabel(member.status)} />
                           </td>
                           <td className="px-6 py-4">
                             <div className="flex items-center justify-end gap-1.5">
-                              {member.status === 'Pending' && (
+                              {member.status === "pending" && (
                                 <button
                                   onClick={() => handleResend(member)}
+                                  disabled={resending}
                                   title="Resend invite"
-                                  className="p-1.5 rounded hover:bg-surface-container transition-colors"
+                                  className="p-1.5 rounded hover:bg-surface-container transition-colors disabled:opacity-50"
                                 >
-                                  <Mail size={14} className="text-on-surface-variant" />
+                                  {resending ? (
+                                    <Loader2
+                                      size={14}
+                                      className="animate-spin text-on-surface-variant"
+                                    />
+                                  ) : (
+                                    <Mail
+                                      size={14}
+                                      className="text-on-surface-variant"
+                                    />
+                                  )}
                                 </button>
                               )}
                               {!isOwner && (
                                 <button
                                   onClick={() => handleRemove(member)}
+                                  disabled={removing}
                                   title="Remove teammate"
-                                  className="p-1.5 rounded hover:bg-red-50 transition-colors"
+                                  className="p-1.5 rounded hover:bg-red-50 transition-colors disabled:opacity-50"
                                 >
-                                  <Trash2 size={14} className="text-error" />
+                                  {removing ? (
+                                    <Loader2 size={14} className="animate-spin text-error" />
+                                  ) : (
+                                    <Trash2 size={14} className="text-error" />
+                                  )}
                                 </button>
                               )}
                             </div>
@@ -259,15 +378,28 @@ export default function TeamRoles() {
               {/* Phone: stacked cards */}
               <div className="md:hidden divide-y divide-outline-variant">
                 {filtered.map((member) => {
-                  const isOwner = member.role === 'Owner';
+                  const isOwner = member.role?.toLowerCase() === "owner";
+                  const removing =
+                    deleteMember.isPending &&
+                    deleteMember.variables === member.id;
+                  const resending =
+                    resendInvite.isPending &&
+                    resendInvite.variables === member.id;
                   return (
                     <div key={member.id} className="px-4 py-4">
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
-                          <p className="text-sm font-semibold text-on-surface truncate">{member.name}</p>
-                          <p className="text-xs text-on-surface-variant truncate">{member.email}</p>
+                          <p className="text-sm font-semibold text-on-surface truncate">
+                            {member.full_name}
+                          </p>
+                          <p className="text-xs text-on-surface-variant truncate">
+                            {member.email}
+                          </p>
                         </div>
-                        <StatusChip status={member.status} className="flex-shrink-0" />
+                        <StatusChip
+                          status={statusLabel(member.status)}
+                          className="flex-shrink-0"
+                        />
                       </div>
 
                       <div className="flex items-center justify-between mt-3 gap-3">
@@ -276,32 +408,44 @@ export default function TeamRoles() {
                             <Crown size={13} className="text-amber" /> Owner
                           </span>
                         ) : (
-                          <Select
-                            value={member.role}
-                            onChange={(e) => handleRoleChange(member, e.target.value)}
-                            className="!py-1.5 text-xs flex-1 max-w-[140px]"
-                          >
-                            {INVITABLE_ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
-                          </Select>
+                          <span className="text-sm text-on-surface-variant capitalize">
+                            {member.role}
+                          </span>
                         )}
 
                         <div className="flex items-center gap-1.5">
-                          {member.status === 'Pending' && (
+                          {member.status === "pending" && (
                             <button
                               onClick={() => handleResend(member)}
+                              disabled={resending}
                               title="Resend invite"
-                              className="p-1.5 rounded hover:bg-surface-container transition-colors"
+                              className="p-1.5 rounded hover:bg-surface-container transition-colors disabled:opacity-50"
                             >
-                              <Mail size={14} className="text-on-surface-variant" />
+                              {resending ? (
+                                <Loader2
+                                  size={14}
+                                  className="animate-spin text-on-surface-variant"
+                                />
+                              ) : (
+                                <Mail
+                                  size={14}
+                                  className="text-on-surface-variant"
+                                />
+                              )}
                             </button>
                           )}
                           {!isOwner && (
                             <button
                               onClick={() => handleRemove(member)}
+                              disabled={removing}
                               title="Remove teammate"
-                              className="p-1.5 rounded hover:bg-red-50 transition-colors"
+                              className="p-1.5 rounded hover:bg-red-50 transition-colors disabled:opacity-50"
                             >
-                              <Trash2 size={14} className="text-error" />
+                              {removing ? (
+                                <Loader2 size={14} className="animate-spin text-error" />
+                              ) : (
+                                <Trash2 size={14} className="text-error" />
+                              )}
                             </button>
                           )}
                         </div>

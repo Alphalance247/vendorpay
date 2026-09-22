@@ -2,6 +2,17 @@ export function cn(...classes) {
   return classes.filter(Boolean).join(' ');
 }
 
+// The backend issues finer-grained roles (admin, owner, staff, member, ...)
+// than the app's two dashboards. Only an explicit "vendor" role belongs on
+// the vendor dashboard — every other role lands on the admin dashboard.
+export function isVendorRole(role) {
+  return role === 'vendor';
+}
+
+export function dashboardPathForRole(role) {
+  return isVendorRole(role) ? '/vendor/dashboard' : '/admin/dashboard';
+}
+
 export const CURRENCY_SYMBOLS = {
   USD: '$', EUR: '€', GBP: '£', CAD: 'C$',
   KES: 'KSh', NGN: '₦', ZAR: 'R', GHS: 'GH₵',
@@ -64,12 +75,19 @@ export function downloadCSV(filename, rows) {
   URL.revokeObjectURL(url);
 }
 
+// Only accept plain, non-empty strings — backend error shapes vary (a missing
+// response/data, or a `detail`/`message`/`error` that's an object or an array,
+// e.g. FastAPI validation errors) and none of those are safe to render directly.
+function asMessage(value) {
+  return typeof value === 'string' && value.trim() ? value : null;
+}
+
 export function extractErrorMessage(error) {
   return (
-    error?.response?.data?.detail ||
-    error?.response?.data?.message ||
-    error?.response?.data?.error ||
-    error?.message ||
+    asMessage(error?.response?.data?.detail) ||
+    asMessage(error?.response?.data?.message) ||
+    asMessage(error?.response?.data?.error) ||
+    asMessage(error?.message) ||
     'An unexpected error occurred'
   );
 }
