@@ -686,9 +686,7 @@ export default function CompanySignup() {
   };
 
   if (completeSignup.isSuccess) {
-    return (
-      <SuccessScreen data={data} onDone={() => navigate("/admin/dashboard")} />
-    );
+    return <SuccessScreen data={data} onDone={() => navigate("/login")} />;
   }
 
   return (

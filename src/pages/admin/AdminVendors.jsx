@@ -1,12 +1,74 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Users, Search, Loader2, PowerOff, Power, Trash2 } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
+import { Users, Search, Loader2, PowerOff, Power, Trash2, UserPlus, Mail } from 'lucide-react';
 import TutorialCard from '../../components/ui/TutorialCard';
 import AppLayout from '../../components/layout/AppLayout';
 import Card from '../../components/ui/Card';
+import Button from '../../components/ui/Button';
+import Input from '../../components/ui/Input';
+import Modal from '../../components/ui/Modal';
 import StatusChip from '../../components/ui/StatusChip';
 import { vendorService } from '../../lib/services/vendorService';
 import { useConfirm } from '../../hooks/useConfirm';
+import { useToast } from '../../components/ui/Toast';
+import { useTeamMembers } from '../../hooks/useQueries/vendorAdmin/useTeamMembers';
+import { useCreateInvite } from '../../hooks/useQueries/vendorAdmin/useCreateInvite';
+import { useResendInvite } from '../../hooks/useQueries/vendorAdmin/useResendInvite';
+import { useDeleteTeamMember } from '../../hooks/useQueries/vendorAdmin/useDeleteTeamMember';
+
+function InviteVendorModal({ open, onClose, onInvite, submitting }) {
+  const [email, setEmail] = useState('');
+
+  function handleSubmit(e) {
+    e.preventDefault();
+    if (!valid) return;
+    onInvite(email, () => setEmail(''));
+  }
+
+  const valid = /\S+@\S+\.\S+/.test(email);
+
+  return (
+    <Modal
+      open={open}
+      onClose={onClose}
+      title="Invite Vendor"
+      subtitle="They'll receive an email invite to join your workspace as a vendor."
+      footer={
+        <>
+          <Button variant="ghost" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button
+            onClick={handleSubmit}
+            disabled={!valid || submitting}
+            className="flex items-center gap-1.5"
+          >
+            {submitting ? (
+              <Loader2 size={15} className="animate-spin" />
+            ) : (
+              <UserPlus size={15} />
+            )}
+            {submitting ? 'Sending...' : 'Send Invite'}
+          </Button>
+        </>
+      }
+    >
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <Input
+          label="Vendor Email"
+          type="email"
+          name="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="vendor@company.com"
+          autoFocus
+          disabled={submitting}
+        />
+      </form>
+    </Modal>
+  );
+}
 
 export default function AdminVendors() {
   const navigate = useNavigate();
@@ -15,8 +77,54 @@ export default function AdminVendors() {
   const [error, setError] = useState('');
   const [search, setSearch] = useState('');
   const [actionLoading, setActionLoading] = useState(null);
+  const [inviteOpen, setInviteOpen] = useState(false);
 
   const { confirm, confirmEl } = useConfirm();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const { data: team = [] } = useTeamMembers();
+  const pendingVendorInvites = team.filter(
+    (m) => m.role?.toLowerCase() === 'vendor' && m.status === 'pending',
+  );
+  const createInvite = useCreateInvite(() => setInviteOpen(false));
+  const resendInvite = useResendInvite();
+  const deleteInvite = useDeleteTeamMember();
+
+  function handleInviteVendor(email, resetForm) {
+    createInvite.mutate(
+      { email, role: 'vendor' },
+      {
+        onSuccess: () => {
+          queryClient.invalidateQueries({ queryKey: ['team-members'] });
+          resetForm?.();
+        },
+      },
+    );
+  }
+
+  function handleResendInvite(invite) {
+    resendInvite.mutate(invite.id, {
+      onSuccess: () => {
+        toast(`Invitation resent to ${invite.email}.`);
+      },
+    });
+  }
+
+  async function handleCancelInvite(invite) {
+    const ok = await confirm({
+      title: 'Cancel Invite',
+      message: `Cancel the invite sent to "${invite.email}"?`,
+      confirmLabel: 'Cancel Invite',
+      variant: 'danger',
+    });
+    if (!ok) return;
+    deleteInvite.mutate(invite.id, {
+      onSuccess: () => {
+        toast(`Cancelled invite to ${invite.email}.`);
+      },
+    });
+  }
 
   const loadVendors = () =>
     vendorService.getAllVendors()
@@ -75,17 +183,90 @@ export default function AdminVendors() {
   return (
     <AppLayout role="admin" searchPlaceholder="Search vendors...">
       {confirmEl}
+      <InviteVendorModal
+        open={inviteOpen}
+        onClose={() => setInviteOpen(false)}
+        onInvite={handleInviteVendor}
+        submitting={createInvite.isPending}
+      />
       <div className="space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
             <h1 className="font-headline-lg text-headline-lg text-on-surface">Vendors</h1>
             <p className="text-sm text-on-surface-variant mt-0.5">Manage all registered vendor accounts.</p>
           </div>
-          <div className="flex items-center gap-2 text-on-surface-variant">
-            <Users size={16} />
-            <span className="text-sm font-medium">{vendors.length} total</span>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 text-on-surface-variant">
+              <Users size={16} />
+              <span className="text-sm font-medium">{vendors.length} total</span>
+            </div>
+            <Button
+              onClick={() => setInviteOpen(true)}
+              className="flex items-center gap-2"
+            >
+              <UserPlus size={16} />
+              Invite Vendor
+            </Button>
           </div>
         </div>
+
+        {pendingVendorInvites.length > 0 && (
+          <Card className="p-0 overflow-hidden">
+            <div className="px-4 py-3 border-b border-outline-variant">
+              <h2 className="text-sm font-semibold text-on-surface">Pending Vendor Invites</h2>
+              <p className="text-xs text-on-surface-variant mt-0.5">
+                Vendors who haven't accepted their invite yet.
+              </p>
+            </div>
+            <div className="divide-y divide-outline-variant">
+              {pendingVendorInvites.map((invite) => {
+                const resending =
+                  resendInvite.isPending && resendInvite.variables === invite.id;
+                const cancelling =
+                  deleteInvite.isPending && deleteInvite.variables === invite.id;
+                return (
+                  <div
+                    key={invite.id}
+                    className="flex items-center justify-between gap-3 px-4 py-3"
+                  >
+                    <div className="min-w-0 flex items-center gap-3">
+                      <p className="text-sm font-medium text-on-surface truncate">
+                        {invite.email}
+                      </p>
+                      <StatusChip status="Pending" className="flex-shrink-0" />
+                    </div>
+                    <div className="flex items-center gap-1.5 flex-shrink-0">
+                      <button
+                        onClick={() => handleResendInvite(invite)}
+                        disabled={resending}
+                        title="Resend invite"
+                        className="p-1.5 rounded hover:bg-surface-container transition-colors disabled:opacity-50"
+                      >
+                        {resending ? (
+                          <Loader2 size={14} className="animate-spin text-on-surface-variant" />
+                        ) : (
+                          <Mail size={14} className="text-on-surface-variant" />
+                        )}
+                      </button>
+                      <button
+                        onClick={() => handleCancelInvite(invite)}
+                        disabled={cancelling}
+                        title="Cancel invite"
+                        className="p-1.5 rounded hover:bg-red-50 transition-colors disabled:opacity-50"
+                      >
+                        {cancelling ? (
+                          <Loader2 size={14} className="animate-spin text-error" />
+                        ) : (
+                          <Trash2 size={14} className="text-error" />
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </Card>
+        )}
 
         <TutorialCard
           id="admin-vendors"

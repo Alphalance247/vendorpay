@@ -13,6 +13,7 @@ import Button from "../../components/ui/Button";
 import Input from "../../components/ui/Input";
 import Select from "../../components/ui/Select";
 import Card from "../../components/ui/Card";
+import Logo from "../../components/ui/Logo";
 import { useAcceptInvite } from "../../hooks/useQueries/companyAuth/useAcceptInvite";
 import { useInviteDetails } from "../../hooks/useQueries/companyAuth/useInviteDetails";
 
@@ -30,11 +31,8 @@ const DEPARTMENTS = ["Finance", "Accounting", "Operations", "Legal", "Other"];
 
 function Brand() {
   return (
-    <div className="flex items-center justify-center gap-2 mb-8">
-      <div className="w-8 h-8 bg-navy rounded flex items-center justify-center">
-        <span className="text-white text-sm font-bold">VP</span>
-      </div>
-      <span className="text-navy font-semibold text-lg">VendorPay</span>
+    <div className="flex items-center justify-center mb-8">
+      <Logo variant="light" />
     </div>
   );
 }

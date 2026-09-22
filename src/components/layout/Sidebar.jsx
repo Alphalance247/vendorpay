@@ -14,6 +14,7 @@ import {
 import { cn } from '../../lib/utils';
 import { useAuth } from '../../lib/authContext';
 import ConfirmModal from '../ui/ConfirmModal';
+import Logo from '../ui/Logo';
 
 function NavItem({ to, icon: Icon, label, onNavigate }) {
   return (
@@ -87,15 +88,7 @@ export default function Sidebar({ role = 'vendor', user, open = false, onClose }
         )}
       >
         <div className="px-5 py-6 border-b border-white/10 flex items-center justify-between">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="w-10 h-10 bg-secondary rounded-lg flex items-center justify-center flex-shrink-0">
-              <span className="text-white text-lg font-bold leading-none" style={{ fontFamily: 'Georgia, serif', letterSpacing: '-1px' }}>~</span>
-            </div>
-            <div className="min-w-0">
-              <p className="font-headline-sm text-headline-sm text-inverse-on-surface uppercase leading-none truncate">Alluvium</p>
-              <p className="font-label-eyebrow text-label-eyebrow text-secondary-fixed-dim uppercase tracking-widest mt-1">VendorPay</p>
-            </div>
-          </div>
+          <Logo variant="dark" className="min-w-0" />
           <button
             onClick={onClose}
             className="lg:hidden p-1.5 rounded text-inverse-on-surface/70 hover:bg-white/10 hover:text-inverse-on-surface transition-colors flex-shrink-0"
