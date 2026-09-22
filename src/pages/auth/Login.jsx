@@ -87,7 +87,7 @@ export default function Login() {
         />
 
         <div className="relative z-10 flex flex-col justify-between p-12 w-full">
-          <Logo variant="dark" />
+          <Logo variant="dark" onClick={() => navigate("/")} />
 
           <div className="space-y-6">
             <h1 className="text-white text-4xl font-bold leading-tight tracking-tight">
@@ -121,7 +121,11 @@ export default function Login() {
       {/* Right panel */}
       <div className="flex-1 flex items-center justify-center bg-white px-6 py-12">
         <div className="w-full max-w-sm">
-          <Logo variant="light" className="mb-8 lg:hidden" />
+          <Logo
+            variant="light"
+            className="mb-8 lg:hidden"
+            onClick={() => navigate("/")}
+          />
 
           <div className="mb-8">
             <h2 className="text-2xl font-semibold text-on-surface tracking-tight">

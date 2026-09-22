@@ -1,24 +1,20 @@
 import axios from "axios";
+import { environment } from "../env/env.local";
+import { withSubdomain } from "./tenantResolver";
 
+// Trailing slash stripped so every `${BASE_URL}/api/...` below produces a
+// single slash regardless of how environment.baseUrl is formatted.
 const BASE_URL =
-  import.meta.env.VITE_BACKEND_URL || "https://vpay.goalluvium.net/";
+  import.meta.env.VITE_BACKEND_URL || environment.baseUrl.replace(/\/+$/, "");
 
 // Once an admin/employee is on a company's own workspace, API calls should
-// hit that company's own subdomain (e.g. bestbraininc.str.ec2.alluvium.net)
+// hit that company's own subdomain (e.g. bestbraininc.vpay.goalluvium.net)
 // rather than the shared root host. company_slug is stored in localStorage
 // on login (see authContext.jsx); no slug (e.g. a vendor session, or before
 // login) falls back to the plain root BASE_URL.
 function companyApiBaseUrl() {
   const slug = localStorage.getItem("company_slug");
-  if (!slug) return `${BASE_URL}/api`;
-
-  try {
-    const url = new URL(BASE_URL);
-    url.hostname = `${slug}.${url?.hostname}`;
-    return `${url.toString().replace(/\/$/, "")}/api`;
-  } catch {
-    return `${BASE_URL}/api`;
-  }
+  return `${withSubdomain(BASE_URL, slug)}/api`;
 }
 
 const apiClient = axios.create({

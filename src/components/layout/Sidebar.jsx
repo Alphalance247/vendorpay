@@ -94,7 +94,14 @@ export default function Sidebar({
         )}
       >
         <div className="px-5 py-6 border-b border-white/10 flex items-center justify-between">
-          <Logo variant="dark" className="min-w-0" />
+          <Logo
+            variant="dark"
+            className="min-w-0"
+            onClick={() => {
+              navigate("/");
+              onClose?.();
+            }}
+          />
           <button
             onClick={onClose}
             className="lg:hidden p-1.5 rounded text-inverse-on-surface/70 hover:bg-white/10 hover:text-inverse-on-surface transition-colors flex-shrink-0"
