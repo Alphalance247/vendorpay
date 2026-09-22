@@ -1,12 +1,13 @@
 // Host-based tenant resolution. Stands in for a future `GET /tenants/{slug}`
 // backend check — swap DUMMY_TENANTS for that call once a real registry exists.
 
-const ROOT_DOMAINS = ['vendorpay.alluvium.net', 'localhost'];
+const ROOT_DOMAINS = ["vendorpay.alluvium.net", "localhost"];
 
 export const DUMMY_TENANTS = {
-  acme: { name: 'Acme Corp' },
-  globex: { name: 'Globex Inc' },
-  bestbraininc: { name: 'Best Brain Inc' },
+  acme: { name: "Acme Corp" },
+  globex: { name: "Globex Inc" },
+  bestbraininc: { name: "Best Brain Inc" },
+  newvendor: { name: "New Vendor" },
 };
 
 export function parseHost(hostname) {
@@ -22,10 +23,10 @@ export function parseHost(hostname) {
 export function resolveTenant(hostname = window.location.hostname) {
   const { slug, rootDomain } = parseHost(hostname);
 
-  if (!slug) return { status: 'none', rootDomain };
+  if (!slug) return { status: "none", rootDomain };
 
   const tenant = DUMMY_TENANTS[slug];
   return tenant
-    ? { status: 'found', tenant, slug, rootDomain }
-    : { status: 'not_found', slug, rootDomain };
+    ? { status: "found", tenant, slug, rootDomain }
+    : { status: "not_found", slug, rootDomain };
 }

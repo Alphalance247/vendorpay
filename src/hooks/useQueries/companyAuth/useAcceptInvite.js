@@ -4,7 +4,8 @@ import { extractErrorMessage } from "../../../lib/utils";
 import { useToast } from "../../../components/ui/Toast";
 
 const BASE_URL =
-  import.meta.env.VITE_BACKEND_URL || "https://str.ec2.alluvium.net/vendorpay";
+  import.meta.env.VITE_BACKEND_URL ||
+  "https://betbraininc.str.ec2.alluvium.net/vendorpay";
 
 const acceptInvite = async (payload) => {
   const res = await axios.post(`${BASE_URL}/api/auth/accept-invite`, payload);
