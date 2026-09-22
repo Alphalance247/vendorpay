@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
 
 const BASE_URL =
-  import.meta.env.VITE_BACKEND_URL || "https://str.ec2.alluvium.net/vendorpay";
+  import.meta.env.VITE_BACKEND_URL || "https://vpay.goalluvium.net";
 
 const checkSubdomain = async (subdomain) => {
   const res = await axios.get(`${BASE_URL}/api/auth/check-subdomain`, {

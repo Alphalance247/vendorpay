@@ -1,4 +1,3 @@
-import { useMemo } from 'react';
 import { Loader2 } from 'lucide-react';
 import Register from './pages/auth/Register';
 import ForgotPassword from './pages/auth/ForgotPassword';
@@ -8,7 +7,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import Login from './pages/auth/Login';
 import { useAuth } from './lib/authContext';
-import { resolveTenant } from './lib/tenantResolver';
+import { useTenantResolution } from './lib/tenantResolver';
 import { dashboardPathForRole } from './lib/utils';
 import WorkspaceNotFound from './pages/marketing/WorkspaceNotFound';
 import Onboarding from './pages/onboarding/Onboarding';
@@ -32,8 +31,16 @@ import Landing from './pages/marketing/Landing';
 import CompanySignup from './pages/signup/CompanySignup';
 
 export default function App() {
-  const tenant = useMemo(() => resolveTenant(), []);
+  const tenant = useTenantResolution();
   const { role, loading } = useAuth();
+
+  if (tenant.status === 'checking') {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 size={28} className="animate-spin text-emerald" />
+      </div>
+    );
+  }
 
   if (tenant.status === 'not_found') {
     return <WorkspaceNotFound slug={tenant.slug} rootDomain={tenant.rootDomain} />;

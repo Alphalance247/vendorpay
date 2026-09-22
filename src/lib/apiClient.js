@@ -1,13 +1,30 @@
-import axios from 'axios';
+import axios from "axios";
 
 const BASE_URL =
-  import.meta.env.VITE_BACKEND_URL ||
-  'https://str.ec2.alluvium.net/vendorpay';
+  import.meta.env.VITE_BACKEND_URL || "https://vpay.goalluvium.net/";
+
+// Once an admin/employee is on a company's own workspace, API calls should
+// hit that company's own subdomain (e.g. bestbraininc.str.ec2.alluvium.net)
+// rather than the shared root host. company_slug is stored in localStorage
+// on login (see authContext.jsx); no slug (e.g. a vendor session, or before
+// login) falls back to the plain root BASE_URL.
+function companyApiBaseUrl() {
+  const slug = localStorage.getItem("company_slug");
+  if (!slug) return `${BASE_URL}/api`;
+
+  try {
+    const url = new URL(BASE_URL);
+    url.hostname = `${slug}.${url?.hostname}`;
+    return `${url.toString().replace(/\/$/, "")}/api`;
+  } catch {
+    return `${BASE_URL}/api`;
+  }
+}
 
 const apiClient = axios.create({
-  baseURL: `${BASE_URL}/api`,
+  baseURL: companyApiBaseUrl(),
   headers: {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
   },
   withCredentials: true,
 });
@@ -16,7 +33,12 @@ const apiClient = axios.create({
 // REQUEST INTERCEPTOR
 // =========================
 apiClient.interceptors.request.use((config) => {
-  const token = localStorage.getItem('access_token');
+  // Re-resolved per request rather than fixed at instance-creation time,
+  // since company_slug may not be known yet (or may change) after the
+  // client was first created.
+  config.baseURL = companyApiBaseUrl();
+
+  const token = localStorage.getItem("access_token");
 
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
@@ -33,13 +55,15 @@ let refreshPromise = null;
 function refreshAccessToken(refreshToken) {
   if (!refreshPromise) {
     refreshPromise = axios
-      .post(`${BASE_URL}/api/auth/refresh`, { refresh_token: refreshToken })
+      .post(`${companyApiBaseUrl()}/auth/refresh`, {
+        refresh_token: refreshToken,
+      })
       .then((res) => {
         const { access_token, refresh_token } = res.data;
 
-        localStorage.setItem('access_token', access_token);
+        localStorage.setItem("access_token", access_token);
         if (refresh_token) {
-          localStorage.setItem('refresh_token', refresh_token);
+          localStorage.setItem("refresh_token", refresh_token);
         }
 
         return access_token;
@@ -64,11 +88,11 @@ apiClient.interceptors.response.use(
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
 
-      const refreshToken = localStorage.getItem('refresh_token');
+      const refreshToken = localStorage.getItem("refresh_token");
 
       if (!refreshToken) {
         localStorage.clear();
-        window.location.href = '/login';
+        window.location.href = "/login";
         return Promise.reject(error);
       }
 
@@ -80,13 +104,13 @@ apiClient.interceptors.response.use(
         return apiClient(originalRequest);
       } catch (err) {
         localStorage.clear();
-        window.location.href = '/login';
+        window.location.href = "/login";
         return Promise.reject(err);
       }
     }
 
     return Promise.reject(error);
-  }
+  },
 );
 
 export default apiClient;

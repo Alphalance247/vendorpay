@@ -36,7 +36,7 @@ const STEPS = [
   "Review",
 ];
 
-const ROOT_DOMAIN = "vendorpay.alluvium.net";
+const ROOT_DOMAIN = "vpay.goalluvium.net";
 
 const INDUSTRIES = [
   "Technology",
