@@ -1,12 +1,14 @@
 import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
+import { environment } from "../env/env.local";
 
 const BASE_URL =
-  import.meta.env.VITE_BACKEND_URL || "https://str.ec2.alluvium.net/vendorpay";
+  import.meta.env.VITE_BACKEND_URL || environment.baseUrl.replace(/\/+$/, "");
 
-// The frontend's own subdomain root — distinct from the backend API host
-// above, which always lives under str.ec2.alluvium.net regardless of tenant.
-const ROOT_DOMAINS = ["vpay.goalluvium.net", "localhost"];
+// The frontend's own subdomain root, derived from the same canonical base
+// URL — "localhost" is kept alongside it for local dev, where the app isn't
+// served from that domain at all.
+const ROOT_DOMAINS = [new URL(environment.baseUrl).hostname, "localhost"];
 
 export function parseHost(hostname) {
   for (const root of ROOT_DOMAINS) {
@@ -16,6 +18,31 @@ export function parseHost(hostname) {
     }
   }
   return { slug: null, rootDomain: hostname };
+}
+
+// Rewrites a base URL's hostname to be prefixed with a company slug, e.g.
+// withSubdomain('https://vpay.goalluvium.net', 'bestbraininc') ->
+// 'https://bestbraininc.vpay.goalluvium.net'. Returns the base URL unchanged
+// when there's no slug to apply.
+export function withSubdomain(baseUrl, slug) {
+  if (!slug) return baseUrl;
+
+  try {
+    const url = new URL(baseUrl);
+    url.hostname = `${slug}.${url.hostname}`;
+    return url.toString().replace(/\/$/, "");
+  } catch {
+    return baseUrl;
+  }
+}
+
+// Scopes a base URL to whatever company subdomain the browser is currently
+// on — e.g. an invite link landing on bestbraininc.vpay.goalluvium.net —
+// so a pre-auth call (no stored session/company_slug yet) still reaches the
+// right company's API host. Falls back to the plain base URL off-subdomain.
+export function currentTenantBaseUrl(baseUrl, hostname = window.location.hostname) {
+  const { slug } = parseHost(hostname);
+  return withSubdomain(baseUrl, slug);
 }
 
 // Reuses the same subdomain-availability check the signup wizard uses to

@@ -22,6 +22,7 @@ import Select from "../../components/ui/Select";
 import Card from "../../components/ui/Card";
 import { cn } from "../../lib/utils";
 import { useAuth } from "../../lib/authContext";
+import { environment } from "../../env/env.local";
 import { useRegisterCompany } from "../../hooks/useQueries/companyAuth/useRegisterCompany";
 import { useVerifyCompanyOtp } from "../../hooks/useQueries/companyAuth/useVerifyCompanyOtp";
 import { useCompleteCompanySignup } from "../../hooks/useQueries/companyAuth/useCompleteCompanySignup";
@@ -36,7 +37,7 @@ const STEPS = [
   "Review",
 ];
 
-const ROOT_DOMAIN = "vpay.goalluvium.net";
+const ROOT_DOMAIN = new URL(environment.baseUrl).hostname;
 
 const INDUSTRIES = [
   "Technology",

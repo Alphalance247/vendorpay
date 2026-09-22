@@ -30,9 +30,10 @@ const INDUSTRIES = [
 const DEPARTMENTS = ["Finance", "Accounting", "Operations", "Legal", "Other"];
 
 function Brand() {
+  const navigate = useNavigate();
   return (
     <div className="flex items-center justify-center mb-8">
-      <Logo variant="light" />
+      <Logo variant="light" onClick={() => navigate("/")} />
     </div>
   );
 }

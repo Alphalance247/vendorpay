@@ -79,7 +79,7 @@ definitions:
             echo "--- production build ---"
             # A Vite build failure is the real signal here: it type-resolves every
             # import and fails on any broken module across all of src/.
-            export VITE_BACKEND_URL="${VITE_BACKEND_URL:-https://str.ec2.alluvium.net/vendorpay}"
+            export VITE_BACKEND_URL="${VITE_BACKEND_URL:-https://vpay.goalluvium.net/}"
             npm run build
             test -f dist/index.html || { echo "build produced no dist/index.html"; exit 1; }
             echo "build output:"
