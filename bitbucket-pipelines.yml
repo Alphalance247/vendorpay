@@ -97,154 +97,159 @@ definitions:
             fi
 
     # ------------------------------------------------------------------
-    # Deploy: SSH only. Slim image — nothing is built here.
+    # Deploy: Zero-SSH via AWS Systems Manager (SSM) Run Command + OIDC
+    #
+    # Security Architecture:
+    # 1. Zero Inbound Ports: Port 22 remains 100% closed on the EC2 host.
+    #    Traffic communicates via outbound HTTPS (443) through the SSM agent.
+    # 2. Zero Static Credentials: Uses Bitbucket OIDC web identity token
+    #    (oidc: true) to assume the AWS IAM deployment role.
+    # 3. Execution: SSM executes the deployment commands as the `ubuntu`
+    #    user on the target EC2 instance.
     # ------------------------------------------------------------------
     - step: &deploy
-        name: Deploy over SSH
-        image: alpine:3.22
+        name: Deploy via AWS Systems Manager (Zero-SSH)
+        image: amazon/aws-cli:latest
+        oidc: true
         clone:
           enabled: false
         script:
-          # openssh-keygen is a SEPARATE Alpine package from openssh-client.
-          # Without it ssh-keygen is simply "not found" and the key checks below
-          # die with no explanation.
-          - apk add --no-cache openssh-client openssh-keygen
-          # The deploy key comes from deployment variables, NOT from
-          # Repository settings -> Pipelines -> SSH keys.
-          #
-          #   SSH_PRIVATE_KEY_B64   base64 -w0 of the ed25519 PRIVATE key (not .pub)
-          #   KNOWN_HOSTS_B64       base64 -w0 of `ssh-keyscan -H <SSH_HOST>` output
-          #
-          # IMPORTANT: the repo-settings SSH key must be cleared. If one is
-          # configured there, Bitbucket also injects it at ~/.ssh/id_rsa and the
-          # two keys together are what produced "error in libcrypto".
-          #
-          # Both variables are scoped to the deployment environment, so they only
-          # reach steps declaring `deployment:` — the two that use this step do.
+          - export AWS_REGION="${AWS_REGION:-us-east-1}"
+          - export AWS_ROLE_ARN="${AWS_ROLE_ARN:-arn:aws:iam::863859422390:role/bitbucket-pipelines-ec2-deployer}"
+          - export AWS_WEB_IDENTITY_TOKEN_FILE="/tmp/web-identity-token"
+          - echo "$BITBUCKET_STEP_OIDC_TOKEN" > "$AWS_WEB_IDENTITY_TOKEN_FILE"
           - |
             set -e
-            mkdir -p ~/.ssh && chmod 700 ~/.ssh
+            echo "================================================================="
+            echo " Zero-SSH EC2 Frontend Deployment via AWS Systems Manager (SSM)"
+            echo "================================================================="
+            echo "Environment: ${BITBUCKET_DEPLOYMENT_ENVIRONMENT:-test}"
+            echo "Branch:      $BITBUCKET_BRANCH"
+            echo "Commit:      $BITBUCKET_COMMIT"
+            echo "AWS Region:  $AWS_REGION"
+            echo "IAM Role:    $AWS_ROLE_ARN"
 
-            # An empty value means the variable is unset, misspelled, or out of
-            # deployment scope. Check all of them up front, because each one
-            # fails obscurely on its own: an empty SSH_PRIVATE_KEY_B64 writes a
-            # 0-byte key file and reads as "Permission denied (publickey)", an
-            # empty SSH_HOST makes the command `ssh user@`, and an empty
-            # VITE_BACKEND_URL builds a frontend that talks to nothing.
-            # Note the name is SSH_HOST, not SSH_HOSTS.
-            for v in SSH_PRIVATE_KEY_B64 KNOWN_HOSTS_B64 SSH_HOST SSH_USER DEPLOY_PATH VITE_BACKEND_URL; do
-              [ -n "$(printenv "$v")" ] || { echo "MISSING: $v is empty — set it on the '$BITBUCKET_DEPLOYMENT_ENVIRONMENT' deployment environment (exact spelling)."; exit 1; }
+            # 0. Authenticate & Verify AWS Identity via OIDC
+            echo "Authenticating to AWS via OIDC Web Identity..."
+            aws sts get-caller-identity
+
+            # 1. Resolve Target EC2 Instance based on Deployment Environment
+            if [ -n "${TARGET_INSTANCE_ID:-}" ]; then
+              INSTANCE_ID="$TARGET_INSTANCE_ID"
+              echo "Using explicitly configured Target Instance ID: $INSTANCE_ID"
+            elif [ "${BITBUCKET_DEPLOYMENT_ENVIRONMENT:-test}" = "production" ]; then
+              TARGET_TAG="${TARGET_APP_TAG:-vendor - prod}"
+              echo "Production Environment: resolving EC2 instance with tag 'Original Name=$TARGET_TAG' in $AWS_REGION..."
+              INSTANCE_ID=$(aws ec2 describe-instances \
+                --region "$AWS_REGION" \
+                --filters "Name=tag:Original Name,Values=$TARGET_TAG" "Name=instance-state-name,Values=running" \
+                --query "Reservations[0].Instances[0].InstanceId" \
+                --output text)
+            else
+              TARGET_TAG="${TARGET_APP_TAG:-TenderFlow_VendorPay}"
+              echo "Test Environment: resolving EC2 instance with tag 'Original Name=$TARGET_TAG' in $AWS_REGION..."
+              INSTANCE_ID=$(aws ec2 describe-instances \
+                --region "$AWS_REGION" \
+                --filters "Name=tag:Original Name,Values=$TARGET_TAG" "Name=instance-state-name,Values=running" \
+                --query "Reservations[0].Instances[0].InstanceId" \
+                --output text)
+            fi
+
+            if [ -z "$INSTANCE_ID" ] || [ "$INSTANCE_ID" = "None" ]; then
+              echo "ERROR: Target EC2 instance not found or not running in $AWS_REGION for environment '${BITBUCKET_DEPLOYMENT_ENVIRONMENT:-test}'!"
+              exit 1
+            fi
+            echo "Target EC2 Instance resolved: $INSTANCE_ID ($TARGET_TAG)"
+
+            # 2. Check SSM Agent Connectivity
+            echo "Verifying SSM Agent status on $INSTANCE_ID..."
+            PING=$(aws ssm describe-instance-information \
+              --region "$AWS_REGION" \
+              --filters "Key=InstanceIds,Values=$INSTANCE_ID" \
+              --query "InstanceInformationList[0].PingStatus" \
+              --output text 2>/dev/null || echo "Offline")
+            echo "SSM Agent Status: $PING"
+            if [ "$PING" != "Online" ]; then
+              echo "ERROR: Instance $INSTANCE_ID is $PING in Systems Manager (must be Online)."
+              exit 1
+            fi
+
+            # 3. Configure Deployment Path & Backend URL
+            export APP_PATH="${DEPLOY_PATH:-/home/ubuntu/merged-vp}"
+            export BRANCH="${BITBUCKET_BRANCH:-main}"
+
+            if [ -z "${VITE_BACKEND_URL:-}" ]; then
+              if [ "${BITBUCKET_DEPLOYMENT_ENVIRONMENT:-test}" = "production" ]; then
+                export VITE_BACKEND_URL="https://vpay.goalluvium.net/"
+              else
+                export VITE_BACKEND_URL="https://str.ec2.alluvium.net/vendorpay"
+              fi
+            fi
+
+            echo "Deployment parameters:"
+            echo "  App Path:    $APP_PATH"
+            echo "  Branch:      $BRANCH"
+            echo "  Backend URL: $VITE_BACKEND_URL"
+
+            # 4. Construct SSM Run Command payload
+            python3 -c 'import os, json; app = os.environ.get("APP_PATH", "/home/ubuntu/merged-vp"); branch = os.environ.get("BRANCH", "main"); backend_url = os.environ.get("VITE_BACKEND_URL", "https://vpay.goalluvium.net/"); params = {"commands": ["set -e", "echo === Deploying Frontend on $(hostname) at $(date) ===", f"sudo -u ubuntu -i bash -c \"cd '\''{app}'\'' && git fetch --all --prune && git checkout '\''{branch}'\'' && git reset --hard '\''origin/{branch}'\'' && export VITE_BACKEND_URL='\''{backend_url}'\'' && docker compose up -d --build && docker image prune -f\"", "echo === Docker Container Status ===", "sudo -u ubuntu -i docker ps --filter name=vendorpay-frontend", "echo === Deployment Finished Successfully ==="], "workingDirectory": [app]}; open("/tmp/ssm-parameters.json", "w").write(json.dumps(params, indent=2))'
+
+            echo "Dispatching deployment commands to $INSTANCE_ID..."
+            COMMAND_ID=$(aws ssm send-command \
+              --region "$AWS_REGION" \
+              --instance-ids "$INSTANCE_ID" \
+              --document-name "AWS-RunShellScript" \
+              --parameters "file:///tmp/ssm-parameters.json" \
+              --comment "Bitbucket Frontend Deploy #${BITBUCKET_BUILD_NUMBER:-0} (${BITBUCKET_COMMIT})" \
+              --query "Command.CommandId" \
+              --output text)
+
+            echo "SSM Command dispatched. CommandId: $COMMAND_ID"
+            echo "Streaming deployment execution on remote EC2 host..."
+
+            # 5. Poll until completion
+            STATUS="Pending"
+            while [ "$STATUS" = "Pending" ] || [ "$STATUS" = "InProgress" ] || [ "$STATUS" = "Delayed" ]; do
+              sleep 4
+              STATUS=$(aws ssm get-command-invocation \
+                --region "$AWS_REGION" \
+                --command-id "$COMMAND_ID" \
+                --instance-id "$INSTANCE_ID" \
+                --query "Status" \
+                --output text 2>/dev/null || echo "Pending")
+              echo "Status: $STATUS..."
             done
-            echo "OK: all six deployment variables are present"
 
-            command -v ssh-keygen >/dev/null 2>&1 || { echo "FAIL: ssh-keygen not installed — add the openssh-keygen package"; exit 1; }
+            echo "================================================================="
+            echo " REMOTE HOST DEPLOYMENT OUTPUT"
+            echo "================================================================="
+            aws ssm get-command-invocation \
+              --region "$AWS_REGION" \
+              --command-id "$COMMAND_ID" \
+              --instance-id "$INSTANCE_ID" \
+              --query "StandardOutputContent" \
+              --output text
 
-            # --- private key -------------------------------------------------
-            # Whitespace is stripped first: a value pasted from a wrapped
-            # terminal line can carry newlines or trailing spaces, which are not
-            # part of the encoding.
-            KEY_B64=$(printf '%s' "$SSH_PRIVATE_KEY_B64" | tr -d '\n\r \t')
-
-            # Report the length. Base64 always comes in groups of 4, so a count
-            # that is not a multiple of 4 proves characters were lost in the
-            # paste — that is what "base64: truncated input" means.
-            KEY_LEN=$(printf '%s' "$KEY_B64" | wc -c)
-            echo "SSH_PRIVATE_KEY_B64: $KEY_LEN base64 characters received"
-            if [ $(( KEY_LEN % 4 )) -ne 0 ]; then
-              echo "FAIL: $KEY_LEN is not a multiple of 4, so the pasted value is incomplete."
-              echo "  Get the expected count on the server with:"
-              echo "    base64 -w0 ~/.ssh/id_ed25519 | wc -c"
-              echo "  (a 464-byte ed25519 key encodes to 620 characters) and make sure the"
-              echo "  variable holds exactly that many. Selecting a wrapped line in a"
-              echo "  terminal commonly drops the tail — prefer scp'ing the key file down"
-              echo "  and piping it through the clipboard instead of copying by hand."
+            if [ "$STATUS" != "Success" ]; then
+              echo "=================================================================" >&2
+              echo " REMOTE HOST DEPLOYMENT ERROR" >&2
+              echo "=================================================================" >&2
+              aws ssm get-command-invocation \
+                --region "$AWS_REGION" \
+                --command-id "$COMMAND_ID" \
+                --instance-id "$INSTANCE_ID" \
+                --query "StandardErrorContent" \
+                --output text >&2
+              echo "ERROR: Deployment failed with status: $STATUS" >&2
               exit 1
             fi
 
-            printf '%s' "$KEY_B64" | base64 -d > ~/.ssh/id_ed25519 2>/tmp/b64.err || {
-              echo "FAIL: SSH_PRIVATE_KEY_B64 did not decode: $(cat /tmp/b64.err)"
-              echo "  Regenerate with: base64 -w0 <keyfile>   (plain base64 wraps at 76 columns)"
-              exit 1
-            }
-            chmod 600 ~/.ssh/id_ed25519
-            echo "decoded private key: $(wc -c < ~/.ssh/id_ed25519) bytes"
-
-            # Header check, because busybox base64 is lenient and will happily
-            # decode the wrong thing. Prints only the first line, never the body.
-            if ! head -n 1 ~/.ssh/id_ed25519 | grep -q 'BEGIN .*PRIVATE KEY'; then
-              echo "FAIL: the decoded value is not a private key. First 40 characters:"
-              head -n 1 ~/.ssh/id_ed25519 | cut -c1-40
-              echo "  A PRIVATE key starts '-----BEGIN OPENSSH PRIVATE KEY-----' and is ~400 bytes."
-              echo "  A PUBLIC key starts 'ssh-ed25519 AAAA' and is ~100 bytes — that one belongs"
-              echo "  in the server's authorized_keys, not in this variable."
-              exit 1
-            fi
-
-            # Derives the public half: fails on a malformed key, and on a
-            # passphrase-protected key, which cannot be used unattended.
-            ssh-keygen -y -f ~/.ssh/id_ed25519 > /tmp/derived.pub 2>/tmp/kg.err || {
-              echo "FAIL: ssh-keygen could not read the private key: $(cat /tmp/kg.err)"
-              echo "  If it has a passphrase, regenerate it with an empty one."
-              exit 1
-            }
-            echo "deploy key: $(ssh-keygen -lf /tmp/derived.pub)"
-            echo "  ^ compare against: ssh-keygen -lf ~/.ssh/authorized_keys  (as $SSH_USER on $SSH_HOST)"
-
-            # --- host key ----------------------------------------------------
-            printf '%s' "$KNOWN_HOSTS_B64" | tr -d '\n\r \t' | base64 -d > ~/.ssh/known_hosts 2>/tmp/b64h.err || {
-              echo "FAIL: KNOWN_HOSTS_B64 did not decode: $(cat /tmp/b64h.err)"
-              echo "  If this says 'truncated input', the pasted value is incomplete."
-              echo "  Regenerate with: ssh-keyscan -H $SSH_HOST | base64 -w0"
-              exit 1
-            }
-            chmod 644 ~/.ssh/known_hosts
-            echo "known_hosts: $(wc -l < ~/.ssh/known_hosts) entries"
-
-            # ssh-keyscan records the exact name it was given, so scanning an IP
-            # and connecting by hostname (or the reverse) fails verification.
-            # Catch that here rather than as a bare "Host key verification failed".
-            if ! ssh-keygen -F "$SSH_HOST" -f ~/.ssh/known_hosts >/dev/null 2>&1; then
-              echo "FAIL: known_hosts decoded but has no entry for '$SSH_HOST'."
-              echo "  Regenerate on a TRUSTED machine using the same name as SSH_HOST:"
-              echo "    ssh-keyscan -H $SSH_HOST | base64 -w0"
-              exit 1
-            fi
-            echo "OK: host key for $SSH_HOST is pinned"
-          - >
-            ssh -i ~/.ssh/id_ed25519
-            -o IdentitiesOnly=yes
-            -o StrictHostKeyChecking=yes
-            -o BatchMode=yes
-            -o ConnectTimeout=15
-            "$SSH_USER@$SSH_HOST"
-            "set -e &&
-            cd '$DEPLOY_PATH' &&
-            git fetch --all --prune &&
-            git checkout '$BITBUCKET_BRANCH' &&
-            git reset --hard 'origin/$BITBUCKET_BRANCH' &&
-            export VITE_BACKEND_URL='$VITE_BACKEND_URL' &&
-            docker compose up -d --build &&
-            docker image prune -f"
+            echo "================================================================="
+            echo " Frontend deployment to $BITBUCKET_DEPLOYMENT_ENVIRONMENT succeeded! ✅"
+            echo "================================================================="
 
 pipelines:
-  # ------------------------------------------------------------------
-  # Pull-request pipelines are keyed on the PR's SOURCE branch, and Bitbucket
-  # reads bitbucket-pipelines.yml from the SOURCE branch as well. Two
-  # consequences that are easy to get wrong:
-  #
-  #   main -> prod   uses MAIN's copy of this file, matched against `main`
-  #   prod -> main   uses PROD's copy of this file, matched against `prod`
-  #
-  # So a `prod -> main` back-merge only builds if PROD's copy of this file has a
-  # matching `pull-requests` entry. Keep the two branches' copies in sync — see
-  # note 5 at the end of this file.
-  # ------------------------------------------------------------------
   pull-requests:
-    # Source branch `prod`: a back-merge, bringing a production hotfix back into
-    # main so the branches don't drift. The promotion guard is deliberately not
-    # here — it only polices PRs whose DESTINATION is prod, so on this route it
-    # would do nothing but print "not applicable". The test gate is the check
-    # that matters: it proves the merged result still builds.
     prod:
       - step: *test
 
@@ -253,24 +258,34 @@ pipelines:
       - step: *test
 
   branches:
-    # Any push to main runs the gate and deploys to TEST. This includes the merge
-    # commit produced by a `prod -> main` back-merge, so that direction already
-    # deploys without needing its own branch entry.
     main:
       - step: *test
       - step:
           <<: *deploy
-          name: Deploy to Test environment
+          name: Deploy to Test environment (Zero-SSH)
           deployment: test
 
-    # Merging main -> prod is the production release trigger. The test gate re-runs
-    # on the merge commit first; production deploys only if it passes.
     prod:
       - step: *test
       - step:
           <<: *deploy
-          name: Deploy to Production
+          name: Deploy to Production (Zero-SSH)
           deployment: production
+
+    feature/zero-ssh-ssm-pipeline:
+      - step: *test
+      - step:
+          <<: *deploy
+          name: Deploy to Test environment (Zero-SSH Verification)
+          deployment: test
+
+  custom:
+    deploy-test-manual:
+      - step: *test
+      - step:
+          <<: *deploy
+          name: Manual Deploy to Test environment (Zero-SSH)
+          deployment: test
 
 # ----------------------------------------------------------------------
 # Repo housekeeping this file depends on:
