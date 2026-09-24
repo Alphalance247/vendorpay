@@ -1,6 +1,14 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Eye, EyeOff, ArrowRight, ShieldCheck, Zap } from "lucide-react";
+import {
+  Eye,
+  EyeOff,
+  ArrowRight,
+  ShieldCheck,
+  Zap,
+  Mail,
+  Building2,
+} from "lucide-react";
 import { useAuth } from "../../lib/authContext";
 import { extractErrorMessage, dashboardPathForRole } from "../../lib/utils";
 import { parseHost } from "../../lib/tenantResolver";
@@ -91,7 +99,7 @@ export default function Login() {
 
           <div className="space-y-6">
             <h1 className="text-white text-4xl font-bold leading-tight tracking-tight">
-              Secure enterprise finance at the speed of business.
+              Vendor Management, without the chaos.
             </h1>
 
             <p className="text-slate-300 text-base leading-relaxed">
@@ -216,35 +224,37 @@ export default function Login() {
             </Button>
           </form>
 
-          <p className="mt-6 text-center text-sm text-on-surface-variant">
-            Don't have an account?{" "}
-            <button
-              type="button"
-              onClick={() => navigate("/register")}
-              className="text-emerald font-medium hover:underline"
-            >
-              Create an account
-            </button>
-          </p>
+          <div className="mt-8 pt-6 border-t border-outline-variant space-y-5">
+            <div className="flex items-start gap-2.5 bg-surface-low border border-outline-variant rounded-lg px-3.5 py-3">
+              <Mail
+                size={15}
+                className="mt-0.5 flex-shrink-0 text-on-surface-variant"
+              />
+              <p className="text-sm text-on-surface-variant">
+                <span className="font-medium text-on-surface">
+                  Invited to a workspace?
+                </span>{" "}
+                Check your email for the invite link from your company admin —
+                that's how you'll set your password and get in.
+              </p>
+            </div>
 
-          <div className="flex items-center gap-3 my-6">
-            <div className="flex-1 h-px bg-outline-variant" />
-            <span className="text-xs text-outline uppercase tracking-wider">
-              or
-            </span>
-            <div className="flex-1 h-px bg-outline-variant" />
+            <div>
+              <p className="text-center text-sm text-on-surface-variant mb-2">
+                Setting up VendorPay for your company for the first time?
+              </p>
+              <Button
+                type="button"
+                variant="secondary"
+                size="lg"
+                className="w-full flex items-center justify-center gap-2"
+                onClick={() => navigate("/signup-company")}
+              >
+                <Building2 size={16} />
+                Set Up Your Company Workspace
+              </Button>
+            </div>
           </div>
-
-          <p className="text-center text-sm text-on-surface-variant">
-            New company?{" "}
-            <button
-              type="button"
-              onClick={() => navigate("/signup-company")}
-              className="text-emerald font-medium hover:underline"
-            >
-              Set up your own workspace
-            </button>
-          </p>
         </div>
       </div>
     </div>

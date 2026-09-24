@@ -1,12 +1,26 @@
-import { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Bell, Settings, Search, X, LogOut, ChevronRight, FileText, User, Menu } from 'lucide-react';
-import { useAuth } from '../../lib/authContext';
-import { invoiceService, adminInvoiceService } from '../../lib/services/invoiceService';
-import { vendorService } from '../../lib/services/vendorService';
-import { formatCurrency, formatDate } from '../../lib/utils';
-import ConfirmModal from '../ui/ConfirmModal';
-import { MdClose } from 'react-icons/md';
+import { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
+import {
+  Bell,
+  Settings,
+  Search,
+  X,
+  LogOut,
+  ChevronRight,
+  FileText,
+  User,
+  Menu,
+} from "lucide-react";
+import { useAuth } from "../../lib/authContext";
+import {
+  invoiceService,
+  adminInvoiceService,
+} from "../../lib/services/invoiceService";
+import { vendorService } from "../../lib/services/vendorService";
+import { formatCurrency, formatDate } from "../../lib/utils";
+import { useCurrentUser } from "../../hooks/useQueries/vendorAdmin/useCurrentUser";
+import ConfirmModal from "../ui/ConfirmModal";
+import { MdClose } from "react-icons/md";
 
 const STATUS_LABEL = {
   submitted: "Submitted",
@@ -56,7 +70,10 @@ function useOutsideClick(ref, onClose) {
   }, [ref, onClose]);
 }
 
-export default function TopBar({ searchPlaceholder = 'Search invoices, payments, or vendors...', onMenuClick }) {
+export default function TopBar({
+  searchPlaceholder = "Search invoices, payments, or vendors...",
+  onMenuClick,
+}) {
   const navigate = useNavigate();
   const { role, logout } = useAuth();
 
@@ -81,9 +98,11 @@ export default function TopBar({ searchPlaceholder = 'Search invoices, payments,
       vendorService
         .getProfile()
         .then(setProfile)
-        .catch(() => { });
+        .catch(() => {});
     }
   }, [role]);
+
+  const { data: currentUser } = useCurrentUser(role === "admin");
 
   // Fetch recent invoices to drive notifications
   useEffect(() => {
@@ -166,15 +185,19 @@ export default function TopBar({ searchPlaceholder = 'Search invoices, payments,
 
   const displayName = profile
     ? [profile.contact_first_name, profile.contact_last_name]
-      .filter(Boolean)
-      .join(" ") ||
-    profile.company_name ||
-    "Vendor"
+        .filter(Boolean)
+        .join(" ") ||
+      profile.company_name ||
+      "Vendor"
     : role === "admin"
-      ? "Administrator"
+      ? currentUser?.full_name || "—"
       : "—";
 
-  const displayEmail = profile?.contact_email || profile?.user_email || "";
+  const displayEmail =
+    profile?.contact_email ||
+    profile?.user_email ||
+    (role === "admin" ? currentUser?.email : "") ||
+    "";
 
   return (
     <header className="h-14 bg-white border-b border-outline-variant flex items-center px-4 sm:px-6 gap-3 sm:gap-4 z-20 relative">
@@ -188,7 +211,10 @@ export default function TopBar({ searchPlaceholder = 'Search invoices, payments,
 
       {/* Search */}
       <form onSubmit={handleSearch} className="flex-1 relative max-w-md">
-        <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-outline pointer-events-none" />
+        <Search
+          size={15}
+          className="absolute left-3 top-1/2 -translate-y-1/2 text-outline pointer-events-none"
+        />
         <input
           type="text"
           value={query}
@@ -197,8 +223,11 @@ export default function TopBar({ searchPlaceholder = 'Search invoices, payments,
           className="w-full pl-9 pr-8 py-1.5 text-sm bg-surface-low rounded border border-outline-variant focus:outline-none focus:ring-2 focus:ring-secondary focus:border-secondary placeholder:text-outline transition-colors"
         />
         {query && (
-          <button type="button" onClick={() => setQuery('')}
-            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-outline hover:text-on-surface">
+          <button
+            type="button"
+            onClick={() => setQuery("")}
+            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-outline hover:text-on-surface"
+          >
             <X size={13} />
           </button>
         )}
@@ -214,7 +243,7 @@ export default function TopBar({ searchPlaceholder = 'Search invoices, payments,
             <Bell size={18} />
             {unread > 0 && (
               <span className="absolute top-1 right-1 min-w-[16px] h-4 bg-error rounded-full flex items-center justify-center text-white text-[10px] font-bold px-0.5">
-                {unread > 9 ? '9+' : unread}
+                {unread > 9 ? "9+" : unread}
               </span>
             )}
           </button>
@@ -222,8 +251,12 @@ export default function TopBar({ searchPlaceholder = 'Search invoices, payments,
           {showBell && (
             <div className="absolute right-0 top-full mt-2 w-80 max-w-[90vw] bg-white rounded-xl shadow-dropdown border border-outline-variant overflow-hidden">
               <div className="px-4 py-3 border-b border-outline-variant">
-                <p className="text-sm font-semibold text-on-surface">Notifications</p>
-                <p className="text-xs text-on-surface-variant mt-0.5">Recent invoice activity</p>
+                <p className="text-sm font-semibold text-on-surface">
+                  Notifications
+                </p>
+                <p className="text-xs text-on-surface-variant mt-0.5">
+                  Recent invoice activity
+                </p>
               </div>
 
               {notifications.length === 0 ? (
@@ -270,7 +303,12 @@ export default function TopBar({ searchPlaceholder = 'Search invoices, payments,
 
               <div className="border-t border-outline-variant px-4 py-2.5">
                 <button
-                  onClick={() => { setShowBell(false); navigate(role === 'admin' ? '/admin/invoices' : '/vendor/invoices'); }}
+                  onClick={() => {
+                    setShowBell(false);
+                    navigate(
+                      role === "admin" ? "/admin/invoices" : "/vendor/invoices",
+                    );
+                  }}
                   className="text-xs text-secondary font-medium hover:underline"
                 >
                   View all invoices →
@@ -300,8 +338,14 @@ export default function TopBar({ searchPlaceholder = 'Search invoices, payments,
                   <User size={15} className="text-white" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-sm font-semibold text-on-surface truncate">{displayName}</p>
-                  {displayEmail && <p className="text-xs text-on-surface-variant truncate">{displayEmail}</p>}
+                  <p className="text-sm font-semibold text-on-surface truncate">
+                    {displayName}
+                  </p>
+                  {displayEmail && (
+                    <p className="text-xs text-on-surface-variant truncate">
+                      {displayEmail}
+                    </p>
+                  )}
                   <p className="text-xs text-outline capitalize">{role}</p>
                 </div>
               </div>
@@ -385,7 +429,6 @@ export default function TopBar({ searchPlaceholder = 'Search invoices, payments,
         onConfirm={handleSignOut}
         onCancel={() => setShowSignOutConfirm(false)}
       />
-
-    </header >
+    </header>
   );
 }
