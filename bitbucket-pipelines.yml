@@ -28,7 +28,7 @@ definitions:
         name: Promotion guard
         image: alpine:3.22
         clone:
-          depth: full           # needs history to prove the commit is on main
+          depth: full # needs history to prove the commit is on main
         script:
           - apk add --no-cache git
           - |
@@ -61,7 +61,7 @@ definitions:
     # ------------------------------------------------------------------
     - step: &test
         name: Test gate
-        image: node:22            # Node 20 is EOL (April 2026) — do not run CI on it
+        image: node:22 # Node 20 is EOL (April 2026) — do not run CI on it
         caches:
           - node
         script:
@@ -182,7 +182,7 @@ definitions:
               if [ "${BITBUCKET_DEPLOYMENT_ENVIRONMENT:-test}" = "production" ]; then
                 export VITE_BACKEND_URL="https://vpay.goalluvium.net/"
               else
-                export VITE_BACKEND_URL="https://str.ec2.alluvium.net/vendorpay"
+                export VITE_BACKEND_URL="https://vpay.goalluvium.net/"
               fi
             fi
 
@@ -253,7 +253,7 @@ pipelines:
     prod:
       - step: *test
 
-    '**':
+    "**":
       - step: *guard
       - step: *test
 

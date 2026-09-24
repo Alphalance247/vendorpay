@@ -7,6 +7,8 @@ import { withSubdomain } from "./tenantResolver";
 const BASE_URL =
   import.meta.env.VITE_BACKEND_URL || environment.baseUrl.replace(/\/+$/, "");
 
+console.log(BASE_URL);
+
 // Once an admin/employee is on a company's own workspace, API calls should
 // hit that company's own subdomain (e.g. bestbraininc.vpay.goalluvium.net)
 // rather than the shared root host. company_slug is stored in localStorage
