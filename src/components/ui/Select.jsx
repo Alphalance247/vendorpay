@@ -1,10 +1,10 @@
-import { forwardRef } from 'react';
-import { ChevronDown } from 'lucide-react';
-import { cn } from '../../lib/utils';
+import { forwardRef } from "react";
+import { ChevronDown } from "lucide-react";
+import { cn } from "../../lib/utils";
 
 const Select = forwardRef(function Select(
   { label, error, className, children, required, ...props },
-  ref
+  ref,
 ) {
   return (
     <div className="flex flex-col gap-1">
@@ -19,10 +19,10 @@ const Select = forwardRef(function Select(
           ref={ref}
           required={required}
           className={cn(
-            'w-full rounded border border-outline bg-white px-3 py-2 pr-9 text-sm text-on-surface appearance-none cursor-pointer',
-            'focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors',
-            error && 'border-error',
-            className
+            "w-full rounded border border-outline bg-white px-3 py-2 pr-9 text-sm text-on-surface appearance-none cursor-pointer",
+            "focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors",
+            error && "border-error",
+            className,
           )}
           {...props}
         >

@@ -1,9 +1,9 @@
-import { forwardRef } from 'react';
-import { cn } from '../../lib/utils';
+import { forwardRef } from "react";
+import { cn } from "../../lib/utils";
 
 const Input = forwardRef(function Input(
   { label, error, hint, className, prefix, suffix, required, ...props },
-  ref
+  ref,
 ) {
   return (
     <div className="flex flex-col gap-1">
@@ -23,23 +23,23 @@ const Input = forwardRef(function Input(
           ref={ref}
           required={required}
           className={cn(
-            'w-full rounded border bg-white px-3 py-2 text-sm text-on-surface placeholder:text-outline transition-colors',
-            'border-outline focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary',
-            error && 'border-error focus:ring-error',
-            prefix && 'pl-7',
-            suffix && 'pr-10',
-            className
+            "w-full rounded border bg-white px-3 py-2 text-sm text-on-surface placeholder:text-outline transition-colors",
+            "border-outline focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary",
+            error && "border-error focus:ring-error",
+            prefix && "pl-7",
+            suffix && "pr-10",
+            className,
           )}
           {...props}
         />
         {suffix && (
-          <span className="absolute right-3 flex items-center">
-            {suffix}
-          </span>
+          <span className="absolute right-3 flex items-center">{suffix}</span>
         )}
       </div>
       {error && <p className="text-xs text-error">{error}</p>}
-      {hint && !error && <p className="text-xs text-on-surface-variant">{hint}</p>}
+      {hint && !error && (
+        <p className="text-xs text-on-surface-variant">{hint}</p>
+      )}
     </div>
   );
 });
