@@ -25,6 +25,33 @@ apiClient.interceptors.request.use((config) => {
   return config;
 });
 
+// Shared by concurrent 401s so they await one refresh call instead of each
+// firing its own — parallel calls with the same refresh token can race if
+// the backend invalidates a refresh token as soon as it's used.
+let refreshPromise = null;
+
+function refreshAccessToken(refreshToken) {
+  if (!refreshPromise) {
+    refreshPromise = axios
+      .post(`${BASE_URL}/api/auth/refresh`, { refresh_token: refreshToken })
+      .then((res) => {
+        const { access_token, refresh_token } = res.data;
+
+        localStorage.setItem('access_token', access_token);
+        if (refresh_token) {
+          localStorage.setItem('refresh_token', refresh_token);
+        }
+
+        return access_token;
+      })
+      .finally(() => {
+        refreshPromise = null;
+      });
+  }
+
+  return refreshPromise;
+}
+
 // =========================
 // RESPONSE INTERCEPTOR
 // =========================
@@ -46,17 +73,9 @@ apiClient.interceptors.response.use(
       }
 
       try {
-        const res = await axios.post(
-          `${BASE_URL}/api/auth/refresh`,
-          { refresh_token: refreshToken }
-        );
+        const accessToken = await refreshAccessToken(refreshToken);
 
-        const { access_token, refresh_token } = res.data;
-
-        localStorage.setItem('access_token', access_token);
-        localStorage.setItem('refresh_token', refresh_token);
-
-        originalRequest.headers.Authorization = `Bearer ${access_token}`;
+        originalRequest.headers.Authorization = `Bearer ${accessToken}`;
 
         return apiClient(originalRequest);
       } catch (err) {

@@ -46,10 +46,9 @@ const ROLES = [
   },
 ];
 
-// Roles the backend invite endpoint currently accepts. Four roles exist
-// conceptually (see ROLES above for Owner/Admin/Reviewer); these three are
-// what's wired up so far — more will be added as the backend supports them.
-const INVITE_ROLES = ["admin", "member", "vendor", "staff"];
+// Roles the backend invite endpoint accepts from this page. "vendor" used to
+// be one of them, but vendor invites now live on the Vendors page instead.
+const INVITE_ROLES = ["admin", "member", "staff"];
 
 // The API returns lowercase status values (e.g. "active", "pending");
 // StatusChip's style map is keyed on the capitalized form.
@@ -79,7 +78,7 @@ function RoleLegend() {
 }
 
 function InviteModal({ open, onClose, onInvite, submitting }) {
-  const [form, setForm] = useState({ name: "", email: "", role: "Admin" });
+  const [form, setForm] = useState({ email: "", role: INVITE_ROLES[0] });
 
   function handleChange(e) {
     const { name, value } = e.target;
@@ -88,13 +87,11 @@ function InviteModal({ open, onClose, onInvite, submitting }) {
 
   function handleSubmit(e) {
     e.preventDefault();
-    if (!form.name || !form.email) return;
-    // The invite endpoint only accepts { email, role } today — name is kept
-    // in the form for when the backend starts inspecting it, but isn't sent yet.
-    onInvite(form, () => setForm({ name: "", email: "", role: "Admin" }));
+    if (!form.email) return;
+    onInvite(form, () => setForm({ email: "", role: INVITE_ROLES[0] }));
   }
 
-  const valid = form.name.trim() && /\S+@\S+\.\S+/.test(form.email);
+  const valid = /\S+@\S+\.\S+/.test(form.email);
 
   return (
     <Modal
@@ -124,21 +121,13 @@ function InviteModal({ open, onClose, onInvite, submitting }) {
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         <Input
-          label="Full Name"
-          name="name"
-          value={form.name}
-          onChange={handleChange}
-          placeholder="Jane Smith"
-          autoFocus
-          disabled={submitting}
-        />
-        <Input
           label="Work Email"
           type="email"
           name="email"
           value={form.email}
           onChange={handleChange}
           placeholder="jane@yourcompany.com"
+          autoFocus
           disabled={submitting}
         />
         <Select
@@ -167,7 +156,9 @@ export default function TeamRoles() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: team = [], isLoading, isError } = useTeamMembers();
+  const { data: rawTeam = [], isLoading, isError } = useTeamMembers();
+  // Vendor invites/rows now live on the Vendors page instead of here.
+  const team = rawTeam.filter((m) => m.role?.toLowerCase() !== "vendor");
   const createInvite = useCreateInvite(() => setInviteOpen(false));
   const deleteMember = useDeleteTeamMember();
   const resendInvite = useResendInvite();
