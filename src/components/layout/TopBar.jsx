@@ -7,6 +7,7 @@ import { vendorService } from '../../lib/services/vendorService';
 import { formatCurrency, formatDate } from '../../lib/utils';
 import ConfirmModal from '../ui/ConfirmModal';
 import { MdClose } from 'react-icons/md';
+// import { RiSettingsLine } from 'react-icons/ri';
 
 const STATUS_LABEL = {
   submitted: "Submitted",
@@ -177,7 +178,7 @@ export default function TopBar({ searchPlaceholder = 'Search invoices, payments,
   const displayEmail = profile?.contact_email || profile?.user_email || "";
 
   return (
-    <header className="h-14 bg-white border-b border-outline-variant flex items-center px-4 sm:px-6 gap-3 sm:gap-4 z-20 relative">
+    <header className=" sticky top-0 h-14 shrink-0 bg-white border-b border-outline-variant flex items-center px-4 sm:px-6 gap-3 sm:gap-4 z-50">
       <button
         onClick={onMenuClick}
         className="lg:hidden p-2 -ml-2 rounded hover:bg-surface-container text-on-surface-variant transition-colors flex-shrink-0"
@@ -319,6 +320,17 @@ export default function TopBar({ searchPlaceholder = 'Search invoices, payments,
                     Edit Profile
                   </button>
                 )}
+
+                {/* <button className='w-full text-left px-4 py-2.5 text-sm text-on-surface hover:bg-surface-low transition-colors flex items-center gap-2.5' onClick={() => {
+                  setShowSettings(false);
+                  navigate(
+                    role === "admin" ? "/admin/general-settings/settings" : "/vendor/general-settings/settings",
+                  );
+                }} >
+
+                  <RiSettingsLine className='text-on-surface' size={15} />
+                  General setting</button> */}
+
                 <button
                   onClick={() => {
                     setShowSettings(false);

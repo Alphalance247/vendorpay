@@ -7,6 +7,7 @@ export const DUMMY_TENANTS = {
   acme: { name: 'Acme Corp' },
   globex: { name: 'Globex Inc' },
   bestbraininc: { name: 'Best Brain Inc' },
+  ajaovendor: { name: "Ajao Vendor" }
 };
 
 export function parseHost(hostname) {

@@ -22,7 +22,7 @@ const Input = forwardRef(function Input(
         <input
           ref={ref}
           className={cn(
-            'w-full rounded border bg-white px-3 py-2 text-sm text-on-surface placeholder:text-outline transition-colors',
+            'relative w-full rounded border bg-white px-3 py-2 text-sm text-on-surface placeholder:text-outline transition-colors',
             'border-outline-variant focus:outline-none focus:ring-2 focus:ring-secondary focus:border-secondary',
             error && 'border-error focus:ring-error',
             prefix && 'pl-7',
@@ -31,6 +31,7 @@ const Input = forwardRef(function Input(
           )}
           {...props}
         />
+        { }
         {suffix && (
           <span className="absolute right-3 flex items-center">
             {suffix}
