@@ -5,6 +5,7 @@ import { useAuth } from '../../lib/authContext';
 import { invoiceService, adminInvoiceService } from '../../lib/services/invoiceService';
 import { vendorService } from '../../lib/services/vendorService';
 import { formatCurrency, formatDate } from '../../lib/utils';
+import { useCurrentUser } from '../../hooks/useQueries/vendorAdmin/useCurrentUser';
 import ConfirmModal from '../ui/ConfirmModal';
 
 const STATUS_LABEL = {
@@ -77,6 +78,8 @@ export default function TopBar({ searchPlaceholder = 'Search invoices, payments,
     }
   }, [role]);
 
+  const { data: currentUser } = useCurrentUser(role === 'admin');
+
   // Fetch recent invoices to drive notifications
   useEffect(() => {
     if (!role) return;
@@ -138,9 +141,9 @@ export default function TopBar({ searchPlaceholder = 'Search invoices, payments,
 
   const displayName = profile
     ? [profile.contact_first_name, profile.contact_last_name].filter(Boolean).join(' ') || profile.company_name || 'Vendor'
-    : role === 'admin' ? 'Administrator' : '—';
+    : role === 'admin' ? currentUser?.full_name || '—' : '—';
 
-  const displayEmail = profile?.contact_email || profile?.user_email || '';
+  const displayEmail = profile?.contact_email || profile?.user_email || (role === 'admin' ? currentUser?.email : '') || '';
 
   return (
     <header className="h-14 bg-white border-b border-outline-variant flex items-center px-4 sm:px-6 gap-3 sm:gap-4 z-20 relative">

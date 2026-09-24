@@ -2,6 +2,12 @@ import { useState, useEffect } from 'react';
 import Sidebar from './Sidebar';
 import TopBar from './TopBar';
 import { vendorService } from '../../lib/services/vendorService';
+import { useCurrentUser } from '../../hooks/useQueries/vendorAdmin/useCurrentUser';
+
+function capitalize(value) {
+  if (!value) return value;
+  return value.charAt(0).toUpperCase() + value.slice(1);
+}
 
 export default function AppLayout({ children, role = 'vendor', searchPlaceholder }) {
   const [profile, setProfile] = useState(null);
@@ -13,8 +19,13 @@ export default function AppLayout({ children, role = 'vendor', searchPlaceholder
     }
   }, [role]);
 
+  const { data: currentUser } = useCurrentUser(role === 'admin');
+
   const user = role === 'admin'
-    ? { name: 'Administrator', role: 'Firm Administrator' }
+    ? {
+        name: currentUser?.full_name || '—',
+        role: capitalize(currentUser?.role) || 'Team Member',
+      }
     : {
         name: profile
           ? [profile.contact_first_name, profile.contact_last_name].filter(Boolean).join(' ') || profile.company_name || 'Vendor'

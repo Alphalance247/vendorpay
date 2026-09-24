@@ -2,13 +2,13 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Check,
+  Circle,
   ArrowRight,
   ArrowLeft,
   Rocket,
   Eye,
   EyeOff,
   Loader2,
-  Upload,
   X,
   ShieldCheck,
   PartyPopper,
@@ -20,22 +20,15 @@ import Button from "../../components/ui/Button";
 import Input from "../../components/ui/Input";
 import Select from "../../components/ui/Select";
 import Card from "../../components/ui/Card";
+import Logo from "../../components/ui/Logo";
 import { cn } from "../../lib/utils";
-import { useAuth } from "../../lib/authContext";
 import { environment } from "../../env/env.local";
 import { useRegisterCompany } from "../../hooks/useQueries/companyAuth/useRegisterCompany";
 import { useVerifyCompanyOtp } from "../../hooks/useQueries/companyAuth/useVerifyCompanyOtp";
 import { useCompleteCompanySignup } from "../../hooks/useQueries/companyAuth/useCompleteCompanySignup";
 import { useCheckSubdomain } from "../../hooks/useQueries/companyAuth/useCheckSubdomain";
 
-const STEPS = [
-  "Account",
-  "Verify Email",
-  "Company",
-  "Subdomain",
-  "Branding",
-  "Review",
-];
+const STEPS = ["Account", "Verify Email", "Company", "Review"];
 
 const ROOT_DOMAIN = new URL(environment.baseUrl).hostname;
 
@@ -62,6 +55,52 @@ function slugify(value) {
     .toLowerCase()
     .replace(/[^a-z0-9-]/g, "")
     .replace(/-+/g, "-");
+}
+
+const EMAIL_PATTERN = /\S+@\S+\.\S+/;
+
+// A stronger rule than a bare length check, with live per-requirement
+// feedback — appropriate for a product that's going to be moving payments.
+const PASSWORD_RULES = [
+  { key: "length", label: "At least 8 characters", test: (v) => v.length >= 8 },
+  { key: "upper", label: "One uppercase letter", test: (v) => /[A-Z]/.test(v) },
+  { key: "lower", label: "One lowercase letter", test: (v) => /[a-z]/.test(v) },
+  { key: "number", label: "One number", test: (v) => /[0-9]/.test(v) },
+  {
+    key: "special",
+    label: "One special character",
+    test: (v) => /[^A-Za-z0-9]/.test(v),
+  },
+];
+
+function passwordMeetsRules(password) {
+  return PASSWORD_RULES.every((rule) => rule.test(password));
+}
+
+function PasswordChecklist({ password }) {
+  return (
+    <ul className="mt-1.5 space-y-1">
+      {PASSWORD_RULES.map((rule) => {
+        const met = rule.test(password);
+        return (
+          <li
+            key={rule.key}
+            className={cn(
+              "flex items-center gap-1.5 text-xs transition-colors",
+              met ? "text-emerald" : "text-on-surface-variant",
+            )}
+          >
+            {met ? (
+              <Check size={12} className="flex-shrink-0" />
+            ) : (
+              <Circle size={12} className="flex-shrink-0 text-outline" />
+            )}
+            {rule.label}
+          </li>
+        );
+      })}
+    </ul>
+  );
 }
 
 // Derives idle/checking/available/taken from the live useCheckSubdomain query.
@@ -98,7 +137,7 @@ function StepIndicator({ current }) {
                 className={cn(
                   "w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold border-2 transition-all",
                   done && "bg-emerald border-emerald text-white",
-                  active && "bg-white border-emerald text-emerald",
+                  active && "bg-white border-primary text-primary",
                   !done &&
                     !active &&
                     "bg-white border-outline-variant text-on-surface-variant",
@@ -108,12 +147,12 @@ function StepIndicator({ current }) {
               </div>
               <span
                 className={cn(
-                  "text-[10px] font-medium uppercase tracking-wider hidden sm:block",
+                  "text-xs font-medium uppercase tracking-wider hidden sm:block",
                   active
-                    ? "text-emerald"
+                    ? "text-primary"
                     : done
                       ? "text-emerald"
-                      : "text-outline",
+                      : "text-on-surface-variant",
                 )}
               >
                 {label}
@@ -146,7 +185,7 @@ function AccountStep({
     data.password &&
     data.confirmPassword &&
     data.password !== data.confirmPassword;
-  const tooShort = data.password && data.password.length < 8;
+  const invalidEmail = data.workEmail && !EMAIL_PATTERN.test(data.workEmail);
 
   return (
     <div className="space-y-4">
@@ -165,7 +204,6 @@ function AccountStep({
             name="fullName"
             value={data.fullName}
             onChange={onChange}
-            placeholder="Jane Smith"
             required
           />
         </div>
@@ -176,39 +214,36 @@ function AccountStep({
             name="workEmail"
             value={data.workEmail}
             onChange={onChange}
-            placeholder="jane@yourcompany.com"
+            error={invalidEmail ? "Enter a valid email address" : undefined}
             required
           />
         </div>
-        <Input
-          label="Password"
-          type={showPassword ? "text" : "password"}
-          name="password"
-          value={data.password}
-          onChange={onChange}
-          placeholder="••••••••"
-          hint="At least 8 characters"
-          error={
-            tooShort ? "Password must be at least 8 characters" : undefined
-          }
-          suffix={
-            <button
-              type="button"
-              onClick={() => setShowPassword((s) => !s)}
-              className="text-outline hover:text-on-surface-variant"
-              tabIndex={-1}
-            >
-              {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-            </button>
-          }
-        />
+        <div>
+          <Input
+            label="Password"
+            type={showPassword ? "text" : "password"}
+            name="password"
+            value={data.password}
+            onChange={onChange}
+            suffix={
+              <button
+                type="button"
+                onClick={() => setShowPassword((s) => !s)}
+                className="text-outline hover:text-on-surface-variant"
+                tabIndex={-1}
+              >
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            }
+          />
+          <PasswordChecklist password={data.password} />
+        </div>
         <Input
           label="Confirm Password"
           type={showConfirm ? "text" : "password"}
           name="confirmPassword"
           value={data.confirmPassword}
           onChange={onChange}
-          placeholder="••••••••"
           error={mismatch ? "Passwords do not match" : undefined}
           suffix={
             <button
@@ -267,15 +302,19 @@ function VerifyEmailStep({ email, code, onCodeChange, verified, verifyError }) {
   );
 }
 
-function CompanyStep({ data, onChange }) {
+function CompanyStep({ data, onChange, checkStatus }) {
+  const preview = data.subdomain || "yourcompany";
+  const tooShort = data.subdomain && data.subdomain.length < 3;
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       <div>
         <h2 className="text-2xl font-semibold text-on-surface tracking-tight">
           Tell us about your company
         </h2>
         <p className="text-on-surface-variant text-sm mt-1">
-          This shows up across your workspace and on invoices you send.
+          This shows up across your workspace, and sets the web address your
+          team and vendors will use to sign in.
         </p>
       </div>
       <div className="grid grid-cols-2 gap-4">
@@ -314,117 +353,52 @@ function CompanyStep({ data, onChange }) {
           ))}
         </Select>
       </div>
-    </div>
-  );
-}
 
-function SubdomainStep({ data, onChange, checkStatus }) {
-  const preview = data.subdomain || "yourcompany";
-  const tooShort = data.subdomain && data.subdomain.length < 3;
+      <div className="space-y-4 pt-4 border-t border-outline">
+        <Input
+          label="Subdomain"
+          name="subdomain"
+          value={data.subdomain}
+          onChange={(e) =>
+            onChange({
+              target: { name: "subdomain", value: slugify(e.target.value) },
+            })
+          }
+          placeholder="yourcompany"
+          error={tooShort ? "Must be at least 3 characters" : undefined}
+          suffix={
+            checkStatus === "checking" ? (
+              <Loader2 size={16} className="animate-spin text-outline" />
+            ) : checkStatus === "available" ? (
+              <Check size={16} className="text-emerald" />
+            ) : checkStatus === "taken" ? (
+              <X size={16} className="text-error" />
+            ) : null
+          }
+        />
 
-  return (
-    <div className="space-y-5">
-      <div>
-        <h2 className="text-2xl font-semibold text-on-surface tracking-tight">
-          Choose your subdomain
-        </h2>
-        <p className="text-on-surface-variant text-sm mt-1">
-          This is the web address your team and vendors will use to sign in.
-        </p>
-      </div>
-
-      <Input
-        label="Subdomain"
-        name="subdomain"
-        value={data.subdomain}
-        onChange={(e) =>
-          onChange({
-            target: { name: "subdomain", value: slugify(e.target.value) },
-          })
-        }
-        placeholder="yourcompany"
-        error={tooShort ? "Must be at least 3 characters" : undefined}
-        suffix={
-          checkStatus === "checking" ? (
-            <Loader2 size={16} className="animate-spin text-outline" />
-          ) : checkStatus === "available" ? (
-            <Check size={16} className="text-emerald" />
-          ) : checkStatus === "taken" ? (
-            <X size={16} className="text-error" />
-          ) : null
-        }
-      />
-
-      <div className="bg-surface-low border border-outline-variant rounded-lg px-4 py-3 flex items-center gap-2">
-        <span className="text-on-surface-variant text-sm">
-          Your workspace URL:
-        </span>
-        <span className="text-sm font-semibold text-on-surface">
-          {preview}.{ROOT_DOMAIN}
-        </span>
-      </div>
-
-      {checkStatus === "taken" && (
-        <p className="text-sm text-error flex items-center gap-1.5">
-          <X size={14} /> That subdomain is already taken. Try another.
-        </p>
-      )}
-      {checkStatus === "available" && (
-        <p className="text-sm text-emerald flex items-center gap-1.5">
-          <Check size={14} /> That subdomain is available.
-        </p>
-      )}
-      <p className="text-xs text-outline">
-        Lowercase letters, numbers, and hyphens only.
-      </p>
-    </div>
-  );
-}
-
-function BrandingStep({ data, onLogoChange }) {
-  return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-semibold text-on-surface tracking-tight">
-          Make it yours
-        </h2>
-        <p className="text-on-surface-variant text-sm mt-1">
-          Add a logo — you'll see it applied on the final screen.
-        </p>
-      </div>
-
-      <div>
-        <label className="text-xs font-semibold tracking-wide text-on-surface-variant uppercase mb-2 block">
-          Logo
-        </label>
-        <div className="flex items-center gap-4">
-          <div
-            className="w-16 h-16 rounded-lg border-2 border-dashed border-outline-variant flex items-center justify-center overflow-hidden bg-surface-low flex-shrink-0"
-            style={data.logoPreviewUrl ? { borderStyle: "solid" } : undefined}
-          >
-            {data.logoPreviewUrl ? (
-              <img
-                src={data.logoPreviewUrl}
-                alt="Logo preview"
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <Upload size={20} className="text-outline" />
-            )}
-          </div>
-          <label className="cursor-pointer">
-            <span className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded border border-outline-variant text-on-surface hover:bg-surface-low transition-colors">
-              <Upload size={14} />
-              {data.logoPreviewUrl ? "Replace logo" : "Upload logo"}
-            </span>
-            <input
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={onLogoChange}
-            />
-          </label>
+        <div className="bg-surface-low border border-outline rounded-lg px-4 py-3 flex items-center gap-2">
+          <span className="text-on-surface-variant text-sm">
+            Your workspace URL:
+          </span>
+          <span className="text-sm font-semibold text-on-surface">
+            {preview}.{ROOT_DOMAIN}
+          </span>
         </div>
+
+        {checkStatus === "taken" && (
+          <p className="text-sm text-error flex items-center gap-1.5">
+            <X size={14} /> That subdomain is already taken. Try another.
+          </p>
+        )}
+        {checkStatus === "available" && (
+          <p className="text-sm text-emerald flex items-center gap-1.5">
+            <Check size={14} /> That subdomain is available.
+          </p>
+        )}
+        <p className="text-xs text-outline">
+          Lowercase letters, numbers, and hyphens only.
+        </p>
       </div>
     </div>
   );
@@ -449,7 +423,7 @@ function ReviewStep({ data }) {
           Everything look right? Let's create your workspace.
         </p>
       </div>
-      <div className="bg-surface-low rounded-lg border border-outline-variant overflow-hidden">
+      <div className="bg-surface-low rounded-lg border border-outline overflow-hidden">
         <table className="w-full text-sm">
           <tbody>
             {rows.map((row) =>
@@ -485,6 +459,10 @@ function SuccessScreen({ data, onDone }) {
   return (
     <div className="min-h-screen bg-surface flex items-center justify-center px-6 py-12">
       <div className="w-full max-w-xl">
+        <div className="flex items-center justify-center mb-8">
+          <Logo variant="light" />
+        </div>
+
         <div className="text-center mb-8">
           <div className="w-14 h-14 rounded-full bg-emerald/10 flex items-center justify-center mx-auto mb-4">
             <PartyPopper size={26} className="text-emerald" />
@@ -496,7 +474,8 @@ function SuccessScreen({ data, onDone }) {
             <span className="font-medium text-on-surface">
               {data.subdomain}.{ROOT_DOMAIN}
             </span>{" "}
-            is set up and waiting for you.
+            is all set up. Sign in with the admin account you just created to
+            get started.
           </p>
         </div>
 
@@ -504,15 +483,7 @@ function SuccessScreen({ data, onDone }) {
         <Card className="overflow-hidden p-0">
           <div className="px-5 py-4 flex items-center gap-3 bg-emerald">
             <div className="w-9 h-9 rounded-lg bg-white/15 flex items-center justify-center overflow-hidden flex-shrink-0">
-              {data.logoPreviewUrl ? (
-                <img
-                  src={data.logoPreviewUrl}
-                  alt=""
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <span className="text-white font-bold text-sm">{initials}</span>
-              )}
+              <span className="text-white font-bold text-sm">{initials}</span>
             </div>
             <div className="min-w-0">
               <p className="text-white font-semibold text-sm truncate">
@@ -541,8 +512,13 @@ function SuccessScreen({ data, onDone }) {
           </div>
         </Card>
 
-        <Button size="lg" className="w-full mt-6" onClick={onDone}>
-          Go to Dashboard
+        <Button
+          size="lg"
+          className="w-full mt-6 flex items-center justify-center gap-2"
+          onClick={onDone}
+        >
+          Go to Login
+          <ArrowRight size={16} />
         </Button>
       </div>
     </div>
@@ -551,7 +527,6 @@ function SuccessScreen({ data, onDone }) {
 
 export default function CompanySignup() {
   const navigate = useNavigate();
-  const { loginWithTokens } = useAuth();
   const [step, setStep] = useState(0);
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -568,23 +543,11 @@ export default function CompanySignup() {
     industry: "",
     companySize: "",
     subdomain: "",
-    logoFile: null,
-    logoPreviewUrl: "",
   });
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setData((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleLogoChange = (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setData((prev) => ({
-      ...prev,
-      logoFile: file,
-      logoPreviewUrl: URL.createObjectURL(file),
-    }));
   };
 
   // Simulated debounced subdomain availability check: the effect only ever
@@ -642,16 +605,20 @@ export default function CompanySignup() {
       case 0:
         return (
           data.fullName &&
-          data.workEmail &&
-          data.password.length >= 8 &&
+          EMAIL_PATTERN.test(data.workEmail) &&
+          passwordMeetsRules(data.password) &&
           data.password === data.confirmPassword
         );
       case 1:
         return verifyOtp.isSuccess;
       case 2:
-        return data.companyName && data.industry && data.companySize;
-      case 3:
-        return data.subdomain.length >= 3 && checkStatus === "available";
+        return (
+          data.companyName &&
+          data.industry &&
+          data.companySize &&
+          data.subdomain.length >= 3 &&
+          checkStatus === "available"
+        );
       default:
         return true;
     }
@@ -671,9 +638,7 @@ export default function CompanySignup() {
     setStep((s) => Math.max(s - 1, 0));
   };
 
-  const completeSignup = useCompleteCompanySignup((tokens) => {
-    loginWithTokens(tokens.access_token, tokens.refresh_token);
-  });
+  const completeSignup = useCompleteCompanySignup();
 
   const handleCreate = () => {
     completeSignup.mutate({
@@ -682,7 +647,6 @@ export default function CompanySignup() {
       subdomain: data.subdomain,
       industry: data.industry,
       company_size: data.companySize,
-      logo_url: "testing",
     });
   };
 
@@ -693,6 +657,10 @@ export default function CompanySignup() {
   return (
     <div className="min-h-screen bg-surface flex flex-col">
       <div className="flex-1 max-w-4xl mx-auto w-full px-6 py-10">
+        <div className="flex items-center justify-center mb-8">
+          <Logo variant="light" onClick={() => navigate("/")} />
+        </div>
+
         <StepIndicator current={step} />
 
         {error && (
@@ -701,7 +669,7 @@ export default function CompanySignup() {
           </div>
         )}
 
-        <div className="bg-white rounded-xl border border-outline-variant shadow-sm p-6">
+        <div className="bg-white rounded-xl border border-outline shadow-sm p-6">
           {step === 0 && (
             <AccountStep
               data={data}
@@ -721,28 +689,23 @@ export default function CompanySignup() {
               verifyError={verifyOtp.isError}
             />
           )}
-          {step === 2 && <CompanyStep data={data} onChange={handleChange} />}
-          {step === 3 && (
-            <SubdomainStep
+          {step === 2 && (
+            <CompanyStep
               data={data}
               onChange={handleChange}
               checkStatus={checkStatus}
             />
           )}
-          {step === 4 && (
-            <BrandingStep data={data} onLogoChange={handleLogoChange} />
-          )}
-          {step === 5 && <ReviewStep data={data} />}
+          {step === 3 && <ReviewStep data={data} />}
 
-          <div className="flex justify-between mt-8 pt-6 border-t border-outline-variant">
+          <div className="flex justify-between mt-8 pt-6 border-t border-outline">
             <Button
               variant="secondary"
-              onClick={handleBack}
-              disabled={step === 0}
+              onClick={step === 0 ? () => navigate("/login") : handleBack}
               className="flex items-center gap-2"
             >
               <ArrowLeft size={16} />
-              Back
+              {step === 0 ? "Back to Login" : "Back"}
             </Button>
 
             {step === 0 ? (
@@ -751,12 +714,12 @@ export default function CompanySignup() {
                 disabled={registerCompany.isPending}
                 className="flex items-center gap-2"
               >
+                {registerCompany.isPending ? "Creating account..." : "Continue"}
                 {registerCompany.isPending ? (
                   <Loader2 size={16} className="animate-spin" />
                 ) : (
                   <ArrowRight size={16} />
                 )}
-                {registerCompany.isPending ? "Creating account..." : "Next"}
               </Button>
             ) : step === 1 && !verifyOtp.isSuccess ? (
               <Button
@@ -773,7 +736,7 @@ export default function CompanySignup() {
               </Button>
             ) : step < STEPS.length - 1 ? (
               <Button onClick={handleNext} className="flex items-center gap-2">
-                {step === STEPS.length - 2 ? "Review" : "Next"}
+                {step === STEPS.length - 2 ? "Review" : "Continue"}
                 <ArrowRight size={16} />
               </Button>
             ) : (

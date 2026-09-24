@@ -2,7 +2,7 @@ import { forwardRef } from 'react';
 import { cn } from '../../lib/utils';
 
 const Input = forwardRef(function Input(
-  { label, error, hint, className, prefix, suffix, ...props },
+  { label, error, hint, className, prefix, suffix, required, ...props },
   ref
 ) {
   return (
@@ -10,6 +10,7 @@ const Input = forwardRef(function Input(
       {label && (
         <label className="text-xs font-semibold tracking-wide text-on-surface-variant uppercase">
           {label}
+          {required && <span className="text-error"> *</span>}
         </label>
       )}
       <div className="relative flex items-center">
@@ -20,9 +21,10 @@ const Input = forwardRef(function Input(
         )}
         <input
           ref={ref}
+          required={required}
           className={cn(
             'w-full rounded border bg-white px-3 py-2 text-sm text-on-surface placeholder:text-outline transition-colors',
-            'border-outline-variant focus:outline-none focus:ring-2 focus:ring-secondary focus:border-secondary',
+            'border-outline focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary',
             error && 'border-error focus:ring-error',
             prefix && 'pl-7',
             suffix && 'pr-10',
