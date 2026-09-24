@@ -7,6 +7,7 @@ import { vendorService } from '../../lib/services/vendorService';
 import { formatCurrency, formatDate } from '../../lib/utils';
 import ConfirmModal from '../ui/ConfirmModal';
 import { MdClose } from 'react-icons/md';
+import { RiSettingsLine } from 'react-icons/ri';
 // import { RiSettingsLine } from 'react-icons/ri';
 
 const STATUS_LABEL = {
@@ -308,7 +309,7 @@ export default function TopBar({ searchPlaceholder = 'Search invoices, payments,
               </div>
 
               <div className="py-1">
-                {role === "vendor" && (
+                {role === "vendor" ? (
                   <button
                     onClick={() => {
                       setShowSettings(false);
@@ -319,17 +320,19 @@ export default function TopBar({ searchPlaceholder = 'Search invoices, payments,
                     <User size={15} className="text-on-surface-variant" />
                     Edit Profile
                   </button>
+                ) : (
+                  <button
+                    className="w-full text-left px-4 py-2.5 text-sm text-on-surface hover:bg-surface-low transition-colors flex items-center gap-2.5"
+                    onClick={() => {
+                      setShowSettings(false);
+                      navigate("/admin/general-settings/settings");
+                    }}
+                  >
+
+                    <RiSettingsLine className='text-on-surface' size={15} />
+                    General setting
+                  </button>
                 )}
-
-                {/* <button className='w-full text-left px-4 py-2.5 text-sm text-on-surface hover:bg-surface-low transition-colors flex items-center gap-2.5' onClick={() => {
-                  setShowSettings(false);
-                  navigate(
-                    role === "admin" ? "/admin/general-settings/settings" : "/vendor/general-settings/settings",
-                  );
-                }} >
-
-                  <RiSettingsLine className='text-on-surface' size={15} />
-                  General setting</button> */}
 
                 <button
                   onClick={() => {

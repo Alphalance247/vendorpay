@@ -31,7 +31,7 @@ import VendorProfile from "./pages/vendor/VendorProfile";
 import Landing from "./pages/marketing/Landing";
 import CompanySignup from "./pages/signup/CompanySignup";
 import Settings from "./pages/admin/general-settings/settings";
-import VendorSetting from "./pages/vendor/general-settings/VendorSettings";
+// import VendorSetting from "./pages/vendor/general-settings/VendorSettings";
 
 export default function App() {
   const tenant = useMemo(() => resolveTenant(), []);
@@ -127,10 +127,10 @@ export default function App() {
                 </ProtectedRoute>
               }
             />
-            <Route
+            {/* <Route
               path="/vendor/general-settings/settings"
               element={<VendorSetting />}
-            ></Route>{" "}
+            ></Route>{" "} */}
             {/* Admin routes */}
             <Route
               path="/admin/dashboard"
