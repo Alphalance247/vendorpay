@@ -10,7 +10,7 @@ COPY . .
 
 # VITE_BACKEND_URL is baked into the bundle at build time.
 # Pass it as a build arg: docker build --build-arg VITE_BACKEND_URL=https://...
-ARG VITE_BACKEND_URL=https://str.ec2.alluvium.net/vendorpay
+ARG VITE_BACKEND_URL=https://vpay.goalluvium.net/
 ENV VITE_BACKEND_URL=$VITE_BACKEND_URL
 
 RUN npm run build

@@ -4,7 +4,7 @@ services:
       context: .
       dockerfile: Dockerfile
       args:
-        VITE_BACKEND_URL: ${VITE_BACKEND_URL:-https://vendorpay.goalluvium.net}
+        VITE_BACKEND_URL: ${VITE_BACKEND_URL:-https://vpay.goalluvium.net/}
     image: vendorpay-frontend
     container_name: vendorpay-frontend
     ports:

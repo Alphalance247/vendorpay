@@ -1,9 +1,9 @@
 import axios from 'axios';
 import apiClient from '../apiClient';
+import { environment } from '../../env/env.local';
 
 const BASE_URL =
-  import.meta.env.VITE_BACKEND_URL ||
-  'https://str.ec2.alluvium.net/vendorpay';
+  import.meta.env.VITE_BACKEND_URL || environment.baseUrl.replace(/\/+$/, '');
 
 export const authService = {
   // =========================

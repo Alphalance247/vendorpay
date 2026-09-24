@@ -11,30 +11,16 @@ import {
 } from "lucide-react";
 import Button from "../../components/ui/Button";
 import Input from "../../components/ui/Input";
-import Select from "../../components/ui/Select";
 import Card from "../../components/ui/Card";
+import Logo from "../../components/ui/Logo";
 import { useAcceptInvite } from "../../hooks/useQueries/companyAuth/useAcceptInvite";
 import { useInviteDetails } from "../../hooks/useQueries/companyAuth/useInviteDetails";
 
-const INDUSTRIES = [
-  "Technology",
-  "Manufacturing",
-  "Logistics",
-  "Professional Services",
-  "Healthcare",
-  "Retail",
-  "Other",
-];
-
-const DEPARTMENTS = ["Finance", "Accounting", "Operations", "Legal", "Other"];
-
 function Brand() {
+  const navigate = useNavigate();
   return (
-    <div className="flex items-center justify-center gap-2 mb-8">
-      <div className="w-8 h-8 bg-navy rounded flex items-center justify-center">
-        <span className="text-white text-sm font-bold">VP</span>
-      </div>
-      <span className="text-navy font-semibold text-lg">VendorPay</span>
+    <div className="flex items-center justify-center mb-8">
+      <Logo variant="light" onClick={() => navigate("/")} />
     </div>
   );
 }
@@ -114,24 +100,12 @@ export default function AcceptInvite() {
     password: "",
     confirmPassword: "",
     fullName: "",
-    taxId: "",
-    businessType: "",
-    businessAddress: "",
-    website: "",
-    industry: "",
-    contactFirstName: "",
-    contactLastName: "",
-    contactEmail: "",
-    phone: "",
-    jobTitle: "",
-    department: "",
   });
 
   const acceptInvite = useAcceptInvite();
   const inviteQuery = useInviteDetails(token);
   const invite = inviteQuery.data;
   const role = (invite?.role || "").toLowerCase();
-  const isVendor = role === "vendor";
 
   function handleChange(e) {
     const { name, value } = e.target;
@@ -165,26 +139,12 @@ export default function AcceptInvite() {
   const tooShort = form.password && form.password.length < 8;
 
   function validate() {
-    if (
-      !form.password ||
-      form.password.length < 8 ||
-      form.password !== form.confirmPassword ||
-      !form.fullName
-    ) {
-      return false;
-    }
-    if (isVendor) {
-      return (
-        form.taxId &&
-        form.businessType &&
-        form.businessAddress &&
-        form.contactFirstName &&
-        form.contactLastName &&
-        form.contactEmail &&
-        form.phone
-      );
-    }
-    return true;
+    return (
+      form.password &&
+      form.password.length >= 8 &&
+      form.password === form.confirmPassword &&
+      form.fullName
+    );
   }
 
   function handleSubmit(e) {
@@ -195,30 +155,12 @@ export default function AcceptInvite() {
     }
     setError("");
 
-    const payload = {
+    acceptInvite.mutate({
       token,
       password: form.password,
       full_name: form.fullName,
-    };
-
-    if (isVendor) {
-      Object.assign(payload, {
-        tax_id: form.taxId,
-        business_type: form.businessType,
-        business_address: form.businessAddress,
-        company_name: invite?.company_name,
-        website: form.website,
-        industry: form.industry,
-        contact_first_name: form.contactFirstName,
-        contact_last_name: form.contactLastName,
-        contact_email: form.contactEmail,
-        phone: form.phone,
-        job_title: form.jobTitle,
-        department: form.department,
-      });
-    }
-
-    acceptInvite.mutate(payload);
+      company_name: invite?.company_name,
+    });
   }
 
   return (
@@ -231,9 +173,7 @@ export default function AcceptInvite() {
             Accept your invite
           </h1>
           <p className="text-on-surface-variant text-sm mt-1">
-            {isVendor
-              ? "Set a password and complete your vendor profile to get started."
-              : "Set a password to activate your account."}
+            Set a password to activate your account.
           </p>
         </div>
 
@@ -334,118 +274,6 @@ export default function AcceptInvite() {
               />
             </div>
           </div>
-
-          {isVendor && (
-            <div className="space-y-4 pt-6 border-t border-outline-variant">
-              <h2 className="text-xs font-semibold tracking-wide text-on-surface-variant uppercase">
-                Business details
-              </h2>
-              <div className="grid grid-cols-2 gap-4">
-                <Input
-                  label="Tax ID / EIN"
-                  name="taxId"
-                  value={form.taxId}
-                  onChange={handleChange}
-                  placeholder="XX-XXXXXXX"
-                  required
-                />
-                <Input
-                  label="Business Type"
-                  name="businessType"
-                  value={form.businessType}
-                  onChange={handleChange}
-                  placeholder="e.g. LLC, Corporation"
-                  required
-                />
-                <div className="col-span-2">
-                  <Input
-                    label="Business Address"
-                    name="businessAddress"
-                    value={form.businessAddress}
-                    onChange={handleChange}
-                    placeholder="123 Main Street, New York, NY 10001"
-                    required
-                  />
-                </div>
-                <Input
-                  label="Website"
-                  name="website"
-                  value={form.website}
-                  onChange={handleChange}
-                  placeholder="https://yourcompany.com"
-                />
-                <Select
-                  label="Industry"
-                  name="industry"
-                  value={form.industry}
-                  onChange={handleChange}
-                >
-                  <option value="">Select industry</option>
-                  {INDUSTRIES.map((i) => (
-                    <option key={i}>{i}</option>
-                  ))}
-                </Select>
-              </div>
-
-              <h2 className="text-xs font-semibold tracking-wide text-on-surface-variant uppercase pt-2">
-                Primary contact
-              </h2>
-              <div className="grid grid-cols-2 gap-4">
-                <Input
-                  label="Contact First Name"
-                  name="contactFirstName"
-                  value={form.contactFirstName}
-                  onChange={handleChange}
-                  placeholder="Jane"
-                  required
-                />
-                <Input
-                  label="Contact Last Name"
-                  name="contactLastName"
-                  value={form.contactLastName}
-                  onChange={handleChange}
-                  placeholder="Smith"
-                  required
-                />
-                <Input
-                  label="Contact Email"
-                  type="email"
-                  name="contactEmail"
-                  value={form.contactEmail}
-                  onChange={handleChange}
-                  placeholder="jane@company.com"
-                  required
-                />
-                <Input
-                  label="Phone Number"
-                  type="tel"
-                  name="phone"
-                  value={form.phone}
-                  onChange={handleChange}
-                  placeholder="+1 (555) 000-0000"
-                  required
-                />
-                <Input
-                  label="Job Title"
-                  name="jobTitle"
-                  value={form.jobTitle}
-                  onChange={handleChange}
-                  placeholder="Accounts Payable Manager"
-                />
-                <Select
-                  label="Department"
-                  name="department"
-                  value={form.department}
-                  onChange={handleChange}
-                >
-                  <option value="">Select department</option>
-                  {DEPARTMENTS.map((d) => (
-                    <option key={d}>{d}</option>
-                  ))}
-                </Select>
-              </div>
-            </div>
-          )}
 
           <Button
             type="submit"
