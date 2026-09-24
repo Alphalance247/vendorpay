@@ -21,6 +21,7 @@ import { formatCurrency, formatDate } from "../../lib/utils";
 import { useCurrentUser } from "../../hooks/useQueries/vendorAdmin/useCurrentUser";
 import ConfirmModal from "../ui/ConfirmModal";
 import { MdClose } from "react-icons/md";
+import { RiSettingsLine } from "react-icons/ri";
 
 const STATUS_LABEL = {
   submitted: "Submitted",

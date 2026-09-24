@@ -29,6 +29,7 @@ import VendorDetail from "./pages/admin/VendorDetail";
 import VendorProfile from "./pages/vendor/VendorProfile";
 import Landing from "./pages/marketing/Landing";
 import CompanySignup from "./pages/signup/CompanySignup";
+import Settings from "./pages/admin/general-settings/settings";
 
 export default function App() {
   const tenant = useTenantResolution();
