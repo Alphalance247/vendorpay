@@ -3,8 +3,6 @@ import { useNavigate } from "react-router-dom";
 import {
   Bell,
   Settings,
-  Search,
-  X,
   LogOut,
   ChevronRight,
   FileText,
@@ -20,7 +18,6 @@ import { vendorService } from "../../lib/services/vendorService";
 import { formatCurrency, formatDate } from "../../lib/utils";
 import { useCurrentUser } from "../../hooks/useQueries/vendorAdmin/useCurrentUser";
 import ConfirmModal from "../ui/ConfirmModal";
-import { MdClose } from "react-icons/md";
 
 const STATUS_LABEL = {
   submitted: "Submitted",
@@ -70,21 +67,16 @@ function useOutsideClick(ref, onClose) {
   }, [ref, onClose]);
 }
 
-export default function TopBar({
-  searchPlaceholder = "Search invoices, payments, or vendors...",
-  onMenuClick,
-}) {
+export default function TopBar({ onMenuClick }) {
   const navigate = useNavigate();
   const { role, logout } = useAuth();
 
-  const [query, setQuery] = useState("");
   const [showBell, setShowBell] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [unread, setUnread] = useState(0);
   const [profile, setProfile] = useState(null);
   const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
-  const [showMobileSearch, setShowMobileSearch] = useState(false);
 
   const bellRef = useRef(null);
   const settingsRef = useRef(null);
@@ -165,18 +157,6 @@ export default function TopBar({
     );
   }
 
-  function handleSearch(e) {
-    e.preventDefault();
-    if (!query.trim()) return;
-    const q = encodeURIComponent(query.trim());
-    navigate(
-      role === "admin"
-        ? `/admin/invoices?search=${q}`
-        : `/vendor/invoices?search=${q}`,
-    );
-    setQuery("");
-  }
-
   async function handleSignOut() {
     setShowSignOutConfirm(false);
     await logout();
@@ -208,30 +188,6 @@ export default function TopBar({
       >
         <Menu size={20} />
       </button>
-
-      {/* Search */}
-      <form onSubmit={handleSearch} className="flex-1 relative max-w-md">
-        <Search
-          size={15}
-          className="absolute left-3 top-1/2 -translate-y-1/2 text-outline pointer-events-none"
-        />
-        <input
-          type="text"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder={searchPlaceholder}
-          className="w-full pl-9 pr-8 py-1.5 text-sm bg-surface-low rounded border border-outline-variant focus:outline-none focus:ring-2 focus:ring-secondary focus:border-secondary placeholder:text-outline transition-colors"
-        />
-        {query && (
-          <button
-            type="button"
-            onClick={() => setQuery("")}
-            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-outline hover:text-on-surface"
-          >
-            <X size={13} />
-          </button>
-        )}
-      </form>
 
       <div className="flex items-center gap-1 ml-auto">
         {/* Bell */}
@@ -390,36 +346,6 @@ export default function TopBar({
           )}
         </div>
       </div>
-      {showMobileSearch && (
-        <div className="fixed inset-0 z-40 bg-white sm:hidden flex items-start p-3 gap-2">
-          <form
-            onSubmit={(e) => {
-              handleSearch(e);
-              setShowMobileSearch(false);
-            }}
-            className="relative flex-1"
-          >
-            <Search
-              size={15}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-outline"
-            />
-            <input
-              autoFocus
-              type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder={searchPlaceholder}
-              className="w-full pl-9 pr-3 py-2 text-sm bg-surface-low rounded border border-outline-variant"
-            />
-          </form>
-          <button
-            onClick={() => setShowMobileSearch(false)}
-            className="p-2 text-on-surface-variant"
-          >
-            <MdClose size={20} />
-          </button>
-        </div>
-      )}
       <ConfirmModal
         open={showSignOutConfirm}
         variant="neutral"

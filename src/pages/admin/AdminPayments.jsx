@@ -63,7 +63,7 @@ export default function AdminPayments() {
   });
 
   return (
-    <AppLayout role="admin" searchPlaceholder="Search payments, vendors, or transactions...">
+    <AppLayout role="admin">
       <div className="space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>

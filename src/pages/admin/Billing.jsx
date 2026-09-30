@@ -191,7 +191,7 @@ export default function Billing() {
   }
 
   return (
-    <AppLayout role="admin" searchPlaceholder="Search billing history...">
+    <AppLayout role="admin">
       {confirmEl}
       <ChangePlanModal
         key={planModalOpen ? `open-${planId}` : 'closed'}

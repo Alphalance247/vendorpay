@@ -9,11 +9,7 @@ function capitalize(value) {
   return value.charAt(0).toUpperCase() + value.slice(1);
 }
 
-export default function AppLayout({
-  children,
-  role = "vendor",
-  searchPlaceholder,
-}) {
+export default function AppLayout({ children, role = "vendor" }) {
   const [profile, setProfile] = useState(null);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
@@ -54,10 +50,7 @@ export default function AppLayout({
         onClose={() => setMobileNavOpen(false)}
       />
       <div className="flex-1 lg:ml-72 flex flex-col min-h-screen min-w-0 overflow-x-hidden">
-        <TopBar
-          searchPlaceholder={searchPlaceholder}
-          onMenuClick={() => setMobileNavOpen(true)}
-        />
+        <TopBar onMenuClick={() => setMobileNavOpen(true)} />
         <main className="flex-1 p-4 sm:p-6 max-w-content mx-auto w-full">
           {children}
         </main>

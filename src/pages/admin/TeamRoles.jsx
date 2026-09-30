@@ -208,7 +208,7 @@ export default function TeamRoles() {
   });
 
   return (
-    <AppLayout role="admin" searchPlaceholder="Search team members...">
+    <AppLayout role="admin">
       {confirmEl}
       <InviteModal
         open={inviteOpen}

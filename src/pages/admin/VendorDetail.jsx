@@ -97,7 +97,7 @@ export default function VendorDetail() {
   const vendorCurrency = vendor.currency ?? invoices[0]?.currency ?? 'USD';
 
   return (
-    <AppLayout role="admin" searchPlaceholder="Search invoices...">
+    <AppLayout role="admin">
       {confirmEl}
       <div className="space-y-6">
         <button
