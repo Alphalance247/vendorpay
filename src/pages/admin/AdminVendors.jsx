@@ -28,7 +28,6 @@ export default function AdminVendors() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
-  const [actionLoading, setActionLoading] = useState(null);
   const [inviteOpen, setInviteOpen] = useState(false);
 
   const { confirm, confirmEl } = useConfirm();
@@ -68,30 +67,33 @@ export default function AdminVendors() {
       message: `Cancel the invite sent to "${email}"?`,
       confirmLabel: "Cancel Invite",
       variant: "danger",
+      onConfirm: () => deleteInvite.mutateAsync(invite.id),
     });
-    if (!ok) return;
-    deleteInvite.mutate(invite.id, {
-      onSuccess: () => {
-        loadVendors();
-        toast(`Cancelled invite to ${email}.`);
-      },
-    });
+    if (ok) {
+      loadVendors();
+      toast(`Cancelled invite to ${email}.`);
+    }
   }
 
   async function handleToggleStatus(vendor) {
-    setActionLoading(`status-${vendor.id}`);
-    try {
-      await vendorService.updateVendorStatus(vendor.id, !vendor.is_active);
-      setVendors((prev) =>
-        prev.map((v) =>
-          v.id === vendor.id ? { ...v, is_active: !v.is_active } : v,
-        ),
-      );
-    } catch {
-      setError("Failed to update vendor status.");
-    } finally {
-      setActionLoading(null);
-    }
+    const activating = !vendor.is_active;
+    const displayName = vendor.company_name || vendor.user_email || "this vendor";
+    await confirm({
+      title: activating ? "Activate Vendor" : "Deactivate Vendor",
+      message: activating
+        ? `Reactivate "${displayName}"? They will regain access to submit invoices.`
+        : `Deactivate "${displayName}"? They will lose access until reactivated.`,
+      confirmLabel: activating ? "Activate" : "Deactivate",
+      variant: activating ? "approve" : "warning",
+      onConfirm: async () => {
+        await vendorService.updateVendorStatus(vendor.id, activating);
+        setVendors((prev) =>
+          prev.map((v) =>
+            v.id === vendor.id ? { ...v, is_active: activating } : v,
+          ),
+        );
+      },
+    });
   }
 
   async function handleDelete(vendor) {
@@ -102,17 +104,10 @@ export default function AdminVendors() {
       message: `Delete "${displayName}"? This action cannot be undone.`,
       confirmLabel: "Delete",
       variant: "danger",
+      onConfirm: () => vendorService.deleteVendor(vendor.id),
     });
-    if (!ok) return;
-    setActionLoading(`delete-${vendor.id}`);
-    try {
-      await vendorService.deleteVendor(vendor.id);
+    if (ok) {
       setVendors((prev) => prev.filter((v) => v.id !== vendor.id));
-    } catch (err) {
-      const msg = err?.response?.data?.detail ?? "Failed to delete vendor.";
-      setError(msg);
-    } finally {
-      setActionLoading(null);
     }
   }
 
@@ -367,20 +362,14 @@ export default function AdminVendors() {
                           <div className="flex items-center gap-2">
                             <button
                               onClick={() => handleToggleStatus(vendor)}
-                              disabled={actionLoading === `status-${vendor.id}`}
                               title={
                                 vendor.is_active
                                   ? "Deactivate vendor"
                                   : "Activate vendor"
                               }
-                              className="p-1.5 rounded hover:bg-surface-container transition-colors disabled:opacity-50"
+                              className="p-1.5 rounded hover:bg-surface-container transition-colors"
                             >
-                              {actionLoading === `status-${vendor.id}` ? (
-                                <Loader2
-                                  size={14}
-                                  className="animate-spin text-on-surface-variant"
-                                />
-                              ) : vendor.is_active ? (
+                              {vendor.is_active ? (
                                 <PowerOff
                                   size={14}
                                   className="text-amber-600"
@@ -391,18 +380,10 @@ export default function AdminVendors() {
                             </button>
                             <button
                               onClick={() => handleDelete(vendor)}
-                              disabled={actionLoading === `delete-${vendor.id}`}
                               title="Delete vendor"
-                              className="p-1.5 rounded hover:bg-red-50 transition-colors disabled:opacity-50"
+                              className="p-1.5 rounded hover:bg-red-50 transition-colors"
                             >
-                              {actionLoading === `delete-${vendor.id}` ? (
-                                <Loader2
-                                  size={14}
-                                  className="animate-spin text-error"
-                                />
-                              ) : (
-                                <Trash2 size={14} className="text-error" />
-                              )}
+                              <Trash2 size={14} className="text-error" />
                             </button>
                           </div>
                         </td>
@@ -456,12 +437,9 @@ export default function AdminVendors() {
                     >
                       <button
                         onClick={() => handleToggleStatus(vendor)}
-                        disabled={actionLoading === `status-${vendor.id}`}
-                        className="flex-1 inline-flex items-center justify-center gap-1.5 py-2 rounded border border-outline-variant text-xs font-medium text-on-surface-variant hover:bg-surface-low transition-colors disabled:opacity-50"
+                        className="flex-1 inline-flex items-center justify-center gap-1.5 py-2 rounded border border-outline-variant text-xs font-medium text-on-surface-variant hover:bg-surface-low transition-colors"
                       >
-                        {actionLoading === `status-${vendor.id}` ? (
-                          <Loader2 size={13} className="animate-spin" />
-                        ) : vendor.is_active ? (
+                        {vendor.is_active ? (
                           <PowerOff size={13} className="text-amber-600" />
                         ) : (
                           <Power size={13} className="text-emerald" />
@@ -470,14 +448,9 @@ export default function AdminVendors() {
                       </button>
                       <button
                         onClick={() => handleDelete(vendor)}
-                        disabled={actionLoading === `delete-${vendor.id}`}
-                        className="flex-1 inline-flex items-center justify-center gap-1.5 py-2 rounded border border-outline-variant text-xs font-medium text-error hover:bg-red-50 transition-colors disabled:opacity-50"
+                        className="flex-1 inline-flex items-center justify-center gap-1.5 py-2 rounded border border-outline-variant text-xs font-medium text-error hover:bg-red-50 transition-colors"
                       >
-                        {actionLoading === `delete-${vendor.id}` ? (
-                          <Loader2 size={13} className="animate-spin" />
-                        ) : (
-                          <Trash2 size={13} />
-                        )}
+                        <Trash2 size={13} />
                         Delete
                       </button>
                     </div>

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { XCircle } from 'lucide-react';
+import { Loader2, XCircle } from 'lucide-react';
 import Button from './Button';
 
 export default function RejectModal({
@@ -8,6 +8,8 @@ export default function RejectModal({
   itemLabel,
   description,
   confirmLabel = 'Reject Invoice',
+  loading = false,
+  error = '',
   onConfirm,
   onCancel,
 }) {
@@ -16,6 +18,7 @@ export default function RejectModal({
   useEffect(() => {
     if (!open) { setReason(''); return; }
     function onKey(e) {
+      if (loading) return;
       if (e.key === 'Escape') onCancel?.();
     }
     document.addEventListener('keydown', onKey);
@@ -24,14 +27,14 @@ export default function RejectModal({
       document.removeEventListener('keydown', onKey);
       document.body.style.overflow = '';
     };
-  }, [open, onCancel]);
+  }, [open, loading, onCancel]);
 
   if (!open) return null;
 
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
-      onClick={onCancel}
+      onClick={loading ? undefined : onCancel}
     >
       <div
         className="bg-white rounded-xl shadow-xl w-full max-w-sm border border-outline-variant animate-in fade-in zoom-in-95 duration-150"
@@ -55,19 +58,24 @@ export default function RejectModal({
             onChange={(e) => setReason(e.target.value)}
             placeholder="Enter rejection reason (required)..."
             rows={4}
-            className="w-full rounded border border-outline-variant px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-error"
+            disabled={loading}
+            className="w-full rounded border border-outline-variant px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-error disabled:bg-surface-low disabled:cursor-not-allowed"
           />
           {reason.trim().length === 0 && (
             <p className="text-xs text-error mt-1">A reason is required before rejecting.</p>
           )}
+          {error && (
+            <p className="text-sm text-error mt-2 bg-red-50 border border-red-200 rounded px-3 py-2">{error}</p>
+          )}
         </div>
         <div className="flex items-center justify-end gap-2 px-6 pb-5">
-          <Button variant="ghost" size="sm" onClick={onCancel}>Cancel</Button>
+          <Button variant="ghost" size="sm" onClick={onCancel} disabled={loading}>Cancel</Button>
           <button
             onClick={() => reason.trim() && onConfirm(reason.trim())}
-            disabled={!reason.trim()}
-            className="px-4 py-1.5 rounded text-sm font-medium transition-colors bg-error text-white hover:bg-error/90 disabled:opacity-40 disabled:cursor-not-allowed"
+            disabled={!reason.trim() || loading}
+            className="px-4 py-1.5 rounded text-sm font-medium transition-colors bg-error text-white hover:bg-error/90 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5"
           >
+            {loading && <Loader2 size={14} className="animate-spin" />}
             {confirmLabel}
           </button>
         </div>

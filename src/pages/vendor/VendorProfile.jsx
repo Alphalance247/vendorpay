@@ -14,13 +14,12 @@ import AppLayout from "../../components/layout/AppLayout";
 import Card from "../../components/ui/Card";
 import Button from "../../components/ui/Button";
 import Input from "../../components/ui/Input";
+import StatusChip from "../../components/ui/StatusChip";
+import { useToast } from "../../components/ui/Toast";
+import { useBanking } from "../../hooks/useQueries/vendorAdmin/useBanking";
+import { useUpdateBanking } from "../../hooks/useQueries/vendorAdmin/useUpdateBanking";
 import { vendorService } from "../../lib/services/vendorService";
-import {
-  extractErrorMessage,
-  CURRENCY_SYMBOLS,
-  cn,
-  maskAccountNumber,
-} from "../../lib/utils";
+import { extractErrorMessage, CURRENCY_SYMBOLS, cn } from "../../lib/utils";
 
 const BUSINESS_TYPES = [
   "LLC",
@@ -52,6 +51,13 @@ const ACCOUNT_TYPES = [
   "Domiciliary",
   "Transmission",
 ];
+const COUNTRY_TYPES = ["ACH", "FASTER_PAYMENTS", "NIP", "PESALINK", "SWIFT"];
+
+const BANKING_STATUS_LABEL = {
+  pending: "Pending Review",
+  approved: "Approved",
+  rejected: "Rejected",
+};
 
 const TABS = [
   { key: "contact", label: "Contact" },
@@ -60,7 +66,8 @@ const TABS = [
 ];
 
 const TAB_SUBTITLES = {
-  contact: "Update the contact details used on your invoices and communications.",
+  contact:
+    "Update the contact details used on your invoices and communications.",
   company: "Keep your company details accurate for invoicing and compliance.",
   banking:
     "Manage the account your payouts are sent to. Changes are reviewed before taking effect.",
@@ -89,21 +96,24 @@ export default function VendorProfile() {
     currency: "",
   });
 
-  const [banking, setBanking] = useState({
-    bank_name: "",
-    account_name: "",
-    account_type: "",
-    account_number: "",
-    routing_number: "",
-    swift_code: "",
-    iban: "",
-  });
-  const [bankingCountryType, setBankingCountryType] = useState(null);
+  const { toast } = useToast();
+  const bankingQuery = useBanking();
+  const banking = bankingQuery.data ?? null;
   const [bankingEditing, setBankingEditing] = useState(false);
   const [bankingDraft, setBankingDraft] = useState(null);
-  const [bankingSaving, setBankingSaving] = useState(false);
-  const [bankingSaved, setBankingSaved] = useState(false);
-  const [bankingError, setBankingError] = useState("");
+
+  const updateBanking = useUpdateBanking(() => {
+    setBankingEditing(false);
+    setBankingDraft(null);
+  });
+
+  const bankingStatus = !banking
+    ? null
+    : banking.is_verified
+      ? "approved"
+      : banking.rejection_reason
+        ? "rejected"
+        : "pending";
 
   useEffect(() => {
     vendorService
@@ -124,16 +134,6 @@ export default function VendorProfile() {
           tax_id: data.tax_id ?? "",
           currency: data.currency ?? "",
         });
-        setBanking({
-          bank_name: data.bank_name ?? "",
-          account_name: data.account_name ?? "",
-          account_type: data.account_type ?? "",
-          account_number: data.account_number ?? "",
-          routing_number: data.routing_number ?? "",
-          swift_code: data.swift_code ?? "",
-          iban: data.iban ?? "",
-        });
-        setBankingCountryType(data.country_type ?? null);
       })
       .catch(() => setError("Failed to load profile."))
       .finally(() => setLoading(false));
@@ -163,24 +163,21 @@ export default function VendorProfile() {
 
   function startBankingEdit() {
     setBankingDraft({
-      bank_name: banking.bank_name,
-      account_name: banking.account_name,
-      account_type: banking.account_type,
+      bank_name: banking?.bank_name ?? "",
+      account_name: banking?.account_name ?? "",
+      account_type: banking?.account_type ?? "",
+      country_type: banking?.country_type ?? "",
+      bank_code: banking?.bank_code ?? "",
+      swift_code: banking?.swift_code ?? "",
       account_number: "",
       confirm_account_number: "",
-      routing_number: banking.routing_number,
-      swift_code: banking.swift_code,
-      iban: banking.iban,
     });
-    setBankingError("");
-    setBankingSaved(false);
     setBankingEditing(true);
   }
 
   function cancelBankingEdit() {
     setBankingEditing(false);
     setBankingDraft(null);
-    setBankingError("");
   }
 
   function handleBankingDraftChange(e) {
@@ -188,47 +185,34 @@ export default function VendorProfile() {
     setBankingDraft((d) => ({ ...d, [name]: value }));
   }
 
-  async function submitBanking(e) {
+  function submitBanking(e) {
     e.preventDefault();
     if (
       !bankingDraft.bank_name ||
       !bankingDraft.account_name ||
       !bankingDraft.account_type ||
-      !bankingDraft.account_number ||
-      !bankingDraft.routing_number
+      !bankingDraft.country_type ||
+      !bankingDraft.bank_code ||
+      !bankingDraft.account_number
     ) {
-      setBankingError("Please fill in all required banking fields.");
+      toast("Please fill in all required banking fields.", {
+        variant: "error",
+      });
       return;
     }
     if (bankingDraft.account_number !== bankingDraft.confirm_account_number) {
-      setBankingError("Account numbers do not match.");
+      toast("Account numbers do not match.", { variant: "error" });
       return;
     }
-    setBankingSaving(true);
-    setBankingError("");
-    try {
-      const updated = {
-        bank_name: bankingDraft.bank_name,
-        account_name: bankingDraft.account_name,
-        account_type: bankingDraft.account_type,
-        account_number: bankingDraft.account_number,
-        routing_number: bankingDraft.routing_number,
-        swift_code: bankingDraft.swift_code,
-        iban: bankingDraft.iban,
-      };
-      await vendorService.updateBanking({
-        ...updated,
-        ...(bankingCountryType && { country_type: bankingCountryType }),
-      });
-      setBanking(updated);
-      setBankingEditing(false);
-      setBankingDraft(null);
-      setBankingSaved(true);
-    } catch (err) {
-      setBankingError(extractErrorMessage(err));
-    } finally {
-      setBankingSaving(false);
-    }
+    updateBanking.mutate({
+      bank_name: bankingDraft.bank_name,
+      account_name: bankingDraft.account_name,
+      account_type: bankingDraft.account_type,
+      country_type: bankingDraft.country_type,
+      bank_code: bankingDraft.bank_code,
+      swift_code: bankingDraft.swift_code,
+      account_number: bankingDraft.account_number,
+    });
   }
 
   const initials =
@@ -299,10 +283,11 @@ export default function VendorProfile() {
                 )}
               >
                 {tab.label}
-                {tab.key === "banking" && bankingSaved && (
-                  <span className="text-[10px] font-semibold bg-amber/15 text-amber px-2 py-0.5 rounded-full">
-                    Pending Review
-                  </span>
+                {tab.key === "banking" && bankingStatus && (
+                  <StatusChip
+                    status={BANKING_STATUS_LABEL[bankingStatus]}
+                    className="text-[10px] px-2 py-0.5"
+                  />
                 )}
                 {active && (
                   <span className="absolute left-0 right-0 -bottom-px h-0.5 bg-amber rounded-full" />
@@ -572,93 +557,92 @@ export default function VendorProfile() {
               <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant flex items-center gap-1.5">
                 <Landmark size={12} className="text-amber" /> Banking Details
               </p>
-              {!bankingEditing && (
+              {!bankingEditing && !bankingQuery.isLoading && (
                 <button
                   type="button"
                   onClick={startBankingEdit}
                   className="text-xs font-medium text-amber hover:underline flex items-center gap-1"
                 >
-                  <Pencil size={12} /> Edit
+                  <Pencil size={12} /> {banking ? "Edit" : "Add"}
                 </button>
               )}
             </div>
 
-            {bankingError && (
-              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded text-red-600 text-sm">
-                {bankingError}
+            {bankingQuery.isLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 size={20} className="animate-spin text-emerald" />
               </div>
-            )}
-
-            {bankingSaved && (
-              <div className="mb-4 p-3 bg-emerald/10 border border-emerald/30 rounded text-emerald text-sm flex items-center gap-2">
-                <CheckCircle size={15} /> Your updated banking details have
-                been submitted for admin review.
-              </div>
-            )}
-
-            {!bankingEditing ? (
-              <div className="grid grid-cols-2 gap-4">
-                <div className="flex flex-col gap-1">
-                  <label className="text-xs font-semibold tracking-wide text-on-surface-variant uppercase">
-                    Bank Name
-                  </label>
-                  <p className="text-sm text-on-surface py-2">
-                    {banking.bank_name || "—"}
-                  </p>
-                </div>
-                <div className="flex flex-col gap-1">
-                  <label className="text-xs font-semibold tracking-wide text-on-surface-variant uppercase">
-                    Account Name
-                  </label>
-                  <p className="text-sm text-on-surface py-2">
-                    {banking.account_name || "—"}
-                  </p>
-                </div>
-                <div className="flex flex-col gap-1">
-                  <label className="text-xs font-semibold tracking-wide text-on-surface-variant uppercase">
-                    Account Type
-                  </label>
-                  <p className="text-sm text-on-surface py-2">
-                    {banking.account_type || "—"}
-                  </p>
-                </div>
-                <div className="flex flex-col gap-1">
-                  <label className="text-xs font-semibold tracking-wide text-on-surface-variant uppercase">
-                    Account Number
-                  </label>
-                  <p className="text-sm text-on-surface py-2 tnum">
-                    {maskAccountNumber(banking.account_number)}
-                  </p>
-                </div>
-                <div className="flex flex-col gap-1">
-                  <label className="text-xs font-semibold tracking-wide text-on-surface-variant uppercase">
-                    Routing / Sort / Branch Number
-                  </label>
-                  <p className="text-sm text-on-surface py-2">
-                    {banking.routing_number || "—"}
-                  </p>
-                </div>
-                {banking.swift_code && (
-                  <div className="flex flex-col gap-1">
-                    <label className="text-xs font-semibold tracking-wide text-on-surface-variant uppercase">
-                      SWIFT / BIC
-                    </label>
-                    <p className="text-sm text-on-surface py-2">
-                      {banking.swift_code}
-                    </p>
+            ) : !bankingEditing ? (
+              !banking ? (
+                <p className="text-sm text-on-surface-variant py-2">
+                  No banking details submitted yet.
+                </p>
+              ) : (
+                <div className="space-y-4">
+                  {bankingStatus === "rejected" && banking.rejection_reason && (
+                    <div className="p-3 bg-red-50 border border-red-200 rounded text-sm text-red-700">
+                      <span className="font-medium">Rejected:</span>{" "}
+                      {banking.rejection_reason}
+                    </div>
+                  )}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="flex flex-col gap-1">
+                      <label className="text-xs font-semibold tracking-wide text-on-surface-variant uppercase">
+                        Bank Name
+                      </label>
+                      <p className="text-sm text-on-surface py-2">
+                        {banking.bank_name || "—"}
+                      </p>
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <label className="text-xs font-semibold tracking-wide text-on-surface-variant uppercase">
+                        Account Name
+                      </label>
+                      <p className="text-sm text-on-surface py-2">
+                        {banking.account_name || "—"}
+                      </p>
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <label className="text-xs font-semibold tracking-wide text-on-surface-variant uppercase">
+                        Account Type
+                      </label>
+                      <p className="text-sm text-on-surface py-2">
+                        {banking.account_type || "—"}
+                      </p>
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <label className="text-xs font-semibold tracking-wide text-on-surface-variant uppercase">
+                        Country Type
+                      </label>
+                      <p className="text-sm text-on-surface py-2">
+                        {banking.country_type || "—"}
+                      </p>
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <label className="text-xs font-semibold tracking-wide text-on-surface-variant uppercase">
+                        Bank Code
+                      </label>
+                      <p className="text-sm text-on-surface py-2">
+                        {banking.bank_code || "—"}
+                      </p>
+                    </div>
+                    {banking.swift_code && (
+                      <div className="flex flex-col gap-1">
+                        <label className="text-xs font-semibold tracking-wide text-on-surface-variant uppercase">
+                          SWIFT / BIC
+                        </label>
+                        <p className="text-sm text-on-surface py-2">
+                          {banking.swift_code}
+                        </p>
+                      </div>
+                    )}
                   </div>
-                )}
-                {banking.iban && (
-                  <div className="flex flex-col gap-1">
-                    <label className="text-xs font-semibold tracking-wide text-on-surface-variant uppercase">
-                      IBAN
-                    </label>
-                    <p className="text-sm text-on-surface py-2">
-                      {banking.iban}
-                    </p>
-                  </div>
-                )}
-              </div>
+                  <p className="text-xs text-on-surface-variant">
+                    For security, your account number isn't shown here. Click
+                    Edit to update it.
+                  </p>
+                </div>
+              )
             ) : (
               <form onSubmit={submitBanking} className="space-y-4">
                 <div className="bg-amber/5 border border-amber/20 rounded-lg p-3 text-sm text-amber-900">
@@ -702,13 +686,31 @@ export default function VendorProfile() {
                       ))}
                     </select>
                   </div>
+                  <div className="flex flex-col gap-1">
+                    <label className="text-xs font-semibold tracking-wide text-on-surface-variant uppercase">
+                      Country Type<span className="text-error"> *</span>
+                    </label>
+                    <select
+                      name="country_type"
+                      value={bankingDraft.country_type}
+                      onChange={handleBankingDraftChange}
+                      className="w-full rounded border border-outline-variant bg-white px-3 py-2 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-amber focus:border-amber transition-colors"
+                    >
+                      <option value="">Select country type</option>
+                      {COUNTRY_TYPES.map((t) => (
+                        <option key={t} value={t}>
+                          {t}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                   <Input
-                    label="Routing / Sort / Branch Number"
-                    name="routing_number"
-                    value={bankingDraft.routing_number}
+                    label="Bank Code"
+                    name="bank_code"
+                    value={bankingDraft.bank_code}
                     onChange={handleBankingDraftChange}
-                    placeholder="Enter routing, sort, or branch number"
-                    required
+                    placeholder="Routing, sort, or branch code"
+                    // required
                   />
                   <Input
                     label="New Account Number"
@@ -716,7 +718,7 @@ export default function VendorProfile() {
                     value={bankingDraft.account_number}
                     onChange={handleBankingDraftChange}
                     placeholder="Enter new account number"
-                    required
+                    // required
                   />
                   <Input
                     label="Confirm Account Number"
@@ -732,7 +734,7 @@ export default function VendorProfile() {
                         ? "Account numbers do not match"
                         : undefined
                     }
-                    required
+                    // required
                   />
                   <Input
                     label="SWIFT / BIC"
@@ -741,18 +743,15 @@ export default function VendorProfile() {
                     onChange={handleBankingDraftChange}
                     placeholder="Optional — required for international wires"
                   />
-                  <Input
-                    label="IBAN"
-                    name="iban"
-                    value={bankingDraft.iban}
-                    onChange={handleBankingDraftChange}
-                    placeholder="Optional"
-                  />
                 </div>
 
                 <div className="flex gap-3">
-                  <Button type="submit" disabled={bankingSaving} size="lg">
-                    {bankingSaving ? (
+                  <Button
+                    type="submit"
+                    disabled={updateBanking.isPending}
+                    size="lg"
+                  >
+                    {updateBanking.isPending ? (
                       <>
                         <Loader2 size={15} className="animate-spin" />{" "}
                         Submitting…
@@ -768,7 +767,7 @@ export default function VendorProfile() {
                     variant="secondary"
                     size="lg"
                     onClick={cancelBankingEdit}
-                    disabled={bankingSaving}
+                    disabled={updateBanking.isPending}
                   >
                     <X size={15} /> Cancel
                   </Button>

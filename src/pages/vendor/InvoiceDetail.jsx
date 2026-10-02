@@ -27,7 +27,7 @@ import {
   invoiceMessageService,
 } from "../../lib/services/invoiceService";
 import { supportService } from "../../lib/services/supportService";
-import { formatCurrency, formatDate } from "../../lib/utils";
+import { formatCurrency, formatDate, extractErrorMessage } from "../../lib/utils";
 
 // Old audit records stored emails — convert to display name if needed
 function displayActor(performedBy) {
@@ -101,8 +101,12 @@ export default function InvoiceDetail() {
 
   // Rejection modal
   const [rejectOpen, setRejectOpen] = useState(false);
+  const [rejectSubmitting, setRejectSubmitting] = useState(false);
+  const [rejectError, setRejectError] = useState("");
   // Dispute modal
   const [disputeOpen, setDisputeOpen] = useState(false);
+  const [disputeSubmitting, setDisputeSubmitting] = useState(false);
+  const [disputeError, setDisputeError] = useState("");
 
   // Per-invoice messaging
   const [messages, setMessages] = useState([]);
@@ -154,8 +158,6 @@ export default function InvoiceDetail() {
     }
   }
 
-  const handleApprove = () =>
-    runAction("approve", () => adminInvoiceService.approveInvoice(id));
   const handleFund = () =>
     runAction("fund", () => adminInvoiceService.fundInvoice(id));
   const handleMarkPaid = () =>
@@ -167,48 +169,69 @@ export default function InvoiceDetail() {
     setInvoice(updated);
   }
 
-  const handleConfirmPayment = async () => {
-    const ok = await confirm({
+  async function handleApprove() {
+    await confirm({
+      title: "Approve Invoice",
+      message: `Approve invoice ${invoice.invoice_number}? It will move forward to funding.`,
+      confirmLabel: "Approve",
+      variant: "approve",
+      onConfirm: async () => {
+        await adminInvoiceService.approveInvoice(id);
+        await refreshInvoice();
+      },
+    });
+  }
+
+  async function handleConfirmPayment() {
+    await confirm({
       title: "Confirm Payment Receipt",
       message: "Confirm that you have received the payment for this invoice?",
       confirmLabel: "Confirm Receipt",
       variant: "warning",
+      onConfirm: async () => {
+        await vendorInvoiceService.confirmPayment(id);
+        await refreshInvoice();
+      },
     });
-    if (!ok) return;
-    setActionLoading("confirm-payment");
-    setActionError("");
-    try {
-      await vendorInvoiceService.confirmPayment(id);
-      await refreshInvoice();
-    } catch (err) {
-      setActionError(err?.response?.data?.detail ?? "Action failed.");
-    } finally {
-      setActionLoading("");
-    }
-  };
+  }
 
-  const handleDisputePayment = () => setDisputeOpen(true);
+  function handleDisputePayment() {
+    setDisputeError("");
+    setDisputeOpen(true);
+  }
 
-  const handleDisputeConfirm = async (reason) => {
-    setDisputeOpen(false);
-    setActionLoading("dispute-payment");
-    setActionError("");
+  async function handleDisputeConfirm(reason) {
+    setDisputeError("");
+    setDisputeSubmitting(true);
     try {
       await vendorInvoiceService.disputePayment(id, reason);
       await refreshInvoice();
+      setDisputeOpen(false);
     } catch (err) {
-      setActionError(err?.response?.data?.detail ?? "Action failed.");
+      setDisputeError(extractErrorMessage(err));
     } finally {
-      setActionLoading("");
+      setDisputeSubmitting(false);
     }
-  };
+  }
 
-  const handleReject = () => setRejectOpen(true);
+  function handleReject() {
+    setRejectError("");
+    setRejectOpen(true);
+  }
 
-  const handleRejectConfirm = (reason) => {
-    setRejectOpen(false);
-    runAction("reject", () => adminInvoiceService.rejectInvoice(id, reason));
-  };
+  async function handleRejectConfirm(reason) {
+    setRejectError("");
+    setRejectSubmitting(true);
+    try {
+      await adminInvoiceService.rejectInvoice(id, reason);
+      await refreshInvoice();
+      setRejectOpen(false);
+    } catch (err) {
+      setRejectError(extractErrorMessage(err));
+    } finally {
+      setRejectSubmitting(false);
+    }
+  }
 
   async function sendMessage() {
     if (!msgInput.trim() || msgSending) return;
@@ -382,12 +405,16 @@ export default function InvoiceDetail() {
       <RejectModal
         open={rejectOpen}
         itemLabel={invoice.invoice_number}
+        loading={rejectSubmitting}
+        error={rejectError}
         onConfirm={handleRejectConfirm}
         onCancel={() => setRejectOpen(false)}
       />
       <DisputeModal
         open={disputeOpen}
         invoiceNumber={invoice.invoice_number}
+        loading={disputeSubmitting}
+        error={disputeError}
         onConfirm={handleDisputeConfirm}
         onCancel={() => setDisputeOpen(false)}
       />
@@ -435,11 +462,7 @@ export default function InvoiceDetail() {
                       disabled={!!actionLoading}
                       className="flex-1 sm:flex-none"
                     >
-                      {actionLoading === "approve" ? (
-                        <Loader2 size={14} className="animate-spin" />
-                      ) : (
-                        "Approve"
-                      )}
+                      Approve
                     </Button>
 
                     <Button
@@ -449,11 +472,7 @@ export default function InvoiceDetail() {
                       disabled={!!actionLoading}
                       className="flex-1 sm:flex-none text-error hover:bg-red-50"
                     >
-                      {actionLoading === "reject" ? (
-                        <Loader2 size={14} className="animate-spin" />
-                      ) : (
-                        "Reject"
-                      )}
+                      Reject
                     </Button>
                   </>
                 )}
@@ -480,11 +499,7 @@ export default function InvoiceDetail() {
                       disabled={!!actionLoading}
                       className="flex-1 sm:flex-none text-error hover:bg-red-50"
                     >
-                      {actionLoading === "reject" ? (
-                        <Loader2 size={14} className="animate-spin" />
-                      ) : (
-                        "Reject"
-                      )}
+                      Reject
                     </Button>
                   </>
                 )}
@@ -520,28 +535,18 @@ export default function InvoiceDetail() {
                     <Button
                       size="sm"
                       onClick={handleConfirmPayment}
-                      disabled={!!actionLoading}
                       className="flex-1 sm:flex-none"
                     >
-                      {actionLoading === "confirm-payment" ? (
-                        <Loader2 size={14} className="animate-spin" />
-                      ) : (
-                        "Confirm Receipt"
-                      )}
+                      Confirm Receipt
                     </Button>
 
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={handleDisputePayment}
-                      disabled={!!actionLoading}
                       className="flex-1 sm:flex-none text-error hover:bg-red-50"
                     >
-                      {actionLoading === "dispute-payment" ? (
-                        <Loader2 size={14} className="animate-spin" />
-                      ) : (
-                        "Dispute"
-                      )}
+                      Dispute
                     </Button>
                   </>
                 )}

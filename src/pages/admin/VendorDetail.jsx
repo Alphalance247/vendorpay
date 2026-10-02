@@ -8,9 +8,11 @@ import StatusChip from '../../components/ui/StatusChip';
 import RejectModal from '../../components/ui/RejectModal';
 import { vendorService } from '../../lib/services/vendorService';
 import { adminInvoiceService } from '../../lib/services/invoiceService';
-import { formatCurrency, formatDate, maskAccountNumber } from '../../lib/utils';
+import { formatCurrency, formatDate, extractErrorMessage } from '../../lib/utils';
 import { useConfirm } from '../../hooks/useConfirm';
-import { useToast } from '../../components/ui/Toast';
+import { useVendorBanking } from '../../hooks/useQueries/vendorAdmin/useVendorBanking';
+import { useVerifyVendorBanking } from '../../hooks/useQueries/vendorAdmin/useVerifyVendorBanking';
+import { useRejectVendorBanking } from '../../hooks/useQueries/vendorAdmin/useRejectVendorBanking';
 
 const BANKING_STATUS_LABEL = {
   pending: 'Pending Review',
@@ -18,39 +20,30 @@ const BANKING_STATUS_LABEL = {
   rejected: 'Rejected',
 };
 
-// TEMP: the backend doesn't populate banking fields on the vendor record
-// yet, so this stands in for a submitted bank account during UI testing.
-// Only fills in fields the real record doesn't already have — remove once
-// the backend actually returns these.
-const DUMMY_BANKING_DETAILS = {
-  bank_name: 'Chase Bank',
-  account_name: 'Acme Corp Ltd',
-  account_type: 'Checking',
-  account_number: '0021457893',
-  routing_number: '021000021',
-  swift_code: 'CHASUS33',
-};
-
 export default function VendorDetail() {
   const navigate = useNavigate();
   const { id } = useParams();
 
   const { confirm, confirmEl } = useConfirm();
-  const { toast } = useToast();
   const [vendor, setVendor] = useState(null);
   const [invoices, setInvoices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
-  const [actionError, setActionError] = useState('');
-  const [actionLoading, setActionLoading] = useState('');
-
-  // Banking review is a UI simulation for now — there's no backend status
-  // field or approve/reject endpoint yet, so this lives in local state only
-  // and resets on refresh.
-  const [bankingStatus, setBankingStatus] = useState(null);
-  const [bankingReason, setBankingReason] = useState('');
-  const [bankingActionLoading, setBankingActionLoading] = useState('');
   const [bankingRejectOpen, setBankingRejectOpen] = useState(false);
+  const [bankingRejectError, setBankingRejectError] = useState('');
+
+  const bankingQuery = useVendorBanking(id);
+  const banking = bankingQuery.data ?? null;
+  const bankingStatus = !banking
+    ? null
+    : banking.is_verified
+      ? 'approved'
+      : banking.rejection_reason
+        ? 'rejected'
+        : 'pending';
+
+  const verifyBanking = useVerifyVendorBanking(id);
+  const rejectBanking = useRejectVendorBanking(id);
 
   useEffect(() => {
     Promise.all([
@@ -58,17 +51,7 @@ export default function VendorDetail() {
       adminInvoiceService.getAllInvoices({ vendor_id: id, page_size: 50 }),
     ])
       .then(([vendorData, invoiceData]) => {
-        const vendorWithBanking = {
-          ...vendorData,
-          bank_name: vendorData.bank_name ?? DUMMY_BANKING_DETAILS.bank_name,
-          account_name: vendorData.account_name ?? DUMMY_BANKING_DETAILS.account_name,
-          account_type: vendorData.account_type ?? DUMMY_BANKING_DETAILS.account_type,
-          account_number: vendorData.account_number ?? DUMMY_BANKING_DETAILS.account_number,
-          routing_number: vendorData.routing_number ?? DUMMY_BANKING_DETAILS.routing_number,
-          swift_code: vendorData.swift_code ?? DUMMY_BANKING_DETAILS.swift_code,
-        };
-        setVendor(vendorWithBanking);
-        setBankingStatus(vendorWithBanking.account_number ? 'pending' : null);
+        setVendor(vendorData);
         const items = Array.isArray(invoiceData)
           ? invoiceData
           : (invoiceData.items ?? invoiceData.invoices ?? invoiceData.data ?? []);
@@ -79,15 +62,19 @@ export default function VendorDetail() {
   }, [id]);
 
   async function handleToggleStatus() {
-    setActionLoading('status');
-    try {
-      const updated = await vendorService.updateVendorStatus(id, !vendor.is_active);
-      setVendor(updated);
-    } catch {
-      setActionError('Failed to update vendor status.');
-    } finally {
-      setActionLoading('');
-    }
+    const activating = !vendor.is_active;
+    await confirm({
+      title: activating ? 'Activate Vendor' : 'Deactivate Vendor',
+      message: activating
+        ? 'Reactivate this vendor? They will regain access to submit invoices.'
+        : 'Deactivate this vendor? They will lose access until reactivated.',
+      confirmLabel: activating ? 'Activate' : 'Deactivate',
+      variant: activating ? 'approve' : 'warning',
+      onConfirm: async () => {
+        const updated = await vendorService.updateVendorStatus(id, activating);
+        setVendor(updated);
+      },
+    });
   }
 
   async function handleDelete() {
@@ -97,45 +84,34 @@ export default function VendorDetail() {
       message: `Delete "${displayName}"? This action cannot be undone.`,
       confirmLabel: 'Delete',
       variant: 'danger',
+      onConfirm: () => vendorService.deleteVendor(id),
     });
-    if (!ok) return;
-    setActionLoading('delete');
-    try {
-      await vendorService.deleteVendor(id);
-      navigate('/admin/vendors');
-    } catch (err) {
-      const msg = err?.response?.data?.detail ?? 'Failed to delete vendor.';
-      setActionError(msg);
-      setActionLoading('');
-    }
+    if (ok) navigate('/admin/vendors');
   }
 
   async function handleApproveBanking() {
-    const ok = await confirm({
+    await confirm({
       title: 'Approve Banking Details',
       message: "Approve these banking details? The vendor's future payouts will be sent to this account.",
       confirmLabel: 'Approve',
       variant: 'approve',
+      onConfirm: () => verifyBanking.mutateAsync(),
     });
-    if (!ok) return;
-    setBankingActionLoading('approve');
-    setTimeout(() => {
-      setBankingStatus('approved');
-      setBankingReason('');
-      setBankingActionLoading('');
-      toast('Banking details approved.');
-    }, 400);
   }
 
-  function handleRejectBanking(reason) {
-    setBankingRejectOpen(false);
-    setBankingActionLoading('reject');
-    setTimeout(() => {
-      setBankingStatus('rejected');
-      setBankingReason(reason);
-      setBankingActionLoading('');
-      toast('Banking details rejected.');
-    }, 400);
+  function openBankingReject() {
+    setBankingRejectError('');
+    setBankingRejectOpen(true);
+  }
+
+  async function handleRejectBanking(reason) {
+    setBankingRejectError('');
+    try {
+      await rejectBanking.mutateAsync(reason);
+      setBankingRejectOpen(false);
+    } catch (err) {
+      setBankingRejectError(extractErrorMessage(err));
+    }
   }
 
   if (loading) {
@@ -172,6 +148,8 @@ export default function VendorDetail() {
         title="Reject Banking Details"
         itemLabel="these banking details"
         confirmLabel="Reject Banking Details"
+        loading={rejectBanking.isPending}
+        error={bankingRejectError}
         onConfirm={handleRejectBanking}
         onCancel={() => setBankingRejectOpen(false)}
       />
@@ -196,12 +174,9 @@ export default function VendorDetail() {
               variant="secondary"
               size="sm"
               onClick={handleToggleStatus}
-              disabled={!!actionLoading}
               className="flex items-center gap-1.5"
             >
-              {actionLoading === 'status' ? (
-                <Loader2 size={13} className="animate-spin" />
-              ) : vendor.is_active ? (
+              {vendor.is_active ? (
                 <><PowerOff size={13} /> Deactivate</>
               ) : (
                 <><Power size={13} /> Activate</>
@@ -211,21 +186,12 @@ export default function VendorDetail() {
               variant="ghost"
               size="sm"
               onClick={handleDelete}
-              disabled={!!actionLoading}
               className="flex items-center gap-1.5 text-error hover:bg-red-50"
             >
-              {actionLoading === 'delete' ? <Loader2 size={13} className="animate-spin" /> : <Trash2 size={13} />}
-              Delete
+              <Trash2 size={13} /> Delete
             </Button>
           </div>
         </div>
-
-        {actionError && (
-          <div className="p-3 bg-red-50 border border-red-200 rounded text-red-600 text-sm">
-            {actionError}
-            <button onClick={() => setActionError('')} className="ml-2 underline text-xs">Dismiss</button>
-          </div>
-        )}
 
         <div className="grid grid-cols-2 gap-4">
           <Card>
@@ -277,48 +243,46 @@ export default function VendorDetail() {
             {bankingStatus && <StatusChip status={BANKING_STATUS_LABEL[bankingStatus]} />}
           </div>
 
-          {!bankingStatus ? (
+          {bankingQuery.isLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 size={20} className="animate-spin text-emerald" />
+            </div>
+          ) : !banking ? (
             <p className="text-sm text-on-surface-variant py-2">No banking details submitted yet.</p>
           ) : (
             <>
               <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
                 <div className="flex gap-2">
                   <span className="text-on-surface-variant w-36 flex-shrink-0">Bank Name</span>
-                  <span className="text-on-surface font-medium">{vendor.bank_name ?? '—'}</span>
+                  <span className="text-on-surface font-medium">{banking.bank_name ?? '—'}</span>
                 </div>
                 <div className="flex gap-2">
                   <span className="text-on-surface-variant w-36 flex-shrink-0">Account Name</span>
-                  <span className="text-on-surface">{vendor.account_name ?? '—'}</span>
+                  <span className="text-on-surface">{banking.account_name ?? '—'}</span>
                 </div>
                 <div className="flex gap-2">
                   <span className="text-on-surface-variant w-36 flex-shrink-0">Account Type</span>
-                  <span className="text-on-surface">{vendor.account_type ?? '—'}</span>
+                  <span className="text-on-surface">{banking.account_type ?? '—'}</span>
                 </div>
                 <div className="flex gap-2">
-                  <span className="text-on-surface-variant w-36 flex-shrink-0">Account Number</span>
-                  <span className="text-on-surface tnum">{maskAccountNumber(vendor.account_number)}</span>
+                  <span className="text-on-surface-variant w-36 flex-shrink-0">Country Type</span>
+                  <span className="text-on-surface">{banking.country_type ?? '—'}</span>
                 </div>
                 <div className="flex gap-2">
-                  <span className="text-on-surface-variant w-36 flex-shrink-0">Routing / Sort / Branch</span>
-                  <span className="text-on-surface">{vendor.routing_number ?? '—'}</span>
+                  <span className="text-on-surface-variant w-36 flex-shrink-0">Bank Code</span>
+                  <span className="text-on-surface">{banking.bank_code ?? '—'}</span>
                 </div>
-                {vendor.swift_code && (
+                {banking.swift_code && (
                   <div className="flex gap-2">
                     <span className="text-on-surface-variant w-36 flex-shrink-0">SWIFT / BIC</span>
-                    <span className="text-on-surface">{vendor.swift_code}</span>
-                  </div>
-                )}
-                {vendor.iban && (
-                  <div className="flex gap-2">
-                    <span className="text-on-surface-variant w-36 flex-shrink-0">IBAN</span>
-                    <span className="text-on-surface">{vendor.iban}</span>
+                    <span className="text-on-surface">{banking.swift_code}</span>
                   </div>
                 )}
               </div>
 
-              {bankingStatus === 'rejected' && bankingReason && (
+              {bankingStatus === 'rejected' && banking.rejection_reason && (
                 <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded text-sm text-red-700">
-                  <span className="font-medium">Rejection reason:</span> {bankingReason}
+                  <span className="font-medium">Rejection reason:</span> {banking.rejection_reason}
                 </div>
               )}
 
@@ -327,28 +291,18 @@ export default function VendorDetail() {
                   <Button
                     size="sm"
                     onClick={handleApproveBanking}
-                    disabled={!!bankingActionLoading}
                     className="flex items-center gap-1.5"
                   >
-                    {bankingActionLoading === 'approve' ? (
-                      <Loader2 size={14} className="animate-spin" />
-                    ) : (
-                      <Check size={14} />
-                    )}
+                    <Check size={14} />
                     Approve
                   </Button>
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => setBankingRejectOpen(true)}
-                    disabled={!!bankingActionLoading}
+                    onClick={openBankingReject}
                     className="flex items-center gap-1.5 text-error hover:bg-red-50"
                   >
-                    {bankingActionLoading === 'reject' ? (
-                      <Loader2 size={14} className="animate-spin" />
-                    ) : (
-                      <XCircle size={14} />
-                    )}
+                    <XCircle size={14} />
                     Reject
                   </Button>
                 </div>
