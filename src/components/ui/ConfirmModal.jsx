@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { AlertTriangle, LogOut, Trash2, XCircle } from 'lucide-react';
+import { AlertTriangle, CheckCircle, LogOut, Trash2, XCircle } from 'lucide-react';
 import Button from './Button';
 
 const ICONS = {
@@ -7,6 +7,7 @@ const ICONS = {
   warning: AlertTriangle,
   reject: XCircle,
   neutral: LogOut,
+  approve: CheckCircle,
 };
 
 const ICON_COLORS = {
@@ -14,6 +15,7 @@ const ICON_COLORS = {
   warning: 'bg-amber-50 text-amber-600',
   reject: 'bg-red-50 text-error',
   neutral: 'bg-navy/5 text-navy',
+  approve: 'bg-emerald/10 text-emerald',
 };
 
 const CONFIRM_VARIANTS = {
@@ -21,6 +23,7 @@ const CONFIRM_VARIANTS = {
   warning: 'bg-amber-500 text-white hover:bg-amber-600',
   reject: 'bg-error text-white hover:bg-error/90',
   neutral: 'bg-navy text-white hover:bg-navy/90',
+  approve: 'bg-emerald text-white hover:bg-emerald/90',
 };
 
 export default function ConfirmModal({

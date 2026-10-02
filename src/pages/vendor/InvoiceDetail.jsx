@@ -18,6 +18,7 @@ import Button from "../../components/ui/Button";
 import StatusChip from "../../components/ui/StatusChip";
 import RejectModal from "../../components/ui/RejectModal";
 import DisputeModal from "../../components/ui/DisputeModal";
+import DocumentViewerCard from "../../components/ui/DocumentViewerCard";
 import { useAuth } from "../../lib/authContext";
 import {
   invoiceService,
@@ -51,8 +52,9 @@ export default function InvoiceDetail() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [actionLoading, setActionLoading] = useState("");
-  const [pdfUrl, setPdfUrl] = useState(null);
-  const [pdfLoading, setPdfLoading] = useState(false);
+  const [docUrl, setDocUrl] = useState(null);
+  const [docContentType, setDocContentType] = useState(null);
+  const [docLoading, setDocLoading] = useState(false);
 
   const [aiMessages, setAiMessages] = useState([
     {
@@ -77,17 +79,18 @@ export default function InvoiceDetail() {
   useEffect(() => {
     if (!invoice) return;
     let url;
-    setPdfLoading(true);
+    setDocLoading(true);
     const loader = isAdmin
       ? invoiceService.getAdminInvoicePdfUrl(id)
       : invoiceService.getInvoicePdfUrl(id);
     loader
-      .then((blobUrl) => {
-        url = blobUrl;
-        setPdfUrl(blobUrl);
+      .then((doc) => {
+        url = doc.url;
+        setDocUrl(doc.url);
+        setDocContentType(doc.contentType);
       })
       .catch(() => {})
-      .finally(() => setPdfLoading(false));
+      .finally(() => setDocLoading(false));
     return () => {
       if (url) window.URL.revokeObjectURL(url);
     };
@@ -378,7 +381,7 @@ export default function InvoiceDetail() {
       {confirmEl}
       <RejectModal
         open={rejectOpen}
-        invoiceNumber={invoice.invoice_number}
+        itemLabel={invoice.invoice_number}
         onConfirm={handleRejectConfirm}
         onCancel={() => setRejectOpen(false)}
       />
@@ -675,93 +678,13 @@ export default function InvoiceDetail() {
               )}
             </Card>
 
-            {/* <Card className="p-0 overflow-hidden">
-                <div className="flex items-center justify-between px-4 py-2 border-b border-outline-variant bg-surface-low">
-                  <span className="text-xs font-medium text-on-surface-variant">
-                    Invoice Document
-                  </span>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="p-1.5"
-                    onClick={handleDownload}
-                  >
-                    <Download size={14} />
-                  </Button>
-                </div>
-                {pdfLoading ? (
-                  <div className="flex items-center justify-center min-h-[400px] bg-surface-low">
-                    <Loader2 size={24} className="animate-spin text-emerald" />
-                  </div>
-                ) : pdfUrl ? (
-                  <iframe
-                    src={pdfUrl}
-                    className="w-full border-0"
-                    style={{ height: "600px" }}
-                    title="Invoice Document"
-                  />
-                ) : (
-                  <div className="p-8 bg-surface-low min-h-[200px] flex items-center justify-center">
-                    <div className="text-center">
-                      <FileText
-                        size={48}
-                        className="text-outline mx-auto mb-3"
-                      />
-                      <p className="text-sm text-on-surface-variant">
-                        Document unavailable
-                      </p>
-                    </div>
-                  </div>
-                )}
-            </Card> */}
-            <Card className="p-0 overflow-hidden">
-              {/* Document header */}
-              <div className="flex items-center justify-between px-4 py-2 border-b border-outline-variant bg-surface-low">
-                <span className="text-xs font-medium text-on-surface-variant">
-                  Invoice Document
-                </span>
-
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="p-1.5 shrink-0"
-                  onClick={handleDownload}
-                >
-                  <Download size={14} />
-                </Button>
-              </div>
-
-              {/* PDF viewer */}
-              <div className="w-full overflow-x-auto overflow-y-hidden bg-[#252525]">
-                {pdfLoading ? (
-                  <div className="flex items-center justify-center min-h-[400px] bg-surface-low">
-                    <Loader2 size={24} className="animate-spin text-emerald" />
-                  </div>
-                ) : pdfUrl ? (
-                  <div className="w-[900px] max-w-none md:w-[900px] ">
-                    <iframe
-                      src={pdfUrl}
-                      title="Invoice Document"
-                      className="block w-full border-0"
-                      style={{ height: "600px" }}
-                    />
-                  </div>
-                ) : (
-                  <div className="p-8 bg-surface-low min-h-[200px] flex items-center justify-center">
-                    <div className="text-center">
-                      <FileText
-                        size={48}
-                        className="text-outline mx-auto mb-3"
-                      />
-
-                      <p className="text-sm text-on-surface-variant">
-                        Document unavailable
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </Card>
+            <DocumentViewerCard
+              title="Invoice Document"
+              url={docUrl}
+              contentType={docContentType}
+              loading={docLoading}
+              onDownload={handleDownload}
+            />
           </div>
 
           <div className="space-y-4">

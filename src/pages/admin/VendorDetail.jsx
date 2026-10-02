@@ -1,20 +1,42 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Download, Eye, Loader2, Power, PowerOff, Trash2 } from 'lucide-react';
+import { ArrowLeft, Check, Download, Eye, Landmark, Loader2, Power, PowerOff, Trash2, XCircle } from 'lucide-react';
 import AppLayout from '../../components/layout/AppLayout';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import StatusChip from '../../components/ui/StatusChip';
+import RejectModal from '../../components/ui/RejectModal';
 import { vendorService } from '../../lib/services/vendorService';
 import { adminInvoiceService } from '../../lib/services/invoiceService';
-import { formatCurrency, formatDate } from '../../lib/utils';
+import { formatCurrency, formatDate, maskAccountNumber } from '../../lib/utils';
 import { useConfirm } from '../../hooks/useConfirm';
+import { useToast } from '../../components/ui/Toast';
+
+const BANKING_STATUS_LABEL = {
+  pending: 'Pending Review',
+  approved: 'Approved',
+  rejected: 'Rejected',
+};
+
+// TEMP: the backend doesn't populate banking fields on the vendor record
+// yet, so this stands in for a submitted bank account during UI testing.
+// Only fills in fields the real record doesn't already have — remove once
+// the backend actually returns these.
+const DUMMY_BANKING_DETAILS = {
+  bank_name: 'Chase Bank',
+  account_name: 'Acme Corp Ltd',
+  account_type: 'Checking',
+  account_number: '0021457893',
+  routing_number: '021000021',
+  swift_code: 'CHASUS33',
+};
 
 export default function VendorDetail() {
   const navigate = useNavigate();
   const { id } = useParams();
 
   const { confirm, confirmEl } = useConfirm();
+  const { toast } = useToast();
   const [vendor, setVendor] = useState(null);
   const [invoices, setInvoices] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -22,13 +44,31 @@ export default function VendorDetail() {
   const [actionError, setActionError] = useState('');
   const [actionLoading, setActionLoading] = useState('');
 
+  // Banking review is a UI simulation for now — there's no backend status
+  // field or approve/reject endpoint yet, so this lives in local state only
+  // and resets on refresh.
+  const [bankingStatus, setBankingStatus] = useState(null);
+  const [bankingReason, setBankingReason] = useState('');
+  const [bankingActionLoading, setBankingActionLoading] = useState('');
+  const [bankingRejectOpen, setBankingRejectOpen] = useState(false);
+
   useEffect(() => {
     Promise.all([
       vendorService.getVendorById(id),
       adminInvoiceService.getAllInvoices({ vendor_id: id, page_size: 50 }),
     ])
       .then(([vendorData, invoiceData]) => {
-        setVendor(vendorData);
+        const vendorWithBanking = {
+          ...vendorData,
+          bank_name: vendorData.bank_name ?? DUMMY_BANKING_DETAILS.bank_name,
+          account_name: vendorData.account_name ?? DUMMY_BANKING_DETAILS.account_name,
+          account_type: vendorData.account_type ?? DUMMY_BANKING_DETAILS.account_type,
+          account_number: vendorData.account_number ?? DUMMY_BANKING_DETAILS.account_number,
+          routing_number: vendorData.routing_number ?? DUMMY_BANKING_DETAILS.routing_number,
+          swift_code: vendorData.swift_code ?? DUMMY_BANKING_DETAILS.swift_code,
+        };
+        setVendor(vendorWithBanking);
+        setBankingStatus(vendorWithBanking.account_number ? 'pending' : null);
         const items = Array.isArray(invoiceData)
           ? invoiceData
           : (invoiceData.items ?? invoiceData.invoices ?? invoiceData.data ?? []);
@@ -70,6 +110,34 @@ export default function VendorDetail() {
     }
   }
 
+  async function handleApproveBanking() {
+    const ok = await confirm({
+      title: 'Approve Banking Details',
+      message: "Approve these banking details? The vendor's future payouts will be sent to this account.",
+      confirmLabel: 'Approve',
+      variant: 'approve',
+    });
+    if (!ok) return;
+    setBankingActionLoading('approve');
+    setTimeout(() => {
+      setBankingStatus('approved');
+      setBankingReason('');
+      setBankingActionLoading('');
+      toast('Banking details approved.');
+    }, 400);
+  }
+
+  function handleRejectBanking(reason) {
+    setBankingRejectOpen(false);
+    setBankingActionLoading('reject');
+    setTimeout(() => {
+      setBankingStatus('rejected');
+      setBankingReason(reason);
+      setBankingActionLoading('');
+      toast('Banking details rejected.');
+    }, 400);
+  }
+
   if (loading) {
     return (
       <AppLayout role="admin">
@@ -99,6 +167,14 @@ export default function VendorDetail() {
   return (
     <AppLayout role="admin">
       {confirmEl}
+      <RejectModal
+        open={bankingRejectOpen}
+        title="Reject Banking Details"
+        itemLabel="these banking details"
+        confirmLabel="Reject Banking Details"
+        onConfirm={handleRejectBanking}
+        onCancel={() => setBankingRejectOpen(false)}
+      />
       <div className="space-y-6">
         <button
           onClick={() => navigate('/admin/vendors')}
@@ -192,6 +268,94 @@ export default function VendorDetail() {
             </div>
           </Card>
         </div>
+
+        <Card className={bankingStatus === 'rejected' ? 'border-error/30' : bankingStatus === 'pending' ? 'border-amber/30' : ''}>
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant flex items-center gap-1.5">
+              <Landmark size={12} /> Banking Details
+            </p>
+            {bankingStatus && <StatusChip status={BANKING_STATUS_LABEL[bankingStatus]} />}
+          </div>
+
+          {!bankingStatus ? (
+            <p className="text-sm text-on-surface-variant py-2">No banking details submitted yet.</p>
+          ) : (
+            <>
+              <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                <div className="flex gap-2">
+                  <span className="text-on-surface-variant w-36 flex-shrink-0">Bank Name</span>
+                  <span className="text-on-surface font-medium">{vendor.bank_name ?? '—'}</span>
+                </div>
+                <div className="flex gap-2">
+                  <span className="text-on-surface-variant w-36 flex-shrink-0">Account Name</span>
+                  <span className="text-on-surface">{vendor.account_name ?? '—'}</span>
+                </div>
+                <div className="flex gap-2">
+                  <span className="text-on-surface-variant w-36 flex-shrink-0">Account Type</span>
+                  <span className="text-on-surface">{vendor.account_type ?? '—'}</span>
+                </div>
+                <div className="flex gap-2">
+                  <span className="text-on-surface-variant w-36 flex-shrink-0">Account Number</span>
+                  <span className="text-on-surface tnum">{maskAccountNumber(vendor.account_number)}</span>
+                </div>
+                <div className="flex gap-2">
+                  <span className="text-on-surface-variant w-36 flex-shrink-0">Routing / Sort / Branch</span>
+                  <span className="text-on-surface">{vendor.routing_number ?? '—'}</span>
+                </div>
+                {vendor.swift_code && (
+                  <div className="flex gap-2">
+                    <span className="text-on-surface-variant w-36 flex-shrink-0">SWIFT / BIC</span>
+                    <span className="text-on-surface">{vendor.swift_code}</span>
+                  </div>
+                )}
+                {vendor.iban && (
+                  <div className="flex gap-2">
+                    <span className="text-on-surface-variant w-36 flex-shrink-0">IBAN</span>
+                    <span className="text-on-surface">{vendor.iban}</span>
+                  </div>
+                )}
+              </div>
+
+              {bankingStatus === 'rejected' && bankingReason && (
+                <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded text-sm text-red-700">
+                  <span className="font-medium">Rejection reason:</span> {bankingReason}
+                </div>
+              )}
+
+              {bankingStatus === 'pending' && (
+                <div className="flex gap-2 mt-4">
+                  <Button
+                    size="sm"
+                    onClick={handleApproveBanking}
+                    disabled={!!bankingActionLoading}
+                    className="flex items-center gap-1.5"
+                  >
+                    {bankingActionLoading === 'approve' ? (
+                      <Loader2 size={14} className="animate-spin" />
+                    ) : (
+                      <Check size={14} />
+                    )}
+                    Approve
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setBankingRejectOpen(true)}
+                    disabled={!!bankingActionLoading}
+                    className="flex items-center gap-1.5 text-error hover:bg-red-50"
+                  >
+                    {bankingActionLoading === 'reject' ? (
+                      <Loader2 size={14} className="animate-spin" />
+                    ) : (
+                      <XCircle size={14} />
+                    )}
+                    Reject
+                  </Button>
+                </div>
+              )}
+            </>
+          )}
+        </Card>
 
         <div className="grid grid-cols-3 gap-4">
           <Card>
