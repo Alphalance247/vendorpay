@@ -10,72 +10,17 @@ import {
   UserPlus,
   Mail,
 } from "lucide-react";
-import TutorialCard from "../../components/ui/TutorialCard";
 import AppLayout from "../../components/layout/AppLayout";
 import Card from "../../components/ui/Card";
 import Button from "../../components/ui/Button";
-import Input from "../../components/ui/Input";
-import Modal from "../../components/ui/Modal";
+import InviteVendorModal from "../../components/ui/InviteVendorModal";
 import StatusChip from "../../components/ui/StatusChip";
+import Tooltip from "../../components/ui/Tooltip";
 import { vendorService } from "../../lib/services/vendorService";
 import { useConfirm } from "../../hooks/useConfirm";
 import { useToast } from "../../components/ui/Toast";
-import { useCreateInvite } from "../../hooks/useQueries/vendorAdmin/useCreateInvite";
 import { useResendInvite } from "../../hooks/useQueries/vendorAdmin/useResendInvite";
 import { useDeleteTeamMember } from "../../hooks/useQueries/vendorAdmin/useDeleteTeamMember";
-
-function InviteVendorModal({ open, onClose, onInvite, submitting }) {
-  const [email, setEmail] = useState("");
-
-  function handleSubmit(e) {
-    e.preventDefault();
-    if (!valid) return;
-    onInvite(email, () => setEmail(""));
-  }
-
-  const valid = /\S+@\S+\.\S+/.test(email);
-
-  return (
-    <Modal
-      open={open}
-      onClose={onClose}
-      title="Invite Vendor"
-      subtitle="They'll receive an email invite to join your workspace as a vendor."
-      footer={
-        <>
-          <Button variant="ghost" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button
-            onClick={handleSubmit}
-            disabled={!valid || submitting}
-            className="flex items-center gap-1.5"
-          >
-            {submitting ? (
-              <Loader2 size={15} className="animate-spin" />
-            ) : (
-              <UserPlus size={15} />
-            )}
-            {submitting ? "Sending..." : "Send Invite"}
-          </Button>
-        </>
-      }
-    >
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <Input
-          label="Vendor Email"
-          type="email"
-          name="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="vendor@company.com"
-          autoFocus
-          disabled={submitting}
-        />
-      </form>
-    </Modal>
-  );
-}
 
 export default function AdminVendors() {
   const navigate = useNavigate();
@@ -83,7 +28,6 @@ export default function AdminVendors() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
-  const [actionLoading, setActionLoading] = useState(null);
   const [inviteOpen, setInviteOpen] = useState(false);
 
   const { confirm, confirmEl } = useConfirm();
@@ -104,21 +48,8 @@ export default function AdminVendors() {
   // list — a "pending" status is a vendor who hasn't accepted their invite yet.
   const pendingVendorInvites = vendors.filter((v) => v.status === "pending");
   const registeredVendors = vendors.filter((v) => v.status !== "pending");
-  const createInvite = useCreateInvite(() => setInviteOpen(false));
   const resendInvite = useResendInvite();
   const deleteInvite = useDeleteTeamMember();
-
-  function handleInviteVendor(email, resetForm) {
-    createInvite.mutate(
-      { email, role: "vendor" },
-      {
-        onSuccess: () => {
-          loadVendors();
-          resetForm?.();
-        },
-      },
-    );
-  }
 
   function handleResendInvite(invite) {
     const email = invite.email ?? invite.contact_email ?? invite.user_email;
@@ -136,30 +67,33 @@ export default function AdminVendors() {
       message: `Cancel the invite sent to "${email}"?`,
       confirmLabel: "Cancel Invite",
       variant: "danger",
+      onConfirm: () => deleteInvite.mutateAsync(invite.id),
     });
-    if (!ok) return;
-    deleteInvite.mutate(invite.id, {
-      onSuccess: () => {
-        loadVendors();
-        toast(`Cancelled invite to ${email}.`);
-      },
-    });
+    if (ok) {
+      loadVendors();
+      toast(`Cancelled invite to ${email}.`);
+    }
   }
 
   async function handleToggleStatus(vendor) {
-    setActionLoading(`status-${vendor.id}`);
-    try {
-      await vendorService.updateVendorStatus(vendor.id, !vendor.is_active);
-      setVendors((prev) =>
-        prev.map((v) =>
-          v.id === vendor.id ? { ...v, is_active: !v.is_active } : v,
-        ),
-      );
-    } catch {
-      setError("Failed to update vendor status.");
-    } finally {
-      setActionLoading(null);
-    }
+    const activating = !vendor.is_active;
+    const displayName = vendor.company_name || vendor.user_email || "this vendor";
+    await confirm({
+      title: activating ? "Activate Vendor" : "Deactivate Vendor",
+      message: activating
+        ? `Reactivate "${displayName}"? They will regain access to submit invoices.`
+        : `Deactivate "${displayName}"? They will lose access until reactivated.`,
+      confirmLabel: activating ? "Activate" : "Deactivate",
+      variant: activating ? "approve" : "warning",
+      onConfirm: async () => {
+        await vendorService.updateVendorStatus(vendor.id, activating);
+        setVendors((prev) =>
+          prev.map((v) =>
+            v.id === vendor.id ? { ...v, is_active: activating } : v,
+          ),
+        );
+      },
+    });
   }
 
   async function handleDelete(vendor) {
@@ -170,17 +104,10 @@ export default function AdminVendors() {
       message: `Delete "${displayName}"? This action cannot be undone.`,
       confirmLabel: "Delete",
       variant: "danger",
+      onConfirm: () => vendorService.deleteVendor(vendor.id),
     });
-    if (!ok) return;
-    setActionLoading(`delete-${vendor.id}`);
-    try {
-      await vendorService.deleteVendor(vendor.id);
+    if (ok) {
       setVendors((prev) => prev.filter((v) => v.id !== vendor.id));
-    } catch (err) {
-      const msg = err?.response?.data?.detail ?? "Failed to delete vendor.";
-      setError(msg);
-    } finally {
-      setActionLoading(null);
     }
   }
 
@@ -196,13 +123,12 @@ export default function AdminVendors() {
   });
 
   return (
-    <AppLayout role="admin" searchPlaceholder="Search vendors...">
+    <AppLayout role="admin">
       {confirmEl}
       <InviteVendorModal
         open={inviteOpen}
         onClose={() => setInviteOpen(false)}
-        onInvite={handleInviteVendor}
-        submitting={createInvite.isPending}
+        onInvited={loadVendors}
       />
       <div className="space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -301,18 +227,6 @@ export default function AdminVendors() {
           </Card>
         )}
 
-        <TutorialCard
-          id="admin-vendors"
-          title="Vendor Management"
-          description="Oversee all registered vendor accounts and their onboarding status."
-          tips={[
-            "Active vendors (green badge) can submit invoices; toggle a vendor inactive to suspend their access without deleting them.",
-            "Use the search bar to find vendors by company name, email address, or industry.",
-            "Click any vendor row to view their full profile, banking details, and complete invoice history.",
-            "Deleting a vendor is permanent — deactivate instead unless you are certain the account should be removed.",
-          ]}
-        />
-
         {error && (
           <div className="p-3 bg-red-50 border border-red-200 rounded text-red-600 text-sm">
             {error}
@@ -326,20 +240,22 @@ export default function AdminVendors() {
         )}
 
         <Card className="p-0 overflow-hidden">
-          <div className="flex items-center gap-3 px-4 py-3 border-b border-outline-variant">
-            <div className="relative flex-1 max-w-sm">
-              <Search
-                size={14}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-outline"
-              />
-              <input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search by name, email, or industry..."
-                className="w-full pl-8 pr-3 py-1.5 text-sm bg-surface-low rounded border border-outline-variant focus:outline-none focus:ring-2 focus:ring-secondary"
-              />
+          {!loading && registeredVendors.length > 0 && (
+            <div className="flex items-center gap-3 px-4 py-3 border-b border-outline-variant">
+              <div className="relative flex-1 max-w-sm">
+                <Search
+                  size={14}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-outline"
+                />
+                <input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search by name, email, or industry..."
+                  className="w-full pl-8 pr-3 py-1.5 text-sm bg-surface-low rounded border border-outline-variant focus:outline-none focus:ring-2 focus:ring-secondary"
+                />
+              </div>
             </div>
-          </div>
+          )}
 
           {loading ? (
             <div className="flex items-center justify-center py-16">
@@ -349,9 +265,40 @@ export default function AdminVendors() {
               </span>
             </div>
           ) : filtered.length === 0 ? (
-            <p className="px-6 py-12 text-center text-sm text-on-surface-variant">
-              No vendors found.
-            </p>
+            search ? (
+              <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
+                <div className="w-12 h-12 rounded-full bg-surface-low flex items-center justify-center mb-3">
+                  <Search size={20} className="text-on-surface-variant" />
+                </div>
+                <p className="text-sm font-semibold text-on-surface">
+                  No matching vendors
+                </p>
+                <p className="text-xs text-on-surface-variant mt-1">
+                  Try a different name, email address, or industry.
+                </p>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
+                <div className="w-12 h-12 rounded-full bg-surface-low flex items-center justify-center mb-3">
+                  <Users size={20} className="text-on-surface-variant" />
+                </div>
+                <p className="text-sm font-semibold text-on-surface">
+                  No vendors yet
+                </p>
+                <p className="text-xs text-on-surface-variant mt-1 max-w-xs">
+                  Invite your first vendor to collect their details, receive
+                  invoices, and prepare payments.
+                </p>
+                <Button
+                  size="sm"
+                  onClick={() => setInviteOpen(true)}
+                  className="mt-4 flex items-center gap-2"
+                >
+                  <UserPlus size={14} />
+                  Invite Vendor
+                </Button>
+              </div>
+            )
           ) : (
             <>
               {/* Desktop / tablet: table */}
@@ -375,6 +322,7 @@ export default function AdminVendors() {
                     {filtered.map((vendor) => (
                       <tr
                         key={vendor.id}
+                        title="View full profile, banking details, and invoice history"
                         className="hover:bg-surface-low/50 transition-colors cursor-pointer"
                         onClick={() => navigate(`/admin/vendors/${vendor.id}`)}
                       >
@@ -401,9 +349,11 @@ export default function AdminVendors() {
                           {vendor.industry ?? "—"}
                         </td>
                         <td className="px-6 py-4">
-                          <StatusChip
-                            status={vendor.is_active ? "Active" : "Inactive"}
-                          />
+                          <Tooltip text="Active vendors can submit invoices. Toggle to suspend access without deleting the account.">
+                            <StatusChip
+                              status={vendor.is_active ? "Active" : "Inactive"}
+                            />
+                          </Tooltip>
                         </td>
                         <td
                           className="px-6 py-4"
@@ -412,20 +362,14 @@ export default function AdminVendors() {
                           <div className="flex items-center gap-2">
                             <button
                               onClick={() => handleToggleStatus(vendor)}
-                              disabled={actionLoading === `status-${vendor.id}`}
                               title={
                                 vendor.is_active
                                   ? "Deactivate vendor"
                                   : "Activate vendor"
                               }
-                              className="p-1.5 rounded hover:bg-surface-container transition-colors disabled:opacity-50"
+                              className="p-1.5 rounded hover:bg-surface-container transition-colors"
                             >
-                              {actionLoading === `status-${vendor.id}` ? (
-                                <Loader2
-                                  size={14}
-                                  className="animate-spin text-on-surface-variant"
-                                />
-                              ) : vendor.is_active ? (
+                              {vendor.is_active ? (
                                 <PowerOff
                                   size={14}
                                   className="text-amber-600"
@@ -436,18 +380,10 @@ export default function AdminVendors() {
                             </button>
                             <button
                               onClick={() => handleDelete(vendor)}
-                              disabled={actionLoading === `delete-${vendor.id}`}
                               title="Delete vendor"
-                              className="p-1.5 rounded hover:bg-red-50 transition-colors disabled:opacity-50"
+                              className="p-1.5 rounded hover:bg-red-50 transition-colors"
                             >
-                              {actionLoading === `delete-${vendor.id}` ? (
-                                <Loader2
-                                  size={14}
-                                  className="animate-spin text-error"
-                                />
-                              ) : (
-                                <Trash2 size={14} className="text-error" />
-                              )}
+                              <Trash2 size={14} className="text-error" />
                             </button>
                           </div>
                         </td>
@@ -462,6 +398,7 @@ export default function AdminVendors() {
                 {filtered.map((vendor) => (
                   <div
                     key={vendor.id}
+                    title="View full profile, banking details, and invoice history"
                     onClick={() => navigate(`/admin/vendors/${vendor.id}`)}
                     className="px-4 py-4 active:bg-surface-low/50 transition-colors cursor-pointer"
                   >
@@ -500,12 +437,9 @@ export default function AdminVendors() {
                     >
                       <button
                         onClick={() => handleToggleStatus(vendor)}
-                        disabled={actionLoading === `status-${vendor.id}`}
-                        className="flex-1 inline-flex items-center justify-center gap-1.5 py-2 rounded border border-outline-variant text-xs font-medium text-on-surface-variant hover:bg-surface-low transition-colors disabled:opacity-50"
+                        className="flex-1 inline-flex items-center justify-center gap-1.5 py-2 rounded border border-outline-variant text-xs font-medium text-on-surface-variant hover:bg-surface-low transition-colors"
                       >
-                        {actionLoading === `status-${vendor.id}` ? (
-                          <Loader2 size={13} className="animate-spin" />
-                        ) : vendor.is_active ? (
+                        {vendor.is_active ? (
                           <PowerOff size={13} className="text-amber-600" />
                         ) : (
                           <Power size={13} className="text-emerald" />
@@ -514,14 +448,9 @@ export default function AdminVendors() {
                       </button>
                       <button
                         onClick={() => handleDelete(vendor)}
-                        disabled={actionLoading === `delete-${vendor.id}`}
-                        className="flex-1 inline-flex items-center justify-center gap-1.5 py-2 rounded border border-outline-variant text-xs font-medium text-error hover:bg-red-50 transition-colors disabled:opacity-50"
+                        className="flex-1 inline-flex items-center justify-center gap-1.5 py-2 rounded border border-outline-variant text-xs font-medium text-error hover:bg-red-50 transition-colors"
                       >
-                        {actionLoading === `delete-${vendor.id}` ? (
-                          <Loader2 size={13} className="animate-spin" />
-                        ) : (
-                          <Trash2 size={13} />
-                        )}
+                        <Trash2 size={13} />
                         Delete
                       </button>
                     </div>

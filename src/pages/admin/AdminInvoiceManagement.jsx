@@ -13,6 +13,7 @@ import {
   extractErrorMessage,
 } from "../../lib/utils";
 import { adminInvoiceService } from "../../lib/services/invoiceService";
+import { useConfirm } from "../../hooks/useConfirm";
 
 const PAGE_SIZE = 25;
 
@@ -64,11 +65,7 @@ function InvoiceActions({
           onClick={onApprove}
           disabled={!!loading}
         >
-          {loading === "approve" ? (
-            <Loader2 size={11} className="animate-spin" />
-          ) : (
-            "Approve"
-          )}
+          Approve
         </Button>
         <Button
           size="sm"
@@ -141,8 +138,12 @@ export default function AdminInvoiceManagement() {
   const [activeTab, setActiveTab] = useState(0);
   const [search, setSearch] = useState("");
 
+  const { confirm, confirmEl } = useConfirm();
+
   // Reject modal state
   const [rejectTarget, setRejectTarget] = useState(null); // { id, invoice_number }
+  const [rejectSubmitting, setRejectSubmitting] = useState(false);
+  const [rejectError, setRejectError] = useState("");
 
   // Inline action loading per row
   const [rowLoading, setRowLoading] = useState({});
@@ -196,11 +197,14 @@ export default function AdminInvoiceManagement() {
   }
 
   async function handleApprove(inv) {
-    rowAction(
-      inv.id,
-      () => adminInvoiceService.approveInvoice(inv.id, ""),
-      "approve",
-    );
+    const ok = await confirm({
+      title: "Approve Invoice",
+      message: `Approve invoice ${inv.invoice_number}? It will move forward to funding.`,
+      confirmLabel: "Approve",
+      variant: "approve",
+      onConfirm: () => adminInvoiceService.approveInvoice(inv.id, ""),
+    });
+    if (ok) await fetchInvoices();
   }
 
   async function handleFund(inv) {
@@ -215,15 +219,24 @@ export default function AdminInvoiceManagement() {
     rowAction(inv.id, () => adminInvoiceService.markPaid(inv.id), "paid");
   }
 
+  function openReject(inv) {
+    setRejectError("");
+    setRejectTarget(inv);
+  }
+
   async function handleRejectConfirm(reason) {
     if (!rejectTarget) return;
-    const { id } = rejectTarget;
-    setRejectTarget(null);
-    rowAction(
-      id,
-      () => adminInvoiceService.rejectInvoice(id, reason),
-      "reject",
-    );
+    setRejectError("");
+    setRejectSubmitting(true);
+    try {
+      await adminInvoiceService.rejectInvoice(rejectTarget.id, reason);
+      await fetchInvoices();
+      setRejectTarget(null);
+    } catch (err) {
+      setRejectError(extractErrorMessage(err));
+    } finally {
+      setRejectSubmitting(false);
+    }
   }
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
@@ -236,9 +249,12 @@ export default function AdminInvoiceManagement() {
 
   return (
     <AppLayout role="admin">
+      {confirmEl}
       <RejectModal
         open={!!rejectTarget}
-        invoiceNumber={rejectTarget?.invoice_number ?? ""}
+        itemLabel={rejectTarget?.invoice_number ?? ""}
+        loading={rejectSubmitting}
+        error={rejectError}
         onConfirm={handleRejectConfirm}
         onCancel={() => setRejectTarget(null)}
       />
@@ -469,7 +485,7 @@ export default function AdminInvoiceManagement() {
                               onApprove={() => handleApprove(inv)}
                               onFund={() => handleFund(inv)}
                               onMarkPaid={() => handleMarkPaid(inv)}
-                              onReject={() => setRejectTarget(inv)}
+                              onReject={() => openReject(inv)}
                               className="flex items-center gap-1.5 flex-nowrap"
                             />
                           </td>
@@ -568,7 +584,7 @@ export default function AdminInvoiceManagement() {
                           onApprove={() => handleApprove(inv)}
                           onFund={() => handleFund(inv)}
                           onMarkPaid={() => handleMarkPaid(inv)}
-                          onReject={() => setRejectTarget(inv)}
+                          onReject={() => openReject(inv)}
                           className="flex items-center gap-2 mt-3"
                         />
                       </div>

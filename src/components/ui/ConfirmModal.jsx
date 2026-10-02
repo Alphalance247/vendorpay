@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { AlertTriangle, LogOut, Trash2, XCircle } from 'lucide-react';
+import { AlertTriangle, CheckCircle, LogOut, Loader2, Trash2, XCircle } from 'lucide-react';
 import Button from './Button';
 
 const ICONS = {
@@ -7,6 +7,7 @@ const ICONS = {
   warning: AlertTriangle,
   reject: XCircle,
   neutral: LogOut,
+  approve: CheckCircle,
 };
 
 const ICON_COLORS = {
@@ -14,6 +15,7 @@ const ICON_COLORS = {
   warning: 'bg-amber-50 text-amber-600',
   reject: 'bg-red-50 text-error',
   neutral: 'bg-navy/5 text-navy',
+  approve: 'bg-emerald/10 text-emerald',
 };
 
 const CONFIRM_VARIANTS = {
@@ -21,6 +23,7 @@ const CONFIRM_VARIANTS = {
   warning: 'bg-amber-500 text-white hover:bg-amber-600',
   reject: 'bg-error text-white hover:bg-error/90',
   neutral: 'bg-navy text-white hover:bg-navy/90',
+  approve: 'bg-emerald text-white hover:bg-emerald/90',
 };
 
 export default function ConfirmModal({
@@ -29,12 +32,15 @@ export default function ConfirmModal({
   message,
   confirmLabel = 'Confirm',
   variant = 'danger',
+  loading = false,
+  error = '',
   onConfirm,
   onCancel,
 }) {
   useEffect(() => {
     if (!open) return;
     function onKey(e) {
+      if (loading) return;
       if (e.key === 'Escape') onCancel?.();
       if (e.key === 'Enter') onConfirm?.();
     }
@@ -44,7 +50,7 @@ export default function ConfirmModal({
       document.removeEventListener('keydown', onKey);
       document.body.style.overflow = '';
     };
-  }, [open, onCancel, onConfirm]);
+  }, [open, loading, onCancel, onConfirm]);
 
   if (!open) return null;
 
@@ -53,7 +59,7 @@ export default function ConfirmModal({
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
-      onClick={onCancel}
+      onClick={loading ? undefined : onCancel}
     >
       <div
         className="bg-white rounded-xl shadow-xl w-full max-w-sm border border-outline-variant animate-in fade-in zoom-in-95 duration-150"
@@ -65,15 +71,20 @@ export default function ConfirmModal({
           </div>
           <h3 className="text-base font-semibold text-on-surface">{title}</h3>
           <p className="text-sm text-on-surface-variant mt-1.5 leading-relaxed">{message}</p>
+          {error && (
+            <p className="text-sm text-error mt-3 bg-red-50 border border-red-200 rounded px-3 py-2">{error}</p>
+          )}
         </div>
         <div className="flex items-center justify-end gap-2 px-6 pb-5">
-          <Button variant="ghost" size="sm" onClick={onCancel}>
+          <Button variant="ghost" size="sm" onClick={onCancel} disabled={loading}>
             Cancel
           </Button>
           <button
             onClick={onConfirm}
-            className={`px-4 py-1.5 rounded text-sm font-medium transition-colors ${CONFIRM_VARIANTS[variant]}`}
+            disabled={loading}
+            className={`px-4 py-1.5 rounded text-sm font-medium transition-colors flex items-center gap-1.5 disabled:opacity-60 disabled:cursor-not-allowed ${CONFIRM_VARIANTS[variant]}`}
           >
+            {loading && <Loader2 size={14} className="animate-spin" />}
             {confirmLabel}
           </button>
         </div>

@@ -179,10 +179,13 @@ export default function Billing() {
       message: 'Your workspace will lose access to paid features at the end of the current billing period. This is a preview — no real subscription is being canceled.',
       confirmLabel: 'Cancel Subscription',
       variant: 'danger',
+      onConfirm: () => {
+        setStatus('canceled');
+      },
     });
-    if (!ok) return;
-    setStatus('canceled');
-    toast('Subscription canceled.', { variant: 'info' });
+    if (ok) {
+      toast('Subscription canceled.', { variant: 'info' });
+    }
   }
 
   function handleReactivate() {
@@ -191,7 +194,7 @@ export default function Billing() {
   }
 
   return (
-    <AppLayout role="admin" searchPlaceholder="Search billing history...">
+    <AppLayout role="admin">
       {confirmEl}
       <ChangePlanModal
         key={planModalOpen ? `open-${planId}` : 'closed'}

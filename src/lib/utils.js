@@ -24,6 +24,12 @@ export function getCurrencySymbol(currency) {
   return CURRENCY_SYMBOLS[currency] ?? currency ?? '';
 }
 
+export function maskAccountNumber(value) {
+  if (!value) return '—';
+  const str = String(value);
+  return str.length <= 4 ? str : `•••• ${str.slice(-4)}`;
+}
+
 export function formatCurrency(amount, currency = 'USD') {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',

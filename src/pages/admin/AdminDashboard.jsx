@@ -15,6 +15,7 @@ import AppLayout from "../../components/layout/AppLayout";
 import Card from "../../components/ui/Card";
 import Button from "../../components/ui/Button";
 import Tooltip from "../../components/ui/Tooltip";
+import InviteVendorModal from "../../components/ui/InviteVendorModal";
 import { formatCurrency } from "../../lib/utils";
 import { vendorService } from "../../lib/services/vendorService";
 
@@ -28,14 +29,14 @@ function currencyValues(map) {
 // Shown in place of the usual stat/activity view until the workspace has at
 // least one vendor — a brand-new account has nothing to review yet, so
 // telling the admin what to set up next is more useful than empty stats.
-function GettingStartedPanel({ navigate }) {
+function GettingStartedPanel({ onInviteVendors }) {
   const steps = [
     {
       key: "invite-vendors",
       label: "Invite your vendors",
       description: "Get suppliers onboarded so they can submit invoices.",
       actionLabel: "Invite Vendors",
-      onAction: () => navigate("/admin/vendors"),
+      onAction: onInviteVendors,
     },
     {
       key: "approval-rules",
@@ -95,6 +96,7 @@ export default function AdminDashboard() {
   const navigate = useNavigate();
   const [dash, setDash] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [inviteOpen, setInviteOpen] = useState(false);
 
   useEffect(() => {
     vendorService
@@ -143,7 +145,11 @@ export default function AdminDashboard() {
 
   const quickActions = isFirstRun
     ? [
-        { label: "Invite Vendors", path: "/admin/vendors", icon: Users },
+        {
+          label: "Invite Vendors",
+          icon: Users,
+          onClick: () => setInviteOpen(true),
+        },
         { label: "Invite Team Members", path: "/admin/team", icon: UserPlus },
         // { label: 'Set Up Billing', path: '/admin/billing', icon: CreditCard },
       ]
@@ -162,10 +168,11 @@ export default function AdminDashboard() {
       ];
 
   return (
-    <AppLayout
-      role="admin"
-      searchPlaceholder="Search vendors, invoices, or transactions..."
-    >
+    <AppLayout role="admin">
+      <InviteVendorModal
+        open={inviteOpen}
+        onClose={() => setInviteOpen(false)}
+      />
       <div className="space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
@@ -189,7 +196,9 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {isFirstRun && <GettingStartedPanel navigate={navigate} />}
+        {isFirstRun && (
+          <GettingStartedPanel onInviteVendors={() => setInviteOpen(true)} />
+        )}
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {stats.map(
@@ -292,10 +301,10 @@ export default function AdminDashboard() {
                   path: "/admin/payments",
                   icon: History,
                 },
-              ].map(({ label, path, icon: Icon }) => (
+              ].map(({ label, path, icon: Icon, onClick }) => (
                 <button
                   key={label}
-                  onClick={() => navigate(path)}
+                  onClick={onClick ?? (() => navigate(path))}
                   className="w-full flex items-center gap-3 px-5 py-4 hover:bg-surface-low/50 transition-colors text-left"
                 >
                   <Icon size={16} className="text-on-surface-variant" />

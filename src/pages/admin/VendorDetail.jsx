@@ -1,14 +1,24 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Download, Eye, Loader2, Power, PowerOff, Trash2 } from 'lucide-react';
+import { ArrowLeft, Check, Download, Eye, Landmark, Loader2, Power, PowerOff, Trash2, XCircle } from 'lucide-react';
 import AppLayout from '../../components/layout/AppLayout';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import StatusChip from '../../components/ui/StatusChip';
+import RejectModal from '../../components/ui/RejectModal';
 import { vendorService } from '../../lib/services/vendorService';
 import { adminInvoiceService } from '../../lib/services/invoiceService';
-import { formatCurrency, formatDate } from '../../lib/utils';
+import { formatCurrency, formatDate, extractErrorMessage } from '../../lib/utils';
 import { useConfirm } from '../../hooks/useConfirm';
+import { useVendorBanking } from '../../hooks/useQueries/vendorAdmin/useVendorBanking';
+import { useVerifyVendorBanking } from '../../hooks/useQueries/vendorAdmin/useVerifyVendorBanking';
+import { useRejectVendorBanking } from '../../hooks/useQueries/vendorAdmin/useRejectVendorBanking';
+
+const BANKING_STATUS_LABEL = {
+  pending: 'Pending Review',
+  approved: 'Approved',
+  rejected: 'Rejected',
+};
 
 export default function VendorDetail() {
   const navigate = useNavigate();
@@ -19,8 +29,21 @@ export default function VendorDetail() {
   const [invoices, setInvoices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
-  const [actionError, setActionError] = useState('');
-  const [actionLoading, setActionLoading] = useState('');
+  const [bankingRejectOpen, setBankingRejectOpen] = useState(false);
+  const [bankingRejectError, setBankingRejectError] = useState('');
+
+  const bankingQuery = useVendorBanking(id);
+  const banking = bankingQuery.data ?? null;
+  const bankingStatus = !banking
+    ? null
+    : banking.is_verified
+      ? 'approved'
+      : banking.rejection_reason
+        ? 'rejected'
+        : 'pending';
+
+  const verifyBanking = useVerifyVendorBanking(id);
+  const rejectBanking = useRejectVendorBanking(id);
 
   useEffect(() => {
     Promise.all([
@@ -39,15 +62,19 @@ export default function VendorDetail() {
   }, [id]);
 
   async function handleToggleStatus() {
-    setActionLoading('status');
-    try {
-      const updated = await vendorService.updateVendorStatus(id, !vendor.is_active);
-      setVendor(updated);
-    } catch {
-      setActionError('Failed to update vendor status.');
-    } finally {
-      setActionLoading('');
-    }
+    const activating = !vendor.is_active;
+    await confirm({
+      title: activating ? 'Activate Vendor' : 'Deactivate Vendor',
+      message: activating
+        ? 'Reactivate this vendor? They will regain access to submit invoices.'
+        : 'Deactivate this vendor? They will lose access until reactivated.',
+      confirmLabel: activating ? 'Activate' : 'Deactivate',
+      variant: activating ? 'approve' : 'warning',
+      onConfirm: async () => {
+        const updated = await vendorService.updateVendorStatus(id, activating);
+        setVendor(updated);
+      },
+    });
   }
 
   async function handleDelete() {
@@ -57,16 +84,33 @@ export default function VendorDetail() {
       message: `Delete "${displayName}"? This action cannot be undone.`,
       confirmLabel: 'Delete',
       variant: 'danger',
+      onConfirm: () => vendorService.deleteVendor(id),
     });
-    if (!ok) return;
-    setActionLoading('delete');
+    if (ok) navigate('/admin/vendors');
+  }
+
+  async function handleApproveBanking() {
+    await confirm({
+      title: 'Approve Banking Details',
+      message: "Approve these banking details? The vendor's future payouts will be sent to this account.",
+      confirmLabel: 'Approve',
+      variant: 'approve',
+      onConfirm: () => verifyBanking.mutateAsync(),
+    });
+  }
+
+  function openBankingReject() {
+    setBankingRejectError('');
+    setBankingRejectOpen(true);
+  }
+
+  async function handleRejectBanking(reason) {
+    setBankingRejectError('');
     try {
-      await vendorService.deleteVendor(id);
-      navigate('/admin/vendors');
+      await rejectBanking.mutateAsync(reason);
+      setBankingRejectOpen(false);
     } catch (err) {
-      const msg = err?.response?.data?.detail ?? 'Failed to delete vendor.';
-      setActionError(msg);
-      setActionLoading('');
+      setBankingRejectError(extractErrorMessage(err));
     }
   }
 
@@ -97,8 +141,18 @@ export default function VendorDetail() {
   const vendorCurrency = vendor.currency ?? invoices[0]?.currency ?? 'USD';
 
   return (
-    <AppLayout role="admin" searchPlaceholder="Search invoices...">
+    <AppLayout role="admin">
       {confirmEl}
+      <RejectModal
+        open={bankingRejectOpen}
+        title="Reject Banking Details"
+        itemLabel="these banking details"
+        confirmLabel="Reject Banking Details"
+        loading={rejectBanking.isPending}
+        error={bankingRejectError}
+        onConfirm={handleRejectBanking}
+        onCancel={() => setBankingRejectOpen(false)}
+      />
       <div className="space-y-6">
         <button
           onClick={() => navigate('/admin/vendors')}
@@ -120,12 +174,9 @@ export default function VendorDetail() {
               variant="secondary"
               size="sm"
               onClick={handleToggleStatus}
-              disabled={!!actionLoading}
               className="flex items-center gap-1.5"
             >
-              {actionLoading === 'status' ? (
-                <Loader2 size={13} className="animate-spin" />
-              ) : vendor.is_active ? (
+              {vendor.is_active ? (
                 <><PowerOff size={13} /> Deactivate</>
               ) : (
                 <><Power size={13} /> Activate</>
@@ -135,21 +186,12 @@ export default function VendorDetail() {
               variant="ghost"
               size="sm"
               onClick={handleDelete}
-              disabled={!!actionLoading}
               className="flex items-center gap-1.5 text-error hover:bg-red-50"
             >
-              {actionLoading === 'delete' ? <Loader2 size={13} className="animate-spin" /> : <Trash2 size={13} />}
-              Delete
+              <Trash2 size={13} /> Delete
             </Button>
           </div>
         </div>
-
-        {actionError && (
-          <div className="p-3 bg-red-50 border border-red-200 rounded text-red-600 text-sm">
-            {actionError}
-            <button onClick={() => setActionError('')} className="ml-2 underline text-xs">Dismiss</button>
-          </div>
-        )}
 
         <div className="grid grid-cols-2 gap-4">
           <Card>
@@ -192,6 +234,82 @@ export default function VendorDetail() {
             </div>
           </Card>
         </div>
+
+        <Card className={bankingStatus === 'rejected' ? 'border-error/30' : bankingStatus === 'pending' ? 'border-amber/30' : ''}>
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant flex items-center gap-1.5">
+              <Landmark size={12} /> Banking Details
+            </p>
+            {bankingStatus && <StatusChip status={BANKING_STATUS_LABEL[bankingStatus]} />}
+          </div>
+
+          {bankingQuery.isLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 size={20} className="animate-spin text-emerald" />
+            </div>
+          ) : !banking ? (
+            <p className="text-sm text-on-surface-variant py-2">No banking details submitted yet.</p>
+          ) : (
+            <>
+              <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                <div className="flex gap-2">
+                  <span className="text-on-surface-variant w-36 flex-shrink-0">Bank Name</span>
+                  <span className="text-on-surface font-medium">{banking.bank_name ?? '—'}</span>
+                </div>
+                <div className="flex gap-2">
+                  <span className="text-on-surface-variant w-36 flex-shrink-0">Account Name</span>
+                  <span className="text-on-surface">{banking.account_name ?? '—'}</span>
+                </div>
+                <div className="flex gap-2">
+                  <span className="text-on-surface-variant w-36 flex-shrink-0">Account Type</span>
+                  <span className="text-on-surface">{banking.account_type ?? '—'}</span>
+                </div>
+                <div className="flex gap-2">
+                  <span className="text-on-surface-variant w-36 flex-shrink-0">Country Type</span>
+                  <span className="text-on-surface">{banking.country_type ?? '—'}</span>
+                </div>
+                <div className="flex gap-2">
+                  <span className="text-on-surface-variant w-36 flex-shrink-0">Bank Code</span>
+                  <span className="text-on-surface">{banking.bank_code ?? '—'}</span>
+                </div>
+                {banking.swift_code && (
+                  <div className="flex gap-2">
+                    <span className="text-on-surface-variant w-36 flex-shrink-0">SWIFT / BIC</span>
+                    <span className="text-on-surface">{banking.swift_code}</span>
+                  </div>
+                )}
+              </div>
+
+              {bankingStatus === 'rejected' && banking.rejection_reason && (
+                <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded text-sm text-red-700">
+                  <span className="font-medium">Rejection reason:</span> {banking.rejection_reason}
+                </div>
+              )}
+
+              {bankingStatus === 'pending' && (
+                <div className="flex gap-2 mt-4">
+                  <Button
+                    size="sm"
+                    onClick={handleApproveBanking}
+                    className="flex items-center gap-1.5"
+                  >
+                    <Check size={14} />
+                    Approve
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={openBankingReject}
+                    className="flex items-center gap-1.5 text-error hover:bg-red-50"
+                  >
+                    <XCircle size={14} />
+                    Reject
+                  </Button>
+                </div>
+              )}
+            </>
+          )}
+        </Card>
 
         <div className="grid grid-cols-3 gap-4">
           <Card>
