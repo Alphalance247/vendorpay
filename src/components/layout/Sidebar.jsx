@@ -8,6 +8,7 @@ import {
   LogOut,
   Users,
   Shield,
+  User,
   X,
 } from "lucide-react";
 import { cn } from "../../lib/utils";
@@ -63,6 +64,7 @@ export default function Sidebar({
     { to: "/vendor/dashboard", icon: LayoutDashboard, label: "Dashboard" },
     { to: "/vendor/invoices", icon: FileText, label: "Invoices" },
     { to: "/vendor/payments", icon: CreditCard, label: "Payments" },
+    { to: "/vendor/profile", icon: User, label: "Profile" },
   ];
 
   const adminNav = [
