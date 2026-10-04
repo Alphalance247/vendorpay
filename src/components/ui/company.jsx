@@ -1,31 +1,85 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { CheckCircle, ImagePlus } from "lucide-react";
 import Input from "./Input";
 import Select from "./Select";
-// import { useSettingsStore } from '@/store/settingsStore';
-// import SaveBar from '@/components/Alluvium-Redesign-2026/settings/SaveBar';
+import { adminService } from "../../lib/services/adminService";
+import { resolveMediaUrl } from "../../lib/apiClient";
 
-const BUSINESS_TYPES = [
-  { value: "sole_proprietorship", label: "Sole proprietorship" },
-  { value: "private_limited", label: "Private limited company" },
-  { value: "partnership", label: "Partnership" },
+
+const industry_type = [
+  { value: "Technology", label: "Technology" },
+  { value: "Manufacturing", label: "Manufacturing" },
+  { value: 'Logistics', label: "Logistics" },
+  { value: " Retail", label: "Retail" },
+  { value: "Professional Services", label: "Professional Services" },
+  { value: "Healthcare", label: "Healthcare" },
+  { value: "Other", label: "Other" },
+]
+const COMPANY_SIZES = [
+  "1-10 employees",
+  "11-50 employees",
+  "51-200 employees",
+  "201-500 employees",
+  "500+ employees",
 ];
-
-// const COUNTRIES = [
-//   { value: "NG", label: "Nigeria" },
-//   { value: "GB", label: "United Kingdom" },
-//   { value: "US", label: "United States" },
-//   { value: "KE", label: "Kenya" },
-// ];
-
+const MAX_LOGO_SIZE = 5 * 1024 * 1024; // 2MB
+const ALLOWED_LOGO_TYPES = [
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/jpg"
+];
 export default function VendorCompany() {
-  // const markDirty = useSettingsStore((s) => s.markDirty);
-  const loading = false;
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [saved, setSaved] = useState(false)
+  const [resetKey, setResetKey] = useState(0);
+
   const [form, setForm] = useState({
-    legalBusinessName: "Bright Supply Co.",
-    businessType: "sole_proprietorship",
-    country: "NG",
-    address: "",
+    logo_url: "",
+    industry: "",
+    company_size: "",
+    name: "",
+    plan: "",
   });
+  const [logoPreview, setLogoPreview] = useState(null);
+  const [logoError, setLogoError] = useState("");
+  // Re-runs whenever resetKey changes (see handleCancel), re-fetching the
+  // last-saved company data to discard any unsaved edits.
+  useEffect(() => {
+    const loadCompany = async () => {
+      try {
+        setLoading(true);
+        setError("");
+
+        const data = await adminService.getCompany();
+
+        console.log("COMPANY DATA:", data);
+
+        setForm({
+          name: data?.name ?? "",
+          logo_url: data?.logo_url ?? "",
+          industry: data?.industry ?? "",
+          plan: data?.plan ?? "",
+          company_size: data?.company_size ?? "",
+        });
+      } catch (error) {
+        console.error("FAILED TO LOAD COMPANY:", error);
+
+        setError("Failed to load company profile.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadCompany();
+  }, [resetKey]);
+  // Revoke the previous object URL whenever it's replaced or the component unmounts.
+  useEffect(() => {
+    return () => {
+      if (logoPreview) URL.revokeObjectURL(logoPreview);
+    };
+  }, [logoPreview]);
 
   const handleChange = (field) => (e) => {
     const { value } = e.target;
@@ -33,6 +87,185 @@ export default function VendorCompany() {
     // markDirty(field, value);
   };
 
+  const handleLogoChange = async (e) => {
+    const file = e.target.files?.[0];
+
+    // Allow the same file to be selected again
+    e.target.value = "";
+
+    if (!file) return;
+
+    // Validate file type
+    if (!ALLOWED_LOGO_TYPES.includes(file.type)) {
+      setLogoError(
+        "Please upload a JPG, PNG, or WebP image."
+      );
+      return;
+    }
+
+    // Validate file size
+    if (file.size > MAX_LOGO_SIZE) {
+      setLogoError(
+        "Image must be smaller than 2MB."
+      );
+      return;
+    }
+
+    setLogoError("");
+    setError("");
+    setSaved(false);
+
+    // Create a local preview immediately
+    const previewUrl = URL.createObjectURL(file);
+
+    setLogoPreview(previewUrl);
+
+    try {
+      setLoading(true);
+
+      const response =
+        await adminService.uploadCompanyLogo(file);
+
+      console.log(
+        "COMPANY LOGO UPLOAD RESPONSE:",
+        response
+      );
+
+      /*
+       * The API documentation says:
+       * "Returns the new logo URL."
+       *
+       * Depending on the actual response format, it could
+       * be logo_url, url, or simply a string.
+       */
+
+      let uploadedLogo = "";
+
+      if (typeof response === "string") {
+        uploadedLogo = response;
+      } else {
+        uploadedLogo =
+          response?.logo_url ||
+          response?.url ||
+          response?.logo ||
+          "";
+      }
+
+      console.log(
+        "UPLOADED LOGO URL:",
+        uploadedLogo
+      );
+
+      /*
+       * Only save the backend URL if we actually received one.
+       *
+       * The local preview remains active, so even if the
+       * backend returns a bad URL, the page won't suddenly
+       * lose the selected image.
+       */
+      if (uploadedLogo) {
+        setForm((prev) => ({
+          ...prev,
+          logo_url: uploadedLogo,
+        }));
+      }
+
+      setSaved(true);
+    } catch (error) {
+      console.error(
+        "COMPANY LOGO UPLOAD ERROR:",
+        error
+      );
+
+      console.error(
+        "STATUS:",
+        error?.response?.status
+      );
+
+      console.error(
+        "RESPONSE:",
+        error?.response?.data
+      );
+
+      setLogoError(
+        error?.response?.data?.detail ||
+        error?.response?.data?.message ||
+        "Failed to upload company logo."
+      );
+
+      // Remove preview only when the actual upload failed
+      setLogoPreview(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLogoRemove = () => {
+    setLogoError("");
+    setLogoPreview(null);
+  };
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    if (!form.name?.trim()) {
+      setError("Company name is required.");
+      return;
+    }
+
+    setLoading(true);
+    setError("");
+    setSaved(false);
+
+    try {
+      const payload = {
+        name: form.name.trim(),
+        industry: form.industry,
+        company_size: form.company_size,
+      };
+
+      const updated =
+        await adminService.updateCompany(payload);
+
+      console.log("UPDATED COMPANY:", updated);
+
+      setForm((prev) => ({
+        ...prev,
+        name: updated?.name ?? prev.name,
+        logo_url:
+          updated?.logo_url ?? prev.logo_url,
+        industry:
+          updated?.industry ?? prev.industry,
+        plan:
+          updated?.plan ?? prev.plan,
+        company_size:
+          updated?.company_size ?? prev.company_size,
+      }));
+
+      setLogoPreview(null);
+      setSaved(true);
+    } catch (error) {
+      console.error(
+        "UPDATE COMPANY ERROR:",
+        error
+      );
+
+      setError(
+        error?.response?.data?.detail ||
+        error?.response?.data?.message ||
+        "Failed to update company details."
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCancel = () => {
+    setError("");
+    setSaved(false);
+    setLogoPreview(null);
+    setLogoError("");
+    setResetKey((prev) => prev + 1);
+  };
   return (
     <div className="w-full lg:w-[500px] xl:w-[700px] py-6 sm:py-10 pb-24">
       <h1 className="text-xl sm:text-[20px] font-semibold text-gray-900 mb-1">
@@ -41,63 +274,141 @@ export default function VendorCompany() {
       <p className="text-[13.5px] text-gray-500 mb-6">
         Your business details, shown on invoices and used for verification.
       </p>
+      {error && (
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded text-red-600 text-sm">
+          {error}
+        </div>
+      )}
 
-      <div className="bg-white border border-gray-200 rounded-xl p-5 sm:p-6 space-y-5">
-        <Input
-          label="Legal business name"
-          type="text"
-          value={form.legalBusinessName}
-          onChange={handleChange("legalBusinessName")}
-        />
+      {saved && (
+        <div className="mb-4 p-3 bg-emerald/10 border border-emerald/30 rounded text-emerald text-sm flex items-center gap-2">
+          <CheckCircle size={15} /> Profile updated successfully.
+        </div>
+      )}
+      <form
+        onSubmit={handleSubmit}
+        className="bg-white border border-gray-200 rounded-xl p-5 sm:p-6 space-y-5"
+      >
+        <div>
+          <label className="block text-[13px] font-medium text-gray-700 mb-1.5">
+            Company Logo
+          </label>
+
+          <div className="flex items-center gap-4">
+            {/* Logo preview */}
+            <div className="w-16 h-16 rounded-full border border-gray-200 bg-gray-50 flex items-center justify-center overflow-hidden shrink-0">
+              {logoPreview || form.logo_url ? (
+                <img
+                  src={
+                    logoPreview ||
+                    resolveMediaUrl(form.logo_url)
+                  }
+                  alt="Company logo preview"
+                  className="w-full h-full object-cover"
+                  onLoad={() => {
+                    console.log(
+                      "COMPANY LOGO LOADED:",
+                      logoPreview ||
+                      resolveMediaUrl(form.logo_url)
+                    );
+                  }}
+                  onError={(e) => {
+                    console.error(
+                      "COMPANY LOGO FAILED:",
+                      e.currentTarget.src
+                    );
+                  }}
+                />
+              ) : (
+                <ImagePlus className="w-5 h-5 text-gray-400" />
+              )}
+            </div>
+
+            {/* Upload controls */}
+            <div className="flex items-center gap-3">
+              <label className="cursor-pointer px-3.5 py-2 rounded-lg border border-gray-200 bg-white text-[13px] font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+                {logoPreview || form.logo_url
+                  ? "Change"
+                  : "Upload"}
+
+                <input
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp"
+                  onChange={handleLogoChange}
+                  className="hidden"
+                />
+              </label>
+
+              {logoPreview && (
+                <button
+                  type="button"
+                  onClick={handleLogoRemove}
+                  className="text-[13px] font-medium text-red-600 hover:underline"
+                >
+                  Remove
+                </button>
+              )}
+            </div>
+          </div>
+
+          <p className="text-[12px] text-gray-500 mt-1.5">
+            PNG, JPG, WEBP. Max 5MB.
+          </p>
+
+          {logoError && (
+            <p className="text-[12px] text-red-600 mt-1">
+              {logoError}
+            </p>
+          )}
+        </div>
 
         {/* <div className="grid grid-cols-1 sm:grid-cols-2 gap-5"> */}
+        <Input
+          label="company name"
+          type="text"
+          placeholder="Enter company name"
+          value={form.name}
+          onChange={handleChange("name")}
+        />
         <Select
-          label="Business type"
-          value={form.businessType}
-          onChange={handleChange("businessType")}
+          label="Industry Type"
+          value={form.industry}
+          onChange={handleChange("industry")}
         >
-          {BUSINESS_TYPES.map((t) => (
+          {industry_type.map((t) => (
             <option key={t.value} value={t.value}>
               {t.label}
             </option>
           ))}
         </Select>
 
-        {/* <Select
-            label="Country Of Registration"
-            value={form.country}
-            onChange={handleChange("country")}
-          >
-            {COUNTRIES.map((c) => (
-              <option key={c.value} value={c.value}>
-                {c.label}
-              </option>
-            ))}
-          </Select> */}
-        {/* </div> */}
-
-        <Input
-          label="Business address"
-          type="text"
-          placeholder="Street, city, state"
-          value={form.address}
-          onChange={handleChange("address")}
-        />
+        <Select
+          label="company size"
+          value={form.company_size}
+          onChange={handleChange("company_size")}
+        >
+          {COMPANY_SIZES.map((c, index) =>
+            <option key={index} value={c}>
+              {c}
+            </option>)}
+        </Select>
         <div className="flex flex-col md:flex-row md:justify-end gap-4">
           <button
             type="button"
+            onClick={handleCancel}
             className="w-full sm:w-auto px-4 py-2 rounded-xl border border-on-primary-fixed-variant text-sm font-semibold text-on-surface hover:bg-surface-low transition-colors"
           >
-            Discard
+            Cancel
           </button>
           <button
-            type="button"
+            type="submit"
+            disabled={loading}
             className="w-full sm:w-auto px-4 py-2 rounded-xl bg-on-primary-fixed-variant text-white text-sm font-semibold hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
           >
             {loading ? "Saving..." : "Save changes"}
           </button>
         </div>
-      </div>
+      </form>
 
       {/* <SaveBar /> */}
     </div>

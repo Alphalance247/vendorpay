@@ -22,6 +22,7 @@ import { useCurrentUser } from "../../hooks/useQueries/vendorAdmin/useCurrentUse
 import ConfirmModal from "../ui/ConfirmModal";
 import { MdClose } from "react-icons/md";
 import { RiSettingsLine } from "react-icons/ri";
+import { resolveMediaUrl } from "../../lib/apiClient";
 
 const STATUS_LABEL = {
   submitted: "Submitted",
@@ -99,12 +100,13 @@ export default function TopBar({
       vendorService
         .getProfile()
         .then(setProfile)
-        .catch(() => { });
+        .catch(() => {});
     }
   }, [role]);
 
   const { data: currentUser } = useCurrentUser(role === "admin");
-
+  // const adminAvatar = currentUser.avatar_url;
+  // console.log(adminAvatar);
   // Fetch recent invoices to drive notifications
   useEffect(() => {
     if (!role) return;
@@ -186,10 +188,10 @@ export default function TopBar({
 
   const displayName = profile
     ? [profile.contact_first_name, profile.contact_last_name]
-      .filter(Boolean)
-      .join(" ") ||
-    profile.company_name ||
-    "Vendor"
+        .filter(Boolean)
+        .join(" ") ||
+      profile.company_name ||
+      "Vendor"
     : role === "admin"
       ? currentUser?.full_name || "—"
       : "—";
@@ -335,9 +337,19 @@ export default function TopBar({
             <div className="absolute right-0 top-full mt-2 w-64 max-w-[90vw] bg-white rounded-xl shadow-dropdown border border-outline-variant overflow-hidden">
               {/* User info */}
               <div className="px-4 py-3 border-b border-outline-variant flex items-center gap-3">
-                <div className="w-9 h-9 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
-                  <User size={15} className="text-white" />
-                </div>
+                {currentUser ? (
+                  <div className="h-9 w-9 flex justify-center items-center ">
+                    <img
+                      src={resolveMediaUrl(currentUser.avatar_url)}
+                      alt="admin photo"
+                      className="w-9 h-9 rounded-full flex-shrink-0 object-cover"
+                    />
+                  </div>
+                ) : (
+                  <div className="w-9 h-9 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
+                    <User size={15} className="text-white" />
+                  </div>
+                )}
                 <div className="min-w-0">
                   <p className="text-sm font-semibold text-on-surface truncate">
                     {displayName}
@@ -350,6 +362,7 @@ export default function TopBar({
                   <p className="text-xs text-outline capitalize">{role}</p>
                 </div>
               </div>
+              {/* } */}
 
               <div className="py-1">
                 {role === "vendor" ? (
@@ -371,8 +384,7 @@ export default function TopBar({
                       navigate("/admin/general-settings/settings");
                     }}
                   >
-
-                    <RiSettingsLine className='text-on-surface' size={15} />
+                    <RiSettingsLine className="text-on-surface" size={15} />
                     General setting
                   </button>
                 )}

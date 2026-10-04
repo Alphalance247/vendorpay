@@ -1,18 +1,10 @@
 import { useNavigate } from "react-router-dom";
 import {
   User,
-  //   Building2,
-  //   CreditCard,
-  //   Bell,
   Shield,
   ChevronLeft,
   X,
-  Users,
-  Settings2,
   Building2,
-  // ChartNoAxesColumn,
-  LandmarkIcon,
-  Bell,
 } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { useEffect } from "react";
@@ -34,194 +26,64 @@ export default function SettingsSidebar({
     };
   }, [open]);
 
-  //   const basePath =
-  //     role === "admin"
-  //       ? "/admin/general-settings/settings"
-  //       : "/vendor/general-settings/settings";
-
   const navigate = useNavigate();
-  const dashboardPath =
-    role === "admin" ? "/admin/dashboard" : "/vendor/dashboard";
-
-  //   const items =
-  //     role === "admin"
-  //       ? [
-  //           {
-  //             heading: "Account",
-  //             items: [
-  //               {
-  //                 label: "Profile",
-  //                 path: `${basePath}/profile`,
-  //                 icon: User,
-  //               },
-  //               {
-  //                 label: "Security",
-  //                 path: `${basePath}/security`,
-  //                 icon: Shield,
-  //               },
-  //             ],
-  //           },
-  //           {
-  //             heading: "Workspace",
-  //             items: [
-  //               {
-  //                 label: "Company",
-  //                 path: `${basePath}/company`,
-  //                 icon: Users,
-  //               },
-  //               {
-  //                 label: "Notifications",
-  //                 path: `${basePath}/notifications`,
-  //                 icon: Bell,
-  //               },
-  //             ],
-  //           },
-  //         ]
-  //       : [
-  //           {
-  //             heading: "Account",
-  //             items: [
-  //               {
-  //                 label: "Profile",
-  //                 path: `${basePath}/profile`,
-  //                 icon: User,
-  //               },
-  //               {
-  //                 label: "Business Information",
-  //                 path: `${basePath}/business`,
-  //                 icon: Building2,
-  //               },
-  //             ],
-  //           },
-  //           {
-  //             heading: "Workspace",
-  //             items: [
-  //               {
-  //                 label: "Banking",
-  //                 path: `${basePath}/banking`,
-  //                 icon: CreditCard,
-  //               },
-  //               {
-  //                 label: "Notifications",
-  //                 path: `${basePath}/notifications`,
-  //                 icon: Bell,
-  //               },
-  //               {
-  //                 label: "Security",
-  //                 path: `${basePath}/security`,
-  //                 icon: Shield,
-  //               },
-  //             ],
-  //           },
-  //         ];
   const items =
-    role === "admin"
-      ? [
+    role === "admin" &&
+    [
+      {
+        heading: "Account",
+        items: [
           {
-            heading: "Account",
-            items: [
-              {
-                label: "Profile",
-                key: "profile",
-                icon: User,
-              },
-              {
-                label: "Security",
-                key: "security",
-                icon: Shield,
-              },
-            ],
+            label: "Profile",
+            key: "profile",
+            icon: User,
           },
           {
-            heading: "Workspace",
-            items: [
-              {
-                label: "Company",
-                key: "company",
-                icon: Building2,
-              },
-              {
-                label: "Teams & Permissions",
-                key: "teams-and-permissions",
-                icon: Users,
-              },
-            ],
+            label: "Security",
+            key: "security",
+            icon: Shield,
           },
+        ],
+      },
+      {
+        heading: "Workspace",
+        items: [
           {
-            heading: "Payments",
-            items: [
-              {
-                label: "Banking & payout rails",
-                key: "banking-and-payout-rails",
-                icon: LandmarkIcon,
-              },
-              // {
-              //   label: "Payout limit",
-              //   key: "payout-limit",
-              //   icon: ChartNoAxesColumn,
-              // },
-            ],
-          },
-        ]
-      : [
-          {
-            heading: "Account",
-            items: [
-              {
-                label: "Profile",
-                key: "profile",
-                icon: User,
-              },
-              {
-                label: "Security",
-                key: "security",
-                icon: Shield,
-              },
-            ],
+            label: "Company",
+            key: "company",
+            icon: Building2,
           },
           // {
-          //   heading: "Business",
-          //   items: [
-          //     {
-          //       label: "Company",
-          //       key: "company",
-          //       icon: LandmarkIcon,
-          //     },
-          //     {
-          //       label: "Verification",
-          //       key: "verification",
-          //       icon: Settings2,
-          //     },
-          //   ],
+          //   label: "Teams & Permissions",
+          //   key: "teams-and-permissions",
+          //   icon: Users,
           // },
-          {
-            heading: "Payments",
-            items: [
-              {
-                label: "Payout accounts",
-                key: "payout-accounts",
-                icon: Settings2,
-              },
-            ],
-          },
-          {
-            heading: "Preferences",
-            items: [
-              {
-                label: "Notifications",
-                key: "notification",
-                icon: Bell,
-              },
-            ],
-          },
-        ];
+        ],
+      },
+      // {
+      //   heading: "Payments",
+      //   items: [
+      //     {
+      //       label: "Banking & payout rails",
+      //       key: "banking-and-payout-rails",
+      //       icon: LandmarkIcon,
+      //     },
+      //     {
+      //       label: "Payout limit",
+      //       key: "payout-limit",
+      //       icon: ChartNoAxesColumn,
+      //     },
+      //   ],
+      // },
+    ]
+
   //   const handleNavigate = () => {
   //     onClose?.();
   //   };
 
   const handleBackToDashboard = () => {
     onClose?.();
-    navigate(dashboardPath);
+    navigate(-1);
   };
 
   return (
@@ -294,7 +156,7 @@ export default function SettingsSidebar({
             className="inline-flex items-center gap-2 text-sm text-inverse-on-surface/70 hover:text-inverse-on-surface transition-colors"
           >
             <ChevronLeft size={16} />
-            Back to dashboard
+            Back
           </button>
         </div>
 

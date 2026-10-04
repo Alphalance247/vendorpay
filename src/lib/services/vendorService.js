@@ -84,4 +84,5 @@ export const vendorService = {
     const res = await apiClient.delete(`/vendors/${id}`);
     return res.data;
   },
+
 };

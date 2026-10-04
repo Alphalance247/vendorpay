@@ -150,7 +150,7 @@ export default function VendorProfile() {
             <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant mb-4 flex items-center gap-1.5">
               <User size={12} /> Contact Information
             </p>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Input label="First Name" name="contact_first_name" value={form.contact_first_name} onChange={handleChange} placeholder="Jane" />
               <Input label="Last Name" name="contact_last_name" value={form.contact_last_name} onChange={handleChange} placeholder="Doe" />
 
@@ -186,7 +186,7 @@ export default function VendorProfile() {
           {/* Company */}
           <Card>
             <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant mb-4">Company Details</p>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Input label="Legal Company Name" name="company_name" value={form.company_name} onChange={handleChange} placeholder="Acme Corp Ltd" className="col-span-2" />
               <div className="flex flex-col gap-1">
                 <label className="text-xs font-semibold tracking-wide text-on-surface-variant uppercase">Business Type</label>

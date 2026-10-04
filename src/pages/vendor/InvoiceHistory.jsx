@@ -33,6 +33,7 @@ import { vendorService } from "../../lib/services/vendorService";
 import { BsThreeDotsVertical } from "react-icons/bs";
 import { BiBarChartAlt2 } from "react-icons/bi";
 import { IoEyeOutline, IoTrash } from "react-icons/io5";
+import ConfirmModal from "../../components/ui/ConfirmModal";
 
 const PAGE_SIZE = 20;
 const STATUS_OPTIONS = [
@@ -69,6 +70,9 @@ export default function InvoiceHistory() {
   const [statusFilter, setStatusFilter] = useState("All");
   const [downloadingId, setDownloadingId] = useState(null);
   const [openAction, setOpenAction] = useState(false);
+  const [selectedInvoice, setSelectedInvoice] = useState(null);
+  const [openDeleteModal, setOpenDeleteModal] = useState(false);
+  const [invoiceToDelete, setInvoiceToDelete] = useState(null);
   useEffect(() => {
     let cancelled = false;
     const fetchAll = async () => {
@@ -135,7 +139,25 @@ export default function InvoiceHistory() {
       label: formatCurrency(amount, currency),
     }));
   }
-
+  const handleDelete = async (invoice) => {
+    if (!invoice || selectedInvoice) return;
+    if (invoice.status !== "submitted") {
+      setError("Only invoices that haven't been reviewed yet can be deleted.");
+      return;
+    }
+    setSelectedInvoice(invoice.id);
+    setError("");
+    try {
+      await invoiceService.deleteInvoice(invoice.id);
+      setInvoices((prev) => prev.filter((inv) => inv.id !== invoice.id));
+      setOpenDeleteModal(false);
+      setInvoiceToDelete(null);
+    } catch (error) {
+      setError(extractErrorMessage(error));
+    } finally {
+      setSelectedInvoice(null);
+    }
+  };
   const trendRaw = dash?.payment_trends ?? [];
   const histPrimaryCurrency =
     trendRaw.flatMap((pt) => Object.keys(pt.submitted_by_currency ?? {}))[0] ??
@@ -639,23 +661,27 @@ export default function InvoiceHistory() {
                                         View
                                       </span>
                                     </div>
-                                    <div
-                                      // type="button"
-                                      onClick={() =>
-                                        navigate(`/vendor/invoices/${inv.id}`)
-                                      }
-                                      className="w-full flex items-center gap-2 px-2 py-2 rounded-md hover:bg-surface-low text-left"
-                                    >
-                                      <IoTrash
-                                        size={15}
-                                        className="shrink-0"
-                                        color="red"
-                                      />
+                                    {/* Only invoices still awaiting review can be deleted. */}
+                                    {inv.status === "submitted" && (
+                                      <div
+                                        onClick={() => {
+                                          setInvoiceToDelete(inv);
+                                          setOpenAction(null);
+                                          setOpenDeleteModal(true);
+                                        }}
+                                        className="w-full flex items-center gap-2 px-2 py-2 rounded-md hover:bg-red-50  text-left"
+                                      >
+                                        <IoTrash
+                                          size={15}
+                                          className="shrink-0"
+                                          color="red"
+                                        />
 
-                                      <span className="text-sm text-error font-medium">
-                                        Delete
-                                      </span>
-                                    </div>
+                                        <span className="text-sm text-error font-medium">
+                                          Delete
+                                        </span>
+                                      </div>
+                                    )}
                                   </div>
                                 </div>
                               )}
@@ -668,6 +694,19 @@ export default function InvoiceHistory() {
                 </table>
               </div>
             )}
+
+            <ConfirmModal
+              open={openDeleteModal}
+              title="Delete invoice?"
+              message={`Are you sure you want to delete invoice ${invoiceToDelete?.invoice_number ?? ""}? This action cannot be undone.`}
+              confirmLabel={selectedInvoice ? "Deleting..." : "Delete"}
+              variant="danger"
+              onConfirm={() => handleDelete(invoiceToDelete)}
+              onCancel={() => {
+                setOpenDeleteModal(false);
+                setInvoiceToDelete(null);
+              }}
+            />
 
             <div className="w-full px-6 py-3 border-t border-outline-variant flex items-center justify-between">
               <p className="text-xs text-on-surface-variant">

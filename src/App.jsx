@@ -21,6 +21,7 @@ import AdminVendors from "./pages/admin/AdminVendors";
 import AdminPayments from "./pages/admin/AdminPayments";
 import TeamRoles from "./pages/admin/TeamRoles";
 import Billing from "./pages/admin/Billing";
+import BillingSuccess from "./pages/admin/BillingSuccess";
 import { InvoiceProvider } from "./lib/invoiceStore";
 import { ToastProvider } from "./components/ui/Toast";
 import VendorPayments from "./pages/vendor/VendorPayments";
@@ -207,6 +208,14 @@ export default function App() {
               element={
                 <ProtectedRoute role="admin">
                   <Billing />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/billing/success"
+              element={
+                <ProtectedRoute role="admin">
+                  <BillingSuccess />
                 </ProtectedRoute>
               }
             />

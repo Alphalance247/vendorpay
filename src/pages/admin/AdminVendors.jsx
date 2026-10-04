@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+// import { useNavigate } from "react-router-dom";
 import {
   Users,
   Search,
@@ -23,6 +23,7 @@ import { useToast } from "../../components/ui/Toast";
 import { useCreateInvite } from "../../hooks/useQueries/vendorAdmin/useCreateInvite";
 import { useResendInvite } from "../../hooks/useQueries/vendorAdmin/useResendInvite";
 import { useDeleteTeamMember } from "../../hooks/useQueries/vendorAdmin/useDeleteTeamMember";
+import { BsThreeDotsVertical } from "react-icons/bs";
 
 function InviteVendorModal({ open, onClose, onInvite, submitting }) {
   const [email, setEmail] = useState("");
@@ -78,14 +79,14 @@ function InviteVendorModal({ open, onClose, onInvite, submitting }) {
 }
 
 export default function AdminVendors() {
-  const navigate = useNavigate();
+  // const navigate = useNavigate();
   const [vendors, setVendors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
   const [actionLoading, setActionLoading] = useState(null);
   const [inviteOpen, setInviteOpen] = useState(false);
-
+  const [openAction, setOpenAction] = useState(false);
   const { confirm, confirmEl } = useConfirm();
   const { toast } = useToast();
 
@@ -183,8 +184,7 @@ export default function AdminVendors() {
       setActionLoading(null);
     }
   }
-
-  const filtered = registeredVendors.filter((v) => {
+  const matchesSearch = (v) => {
     if (!search) return true;
     const q = search.toLowerCase();
     return (
@@ -193,8 +193,9 @@ export default function AdminVendors() {
       v.user_email?.toLowerCase().includes(q) ||
       v.industry?.toLowerCase().includes(q)
     );
-  });
-
+  };
+  const filtered = registeredVendors.filter(matchesSearch);
+  const filteredPendingInvites = pendingVendorInvites.filter(matchesSearch);
   return (
     <AppLayout role="admin" searchPlaceholder="Search vendors...">
       {confirmEl}
@@ -217,8 +218,14 @@ export default function AdminVendors() {
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2 text-on-surface-variant">
               <Users size={16} />
-              <span className="text-sm font-medium">
-                {registeredVendors.length} total
+              <span className="text-sm font-medium capitalize">
+                {registeredVendors.length} active
+              </span>
+            </div>
+            <div className="flex items-center gap-2 text-on-surface">
+              <Users size={16} />
+              <span className="text-sm font-medium capitalize">
+                {pendingVendorInvites.length} pending
               </span>
             </div>
             <Button
@@ -231,7 +238,7 @@ export default function AdminVendors() {
           </div>
         </div>
 
-        {pendingVendorInvites.length > 0 && (
+        {/* {pendingVendorInvites.length > 0 && (
           <Card className="p-0 overflow-hidden">
             <div className="px-4 py-3 border-b border-outline-variant">
               <h2 className="text-sm font-semibold text-on-surface">
@@ -299,7 +306,7 @@ export default function AdminVendors() {
               })}
             </div>
           </Card>
-        )}
+        )} */}
 
         <TutorialCard
           id="admin-vendors"
@@ -348,7 +355,7 @@ export default function AdminVendors() {
                 Loading vendors...
               </span>
             </div>
-          ) : filtered.length === 0 ? (
+          ) : filtered.length === 0 && filteredPendingInvites.length === 0 ? (
             <p className="px-6 py-12 text-center text-sm text-on-surface-variant">
               No vendors found.
             </p>
@@ -359,16 +366,20 @@ export default function AdminVendors() {
                 <table className="w-full">
                   <thead>
                     <tr className="bg-surface-low border-b border-outline-variant">
-                      {["Company", "Contact", "Industry", "Status", ""].map(
-                        (h) => (
-                          <th
-                            key={h}
-                            className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-on-surface-variant"
-                          >
-                            {h}
-                          </th>
-                        ),
-                      )}
+                      {[
+                        "Company",
+                        "Contact",
+                        "Industry",
+                        "Status",
+                        "Action",
+                      ].map((h) => (
+                        <th
+                          key={h}
+                          className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-on-surface-variant"
+                        >
+                          {h}
+                        </th>
+                      ))}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-outline-variant">
@@ -376,7 +387,7 @@ export default function AdminVendors() {
                       <tr
                         key={vendor.id}
                         className="hover:bg-surface-low/50 transition-colors cursor-pointer"
-                        onClick={() => navigate(`/admin/vendors/${vendor.id}`)}
+                        // onClick={() => navigate(`/admin/vendors/${vendor.id}`)}
                       >
                         <td className="px-6 py-4">
                           <p className="text-sm font-semibold text-on-surface">
@@ -402,63 +413,204 @@ export default function AdminVendors() {
                         </td>
                         <td className="px-6 py-4">
                           <StatusChip
-                            status={vendor.is_active ? "Active" : "Inactive"}
+                            status={vendor.status}
+                            // status={vendor.is_active ? "Active" : "Inactive"}
                           />
                         </td>
-                        <td
-                          className="px-6 py-4"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <div className="flex items-center gap-2">
+                        <td className="px-6 py-4">
+                          <div className="relative ">
                             <button
-                              onClick={() => handleToggleStatus(vendor)}
-                              disabled={actionLoading === `status-${vendor.id}`}
-                              title={
-                                vendor.is_active
-                                  ? "Deactivate vendor"
-                                  : "Activate vendor"
+                              type="button"
+                              onClick={() =>
+                                setOpenAction(
+                                  openAction === vendor.id ? null : vendor.id,
+                                )
                               }
-                              className="p-1.5 rounded hover:bg-surface-container transition-colors disabled:opacity-50"
+                              className="p-1.5 rounded-md hover:bg-surface-low transition-colors"
                             >
-                              {actionLoading === `status-${vendor.id}` ? (
-                                <Loader2
-                                  size={14}
-                                  className="animate-spin text-on-surface-variant"
-                                />
-                              ) : vendor.is_active ? (
-                                <PowerOff
-                                  size={14}
-                                  className="text-amber-600"
-                                />
-                              ) : (
-                                <Power size={14} className="text-emerald" />
-                              )}
+                              <BsThreeDotsVertical size={20} />
                             </button>
-                            <button
-                              onClick={() => handleDelete(vendor)}
-                              disabled={actionLoading === `delete-${vendor.id}`}
-                              title="Delete vendor"
-                              className="p-1.5 rounded hover:bg-red-50 transition-colors disabled:opacity-50"
-                            >
-                              {actionLoading === `delete-${vendor.id}` ? (
-                                <Loader2
-                                  size={14}
-                                  className="animate-spin text-error"
-                                />
-                              ) : (
-                                <Trash2 size={14} className="text-error" />
-                              )}
-                            </button>
+
+                            {openAction === vendor.id && (
+                              <div className="absolute right-10 top-9 w-40 bg-white rounded-md p-2 shadow-lg border border-outline-variant z-20">
+                                <div className="flex flex-col gap-1">
+                                  <button
+                                    onClick={() => handleToggleStatus(vendor)}
+                                    disabled={
+                                      actionLoading === `status-${vendor.id}`
+                                    }
+                                    className="w-full flex items-center gap-2 px-2 py-1.5 rounded hover:bg-surface-low transition-colors disabled:opacity-50 text-left"
+                                  >
+                                    {actionLoading === `status-${vendor.id}` ? (
+                                      <Loader2
+                                        size={13}
+                                        className="animate-spin"
+                                      />
+                                    ) : vendor.is_active ? (
+                                      <PowerOff
+                                        size={13}
+                                        className="text-amber-600"
+                                      />
+                                    ) : (
+                                      <Power
+                                        size={13}
+                                        className="text-emerald"
+                                      />
+                                    )}
+                                    <span className="text-xs font-medium text-on-surface-variant">
+                                      {vendor.is_active
+                                        ? "Deactivate"
+                                        : "Activate"}
+                                    </span>
+                                  </button>
+                                  <button
+                                    onClick={() => handleDelete(vendor)}
+                                    disabled={
+                                      actionLoading === `delete-${vendor.id}`
+                                    }
+                                    className="w-full flex items-center gap-2 px-2 py-1.5 rounded hover:bg-red-50 transition-colors disabled:opacity-50 text-left"
+                                  >
+                                    {actionLoading === `delete-${vendor.id}` ? (
+                                      <Loader2
+                                        size={13}
+                                        className="animate-spin"
+                                      />
+                                    ) : (
+                                      <Trash2
+                                        size={13}
+                                        className="text-error"
+                                      />
+                                    )}
+                                    <span className="text-xs font-medium text-error">
+                                      Delete
+                                    </span>
+                                  </button>
+                                </div>
+                              </div>
+                            )}
                           </div>
                         </td>
                       </tr>
                     ))}
+
+                    {filteredPendingInvites.map((invite) => {
+                      const resending =
+                        resendInvite.isPending &&
+                        resendInvite.variables === invite.id;
+                      const cancelling =
+                        deleteInvite.isPending &&
+                        deleteInvite.variables === invite.id;
+                      return (
+                        <tr
+                          key={invite.id}
+                          className="hover:bg-surface-low/50 transition-colors cursor-pointer"
+                        >
+                          <td className="px-6 py-4">
+                            <p className="text-sm font-semibold text-on-surface">
+                              {invite.company_name ?? "—"}
+                            </p>
+                            <p className="text-xs text-on-surface-variant mt-0.5">
+                              {invite.business_type ?? ""}
+                            </p>
+                          </td>
+                          <td className="px-6 py-4">
+                            <p className="text-sm text-on-surface">
+                              {invite.contact_first_name ||
+                              invite.contact_last_name
+                                ? `${invite.contact_first_name ?? ""} ${invite.contact_last_name ?? ""}`.trim()
+                                : "—"}
+                            </p>
+                            <p className="text-xs text-on-surface-variant">
+                              {invite.contact_email ?? invite.user_email ?? "—"}
+                            </p>
+                          </td>
+                          <td className="px-6 py-4 text-sm text-on-surface-variant">
+                            {invite.industry ?? "—"}
+                          </td>
+                          <td className="px-6 py-4 ">
+                            <StatusChip status={invite.status} />
+                          </td>
+                          <td
+                            className="px-6 py-4"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <div className="relative ">
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setOpenAction(
+                                    openAction === invite.id ? null : invite.id,
+                                  )
+                                }
+                                className="p-1.5 rounded-md hover:bg-surface-low transition-colors"
+                              >
+                                <BsThreeDotsVertical size={20} />
+                              </button>
+
+                              {openAction === invite.id && (
+                                <div className="absolute right-10 top-9 w-40 bg-white rounded-md p-2 shadow-lg border border-outline-variant z-20">
+                                  <div className="flex flex-col gap-1">
+                                    <button
+                                      onClick={() => handleResendInvite(invite)}
+                                      disabled={resending}
+                                      title="Resend invite"
+                                      className="p-1.5 rounded hover:bg-surface-container transition-colors disabled:opacity-50 "
+                                    >
+                                      {resending ? (
+                                        <Loader2
+                                          size={14}
+                                          className="animate-spin text-on-surface-variant"
+                                        />
+                                      ) : (
+                                        <div className="flex items-center gap-2 ">
+                                          <Mail
+                                            size={14}
+                                            className="text-on-surface-variant"
+                                          />
+                                          <div className="text-xs text-on-surface-variant">
+                                            Resend Invite
+                                          </div>
+                                        </div>
+                                      )}
+                                    </button>
+
+                                    <button
+                                      onClick={() => handleCancelInvite(invite)}
+                                      disabled={cancelling}
+                                      title="Cancel invite"
+                                      className="p-1.5 rounded hover:bg-red-50 transition-colors disabled:opacity-50"
+                                    >
+                                      {cancelling ? (
+                                        <Loader2
+                                          size={14}
+                                          className="animate-spin text-error"
+                                        />
+                                      ) : (
+                                        <div className="flex items-center gap-2 ">
+                                          <Trash2
+                                            size={14}
+                                            className="text-error"
+                                          />
+                                          <div className="text-xs text-error">
+                                            Cancel Invite
+                                          </div>
+                                        </div>
+                                      )}
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
 
               {/* Phone: stacked cards */}
-              <div className="md:hidden divide-y divide-outline-variant">
+              {/* <div className="md:hidden divide-y divide-outline-variant">
                 {filtered.map((vendor) => (
                   <div
                     key={vendor.id}
@@ -495,39 +647,70 @@ export default function AdminVendors() {
                     )}
 
                     <div
-                      className="flex items-center gap-2 mt-3"
+                      className="flex items-center justify-end mt-3"
                       onClick={(e) => e.stopPropagation()}
                     >
-                      <button
-                        onClick={() => handleToggleStatus(vendor)}
-                        disabled={actionLoading === `status-${vendor.id}`}
-                        className="flex-1 inline-flex items-center justify-center gap-1.5 py-2 rounded border border-outline-variant text-xs font-medium text-on-surface-variant hover:bg-surface-low transition-colors disabled:opacity-50"
-                      >
-                        {actionLoading === `status-${vendor.id}` ? (
-                          <Loader2 size={13} className="animate-spin" />
-                        ) : vendor.is_active ? (
-                          <PowerOff size={13} className="text-amber-600" />
-                        ) : (
-                          <Power size={13} className="text-emerald" />
+                      <div className="relative">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setOpenAction(
+                              openAction === vendor.id ? null : vendor.id,
+                            )
+                          }
+                          className="p-1.5 rounded-md hover:bg-surface-low transition-colors"
+                        >
+                          <BsThreeDotsVertical size={20} />
+                        </button>
+
+                        {openAction === vendor.id && (
+                          <div className="absolute right-0 top-9 w-40 bg-white rounded-md p-2 shadow-lg border border-outline-variant z-20">
+                            <div className="flex flex-col gap-1">
+                              <button
+                                onClick={() => handleToggleStatus(vendor)}
+                                disabled={
+                                  actionLoading === `status-${vendor.id}`
+                                }
+                                className="w-full flex items-center gap-2 px-2 py-1.5 rounded hover:bg-surface-low transition-colors disabled:opacity-50 text-left"
+                              >
+                                {actionLoading === `status-${vendor.id}` ? (
+                                  <Loader2 size={13} className="animate-spin" />
+                                ) : vendor.is_active ? (
+                                  <PowerOff
+                                    size={13}
+                                    className="text-amber-600"
+                                  />
+                                ) : (
+                                  <Power size={13} className="text-emerald" />
+                                )}
+                                <span className="text-xs font-medium text-on-surface-variant">
+                                  {vendor.is_active ? "Deactivate" : "Activate"}
+                                </span>
+                              </button>
+                              <button
+                                onClick={() => handleDelete(vendor)}
+                                disabled={
+                                  actionLoading === `delete-${vendor.id}`
+                                }
+                                className="w-full flex items-center gap-2 px-2 py-1.5 rounded hover:bg-red-50 transition-colors disabled:opacity-50 text-left"
+                              >
+                                {actionLoading === `delete-${vendor.id}` ? (
+                                  <Loader2 size={13} className="animate-spin" />
+                                ) : (
+                                  <Trash2 size={13} className="text-error" />
+                                )}
+                                <span className="text-xs font-medium text-error">
+                                  Delete
+                                </span>
+                              </button>
+                            </div>
+                          </div>
                         )}
-                        {vendor.is_active ? "Deactivate" : "Activate"}
-                      </button>
-                      <button
-                        onClick={() => handleDelete(vendor)}
-                        disabled={actionLoading === `delete-${vendor.id}`}
-                        className="flex-1 inline-flex items-center justify-center gap-1.5 py-2 rounded border border-outline-variant text-xs font-medium text-error hover:bg-red-50 transition-colors disabled:opacity-50"
-                      >
-                        {actionLoading === `delete-${vendor.id}` ? (
-                          <Loader2 size={13} className="animate-spin" />
-                        ) : (
-                          <Trash2 size={13} />
-                        )}
-                        Delete
-                      </button>
+                      </div>
                     </div>
                   </div>
                 ))}
-              </div>
+              </div> */}
             </>
           )}
         </Card>

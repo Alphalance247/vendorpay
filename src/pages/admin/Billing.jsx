@@ -1,17 +1,17 @@
 import { useEffect, useState } from 'react';
-import { Check, CreditCard, Receipt, AlertTriangle } from 'lucide-react';
+import { Check, Receipt, AlertTriangle, Loader2 } from 'lucide-react';
 import TutorialCard from '../../components/ui/TutorialCard';
 import AppLayout from '../../components/layout/AppLayout';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
-import Input from '../../components/ui/Input';
+// import Input from '../../components/ui/Input';
 import Modal from '../../components/ui/Modal';
 import StatusChip from '../../components/ui/StatusChip';
 import { useConfirm } from '../../hooks/useConfirm';
 import { useToast } from '../../components/ui/Toast';
 import { formatCurrency, formatDate, cn } from '../../lib/utils';
-import { PLANS } from '../../lib/plans';
 import { vendorService } from '../../lib/services/vendorService';
+import { useBillingStatus, useBillingPlanList, useChangeBilling, useBillingPortal } from '../../hooks/useQueries/billingPlan/useBillingPlanList';
 
 const SEED_HISTORY = [
   { id: 1, date: '2026-08-03', description: 'Growth Plan — Monthly', amount: 149, status: 'Paid' },
@@ -25,122 +25,176 @@ function renewalDate() {
   return d.toISOString().slice(0, 10);
 }
 
-function ChangePlanModal({ open, onClose, currentPlanId, onConfirm }) {
-  const [selected, setSelected] = useState(currentPlanId);
+function ChangePlanModal({ open, onClose, currentPlanSlug, plans, plansLoading }) {
+  const [selected, setSelected] = useState(currentPlanSlug);
+  const changePlan = useChangeBilling();
+  const billingPortal = useBillingPortal();
+
+  // /billing/checkout-session only works for a brand-new subscription
+  // (Free -> paid) — it 400s with "Already on a paid plan — use the
+  // billing portal to change plans" once a paid subscription already
+  // exists, so switching between paid plans has to go through the portal
+  // instead of starting a new checkout session.
+  const currentPlan = plans.find((p) => p.slug === currentPlanSlug);
+  const isCurrentPlanPaid = (currentPlan?.price?.amount ?? 0) > 0;
+  const confirming = changePlan.isPending || billingPortal.isPending;
+
+  const handleConfirm = () => {
+    if (isCurrentPlanPaid) {
+      billingPortal.mutate();
+    } else {
+      changePlan.mutate({ plan: selected });
+    }
+  };
 
   return (
     <Modal
       open={open}
       onClose={onClose}
       title="Change Plan"
-      subtitle="Changes apply immediately in this preview — no payment is processed."
+      subtitle="You'll be redirected to Stripe to complete this securely — no card details are handled by VendorPay."
       size="xl"
       footer={
         <>
-          <Button variant="ghost" onClick={onClose}>Cancel</Button>
-          <Button onClick={() => onConfirm(selected)} disabled={selected === currentPlanId}>
-            Confirm Change
+          <Button variant="ghost" onClick={onClose} disabled={confirming}>Cancel</Button>
+          <Button
+            onClick={handleConfirm}
+            disabled={selected === currentPlanSlug || confirming}
+          >
+            {confirming ? 'Redirecting...' : 'Confirm Change'}
           </Button>
         </>
       }
     >
+      {(changePlan.isError || billingPortal.isError) && (
+        <p className="mb-3 text-xs text-error">
+          {isCurrentPlanPaid
+            ? "Couldn't open the billing portal. Please try again."
+            : "Couldn't start checkout. Please try again."}
+        </p>
+      )}
+      {isCurrentPlanPaid && (
+        <p className="mb-3 text-xs text-on-surface-variant">
+          You're already on a paid plan — confirming here opens Stripe's billing portal, where you can switch plans directly.
+        </p>
+      )}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {PLANS.map((plan) => {
-          const isSelected = selected === plan.id;
-          const isCurrent = plan.id === currentPlanId;
-          return (
-            <button
-              type="button"
-              key={plan.id}
-              onClick={() => setSelected(plan.id)}
-              className={cn(
-                'relative text-left rounded-xl border-2 p-4 transition-all flex flex-col',
-                isSelected ? 'border-secondary bg-secondary/5' : 'border-outline-variant bg-white hover:border-outline'
-              )}
-            >
-              {isCurrent && (
-                <span className="absolute -top-2.5 left-4 bg-inverse-surface text-inverse-on-surface text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full">
-                  Current Plan
-                </span>
-              )}
-              <p className="font-semibold text-on-surface text-sm">{plan.name}</p>
-              <p className="text-xs text-on-surface-variant mt-0.5">{plan.blurb}</p>
-              <p className="mt-3">
-                <span className="text-xl font-bold text-on-surface">{plan.price}</span>
-                <span className="text-xs text-on-surface-variant">{plan.period}</span>
-              </p>
-              <ul className="mt-3 space-y-1.5 flex-1">
-                {plan.features.map((f) => (
-                  <li key={f} className="flex items-start gap-1.5 text-xs text-on-surface-variant">
-                    <Check size={13} className="text-emerald mt-0.5 flex-shrink-0" />
-                    {f}
-                  </li>
-                ))}
-              </ul>
-              <div className={cn(
-                'mt-3 w-5 h-5 rounded-full border-2 flex items-center justify-center self-end',
-                isSelected ? 'bg-secondary border-secondary' : 'border-outline-variant'
-              )}>
-                {isSelected && <Check size={12} className="text-white" />}
-              </div>
-            </button>
-          );
-        })}
+        {plansLoading ? (
+          <Loader2 size={14} className="animate-spin text-on-surface-variant" />
+
+        ) : (
+          plans.map((plan) => {
+            const isSelected = selected === plan.slug;
+            const isCurrent = plan.slug === currentPlanSlug;
+            return (
+              <button
+                type="button"
+                key={plan.slug}
+                onClick={() => setSelected(plan.slug)}
+                className={cn(
+                  'relative text-left rounded-xl border-2 p-4 transition-all flex flex-col',
+                  isSelected
+                    ? 'border-secondary bg-secondary/5'
+                    : plan.most_popular
+                      ? 'border-secondary/40 bg-white hover:border-secondary'
+                      : 'border-outline-variant bg-white hover:border-outline'
+                )}
+              >
+                {isCurrent && (
+                  <span className="absolute -top-2.5 left-4 bg-inverse-surface text-inverse-on-surface text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full">
+                    Current Plan
+                  </span>
+                )}
+                {plan.most_popular && (
+                  <span className="absolute -top-2.5 right-4 bg-secondary text-white text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full">
+                    Most Popular
+                  </span>
+                )}
+                <p className="font-semibold text-on-surface text-sm">{plan.name}</p>
+                <p className="mt-3">
+                  <span className="text-xl font-bold text-on-surface">
+                    {`$${plan.price.amount}`}
+                  </span>
+                  <span className="text-xs text-on-surface-variant">/{plan.price.interval}</span>
+                </p>
+                <ul className="mt-3 space-y-1.5 flex-1">
+                  {(plan.plan_detail ?? []).map((f) => (
+                    <li key={f} className="flex items-start gap-1.5 text-xs text-on-surface-variant">
+                      <Check size={13} className="text-emerald mt-0.5 flex-shrink-0" />
+                      {f}
+                    </li>
+                  ))}
+                </ul>
+                <div className={cn(
+                  'mt-3 w-5 h-5 rounded-full border-2 flex items-center justify-center self-end',
+                  isSelected ? 'bg-secondary border-secondary' : 'border-outline-variant'
+                )}>
+                  {isSelected && <Check size={12} className="text-white" />}
+                </div>
+              </button>
+            );
+          })
+        )}
       </div>
     </Modal>
   );
 }
 
-function UpdateCardModal({ open, onClose, onSave }) {
-  const [form, setForm] = useState({ number: '', expiry: '', cvc: '' });
+// function UpdateCardModal({ open, onClose, onSave }) {
+//   const [form, setForm] = useState({ number: '', expiry: '', cvc: '' });
 
-  function handleChange(e) {
-    const { name, value } = e.target;
-    setForm((f) => ({ ...f, [name]: value }));
-  }
+//   function handleChange(e) {
+//     const { name, value } = e.target;
+//     setForm((f) => ({ ...f, [name]: value }));
+//   }
 
-  const digits = form.number.replace(/\D/g, '');
-  const valid = digits.length >= 12 && /^\d{2}\/\d{2}$/.test(form.expiry) && form.cvc.length >= 3;
+//   const digits = form.number.replace(/\D/g, '');
+//   const valid = digits.length >= 12 && /^\d{2}\/\d{2}$/.test(form.expiry) && form.cvc.length >= 3;
 
-  function handleSubmit(e) {
-    e.preventDefault();
-    if (!valid) return;
-    onSave({ brand: 'Visa', last4: digits.slice(-4), expiry: form.expiry });
-    setForm({ number: '', expiry: '', cvc: '' });
-  }
+//   function handleSubmit(e) {
+//     e.preventDefault();
+//     if (!valid) return;
+//     onSave({ brand: 'Visa', last4: digits.slice(-4), expiry: form.expiry });
+//     setForm({ number: '', expiry: '', cvc: '' });
+//   }
 
-  return (
-    <Modal
-      open={open}
-      onClose={onClose}
-      title="Update Payment Method"
-      subtitle="This is a preview — no card is actually charged or stored."
-      footer={
-        <>
-          <Button variant="ghost" onClick={onClose}>Cancel</Button>
-          <Button onClick={handleSubmit} disabled={!valid}>Save Card</Button>
-        </>
-      }
-    >
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <Input label="Card Number" name="number" value={form.number} onChange={handleChange} placeholder="4242 4242 4242 4242" autoFocus />
-        <div className="grid grid-cols-2 gap-4">
-          <Input label="Expiry (MM/YY)" name="expiry" value={form.expiry} onChange={handleChange} placeholder="12/27" />
-          <Input label="CVC" name="cvc" value={form.cvc} onChange={handleChange} placeholder="123" />
-        </div>
-      </form>
-    </Modal>
-  );
-}
+//   return (
+//     <Modal
+//       open={open}
+//       onClose={onClose}
+//       title="Update Payment Method"
+//       subtitle="This is a preview — no card is actually charged or stored."
+//       footer={
+//         <>
+//           <Button variant="ghost" onClick={onClose}>Cancel</Button>
+//           <Button onClick={handleSubmit} disabled={!valid}>Save Card</Button>
+//         </>
+//       }
+//     >
+//       <form onSubmit={handleSubmit} className="space-y-4">
+//         <Input label="Card Number" name="number" value={form.number} onChange={handleChange} placeholder="4242 4242 4242 4242" autoFocus />
+//         <div className="grid grid-cols-2 gap-4">
+//           <Input label="Expiry (MM/YY)" name="expiry" value={form.expiry} onChange={handleChange} placeholder="12/27" />
+//           <Input label="CVC" name="cvc" value={form.cvc} onChange={handleChange} placeholder="123" />
+//         </div>
+//       </form>
+//     </Modal>
+//   );
+// }
 
 export default function Billing() {
-  const [planId, setPlanId] = useState('growth');
+  // `data` is undefined until the query resolves (react-query's initial
+  // state, not an empty array) — calling .find() on it directly before
+  // then throws, so every usage below goes through `plans` instead.
+  const { data: billingPlanList, isLoading: plansLoading } = useBillingPlanList();
+  const plans = billingPlanList ?? [];
+  const [planSlug, setPlanSlug] = useState('');
   const [status, setStatus] = useState('active'); // active | canceled
-  const [card, setCard] = useState({ brand: 'Visa', last4: '4242', expiry: '12/27' });
+  // const [card, setCard] = useState({ brand: 'Visa', last4: '4242', expiry: '12/27' });
   const [history] = useState(SEED_HISTORY);
   const [vendorCount, setVendorCount] = useState(null);
   const [planModalOpen, setPlanModalOpen] = useState(false);
-  const [cardModalOpen, setCardModalOpen] = useState(false);
+  // const [cardModalOpen, setCardModalOpen] = useState(false);
 
   const { confirm, confirmEl } = useConfirm();
   const { toast } = useToast();
@@ -151,23 +205,38 @@ export default function Billing() {
       .catch(() => setVendorCount(null));
   }, []);
 
-  const plan = PLANS.find((p) => p.id === planId) ?? PLANS[0];
-  const usagePct = vendorCount == null || !Number.isFinite(plan.vendorLimit)
+  // Seeds planId/status from the real subscription once it loads — kept as
+  // local state (rather than reading billingStatus directly) so Change
+  // Plan/Cancel/Reactivate below can keep optimistically updating them the
+  // way they already do in this preview. Done during render (React's
+  // sanctioned way to adjust state when an input changes) rather than in a
+  // useEffect, which would fire the setState a frame too late and trigger
+  // the "cascading renders" lint rule.
+  const { data: billingStatus, isLoading: statusLoading } = useBillingStatus();
+
+  const [prevBillingStatus, setPrevBillingStatus] = useState(billingStatus);
+  if (billingStatus !== prevBillingStatus) {
+    setPrevBillingStatus(billingStatus);
+    if (billingStatus) {
+      const resolvedPlanId = billingStatus.plan_id ?? billingStatus.plan?.id;
+      if (resolvedPlanId) setPlanSlug(resolvedPlanId);
+      if (billingStatus.status) setStatus(billingStatus.status);
+    }
+  }
+
+  const plan = plans.find((p) => p.slug === planSlug) ?? plans[0] ?? {};
+  const effectiveVendorCount = billingStatus?.vendor_count ?? vendorCount;
+  const vendorLimit = billingStatus?.vendors?.limit;
+  const renewsOn = billingStatus?.current_period_end ?? billingStatus?.renews_at;
+  const usagePct = effectiveVendorCount == null || !Number.isFinite(vendorLimit)
     ? 0
-    : Math.min(100, Math.round((vendorCount / plan.vendorLimit) * 100));
+    : Math.min(100, Math.round((effectiveVendorCount / vendorLimit) * 100));
 
-  function handleChangePlan(newPlanId) {
-    const newPlan = PLANS.find((p) => p.id === newPlanId);
-    setPlanId(newPlanId);
-    setPlanModalOpen(false);
-    toast(`Plan updated to ${newPlan.name}.`);
-  }
-
-  function handleSaveCard(newCard) {
-    setCard(newCard);
-    setCardModalOpen(false);
-    toast('Payment method updated.');
-  }
+  // function handleSaveCard(newCard) {
+  //   setCard(newCard);
+  //   setCardModalOpen(false);
+  //   toast('Payment method updated.');
+  // }
 
   function handleReceiptClick() {
     toast('Receipt download is a preview — not a real file yet.', { variant: 'info' });
@@ -194,13 +263,14 @@ export default function Billing() {
     <AppLayout role="admin" searchPlaceholder="Search billing history...">
       {confirmEl}
       <ChangePlanModal
-        key={planModalOpen ? `open-${planId}` : 'closed'}
+        key={planModalOpen ? `open-${planSlug}` : 'closed'}
         open={planModalOpen}
         onClose={() => setPlanModalOpen(false)}
-        currentPlanId={planId}
-        onConfirm={handleChangePlan}
+        currentPlanSlug={planSlug}
+        plans={plans}
+        plansLoading={plansLoading}
       />
-      <UpdateCardModal open={cardModalOpen} onClose={() => setCardModalOpen(false)} onSave={handleSaveCard} />
+      {/* <UpdateCardModal open={cardModalOpen} onClose={() => setCardModalOpen(false)} onSave={handleSaveCard} /> */}
 
       <div className="space-y-6">
         <div>
@@ -220,16 +290,22 @@ export default function Billing() {
         />
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          <Card className="lg:col-span-2">
+          <Card className="lg:col-span-3">
             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
               <div>
                 <div className="flex items-center gap-2">
                   <p className="text-lg font-semibold text-on-surface">{plan.name} Plan</p>
                   <StatusChip status={status === 'active' ? 'Active' : 'Inactive'} />
+                  {(statusLoading || plansLoading) && (
+                    <Loader2 size={14} className="animate-spin text-on-surface-variant" />
+                  )}
                 </div>
                 <p className="text-sm text-on-surface-variant mt-1">
-                  <span className="font-semibold text-on-surface">{plan.price}</span>{plan.period}
-                  {status === 'active' ? ` · Renews ${formatDate(renewalDate())}` : ' · Access ends at period end'}
+                  <span className="font-semibold text-on-surface">
+                    {plan.price?.amount === 0 ? 'Free' : plan.price?.amount != null ? `$${plan.price.amount}` : ''}
+                  </span>
+                  {plan.price?.interval ? `/${plan.price.interval}` : ''}
+                  {status === 'active' ? ` · Renews ${formatDate(renewsOn ?? renewalDate())}` : ' · Access ends at period end'}
                 </p>
               </div>
               <div className="flex items-center gap-2">
@@ -244,19 +320,19 @@ export default function Billing() {
               <div className="flex items-center justify-between text-sm mb-1.5">
                 <span className="text-on-surface-variant">Vendors used</span>
                 <span className="font-medium text-on-surface tnum">
-                  {vendorCount ?? '—'} / {Number.isFinite(plan.vendorLimit) ? plan.vendorLimit : 'Unlimited'}
+                  {effectiveVendorCount ?? '—'} / {Number.isFinite(vendorLimit) ? vendorLimit : 'Unlimited'}
                 </span>
               </div>
               <div className="h-2 rounded-full bg-surface-container overflow-hidden">
                 <div
                   className={cn('h-full rounded-full transition-all', usagePct >= 90 ? 'bg-error' : 'bg-emerald')}
-                  style={{ width: `${Number.isFinite(plan.vendorLimit) ? usagePct : 100}%` }}
+                  style={{ width: `${Number.isFinite(vendorLimit) ? usagePct : 100}%` }}
                 />
               </div>
             </div>
           </Card>
 
-          <Card>
+          {/* <Card>
             <div className="flex items-center justify-between mb-3">
               <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant">Payment Method</p>
               <CreditCard size={16} className="text-on-surface-variant" />
@@ -266,7 +342,7 @@ export default function Billing() {
             <Button variant="secondary" size="sm" className="w-full mt-4" onClick={() => setCardModalOpen(true)}>
               Update Payment Method
             </Button>
-          </Card>
+          </Card> */}
         </div>
 
         <Card className="p-0 overflow-hidden">
