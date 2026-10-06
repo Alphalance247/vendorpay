@@ -9,11 +9,7 @@ function capitalize(value) {
   return value.charAt(0).toUpperCase() + value.slice(1);
 }
 
-export default function AppLayout({
-  children,
-  role = "vendor",
-  searchPlaceholder,
-}) {
+export default function AppLayout({ children, role = "vendor" }) {
   const [profile, setProfile] = useState(null);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
@@ -22,7 +18,7 @@ export default function AppLayout({
       vendorService
         .getProfile()
         .then(setProfile)
-        .catch(() => {});
+        .catch(() => { });
     }
   }, [role]);
 
@@ -31,19 +27,19 @@ export default function AppLayout({
   const user =
     role === "admin"
       ? {
-          name: currentUser?.full_name || "—",
-          role: capitalize(currentUser?.role) || "Team Member",
-        }
+        name: currentUser?.full_name || "—",
+        role: capitalize(currentUser?.role) || "Team Member",
+      }
       : {
-          name: profile
-            ? [profile.contact_first_name, profile.contact_last_name]
-                .filter(Boolean)
-                .join(" ") ||
-              profile.company_name ||
-              "Vendor"
-            : "—",
-          role: "Vendor",
-        };
+        name: profile
+          ? [profile.contact_first_name, profile.contact_last_name]
+            .filter(Boolean)
+            .join(" ") ||
+          profile.company_name ||
+          "Vendor"
+          : "—",
+        role: "Vendor",
+      };
 
   return (
     <div className="h-screen bg-surface flex overflow-hidden">
@@ -58,7 +54,7 @@ export default function AppLayout({
       <div className="flex-1 lg:ml-72 flex flex-col min-w-0 min-h-0 overflow-y-auto overflow-x-hidden">
         {/* Sticky TopBar */}
         <TopBar
-          searchPlaceholder={searchPlaceholder}
+          // searchPlaceholder={searchPlaceholder}
           onMenuClick={() => setMobileNavOpen(true)}
         />
 

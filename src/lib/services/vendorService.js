@@ -51,10 +51,6 @@ export const vendorService = {
     const res = await apiClient.patch("/vendors/profile", data);
     return res.data;
   },
-  updateBanking: async (bankingData) => {
-    const res = await apiClient.put("/banking/update", bankingData);
-    return res.data;
-  },
   getDashboard: async () => {
     const res = await apiClient.get("/vendors/dashboard");
     return res.data;

@@ -8,7 +8,7 @@ const getBillingPlanList = async () => {
 }
 const changeBillingPlan = async ({ plan }) => {
     const res = await apiClient.post("/billing/checkout-session",
-        plan,
+        { plan },
     );
 
     return res.data;

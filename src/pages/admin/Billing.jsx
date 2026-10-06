@@ -29,7 +29,6 @@ function ChangePlanModal({ open, onClose, currentPlanSlug, plans, plansLoading }
   const [selected, setSelected] = useState(currentPlanSlug);
   const changePlan = useChangeBilling();
   const billingPortal = useBillingPortal();
-
   // /billing/checkout-session only works for a brand-new subscription
   // (Free -> paid) — it 400s with "Already on a paid plan — use the
   // billing portal to change plans" once a paid subscription already
@@ -84,54 +83,66 @@ function ChangePlanModal({ open, onClose, currentPlanSlug, plans, plansLoading }
 
         ) : (
           plans.map((plan) => {
+            const isFree = plan.slug === "free";
             const isSelected = selected === plan.slug;
             const isCurrent = plan.slug === currentPlanSlug;
             return (
-              <button
-                type="button"
-                key={plan.slug}
-                onClick={() => setSelected(plan.slug)}
-                className={cn(
-                  'relative text-left rounded-xl border-2 p-4 transition-all flex flex-col',
-                  isSelected
-                    ? 'border-secondary bg-secondary/5'
-                    : plan.most_popular
-                      ? 'border-secondary/40 bg-white hover:border-secondary'
-                      : 'border-outline-variant bg-white hover:border-outline'
-                )}
-              >
-                {isCurrent && (
-                  <span className="absolute -top-2.5 left-4 bg-inverse-surface text-inverse-on-surface text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full">
-                    Current Plan
-                  </span>
-                )}
-                {plan.most_popular && (
-                  <span className="absolute -top-2.5 right-4 bg-secondary text-white text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full">
-                    Most Popular
-                  </span>
-                )}
-                <p className="font-semibold text-on-surface text-sm">{plan.name}</p>
-                <p className="mt-3">
-                  <span className="text-xl font-bold text-on-surface">
-                    {`$${plan.price.amount}`}
-                  </span>
-                  <span className="text-xs text-on-surface-variant">/{plan.price.interval}</span>
-                </p>
-                <ul className="mt-3 space-y-1.5 flex-1">
-                  {(plan.plan_detail ?? []).map((f) => (
-                    <li key={f} className="flex items-start gap-1.5 text-xs text-on-surface-variant">
-                      <Check size={13} className="text-emerald mt-0.5 flex-shrink-0" />
-                      {f}
-                    </li>
-                  ))}
-                </ul>
-                <div className={cn(
-                  'mt-3 w-5 h-5 rounded-full border-2 flex items-center justify-center self-end',
-                  isSelected ? 'bg-secondary border-secondary' : 'border-outline-variant'
-                )}>
-                  {isSelected && <Check size={12} className="text-white" />}
-                </div>
-              </button>
+              <>
+                {plan.slug === "free"}
+                <button
+                  type="button"
+                  key={plan.slug}
+                  onClick={() => setSelected(plan.slug)}
+                  disabled={isFree}
+                  onClick={() => {
+                    if (!isFree) {
+                      setSelected(plan.slug);
+                    }
+                  }}
+                  className={cn(
+                    'relative text-left rounded-xl border-2 p-4 transition-all flex flex-col',
+                    isFree
+                      ? "border-outline-variant bg-gray-50 opacity-50 cursor-not-allowed"
+                      : isSelected
+                        ? "border-secondary bg-secondary/5"
+                        : plan.most_popular
+                          ? "border-secondary/40 bg-white hover:border-secondary"
+                          : "border-outline-variant bg-white hover:border-outline"
+                  )}
+                >
+                  {isCurrent && (
+                    <span className="absolute -top-2.5 left-4 bg-inverse-surface text-inverse-on-surface text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full">
+                      Current Plan
+                    </span>
+                  )}
+                  {plan.most_popular && (
+                    <span className="absolute -top-2.5 right-4 bg-secondary text-white text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full">
+                      Most Popular
+                    </span>
+                  )}
+                  <p className="font-semibold text-on-surface text-sm">{plan.name}</p>
+                  <p className="mt-3">
+                    <span className="text-xl font-bold text-on-surface">
+                      {`$${plan.price.amount}`}
+                    </span>
+                    <span className="text-xs text-on-surface-variant">/{plan.price.interval}</span>
+                  </p>
+                  <ul className="mt-3 space-y-1.5 flex-1">
+                    {(plan.plan_detail ?? []).map((f) => (
+                      <li key={f} className="flex items-start gap-1.5 text-xs text-on-surface-variant">
+                        <Check size={13} className="text-emerald mt-0.5 flex-shrink-0" />
+                        {f}
+                      </li>
+                    ))}
+                  </ul>
+                  <div className={cn(
+                    'mt-3 w-5 h-5 rounded-full border-2 flex items-center justify-center self-end',
+                    isSelected ? 'bg-secondary border-secondary' : 'border-outline-variant'
+                  )}>
+                    {isSelected && <Check size={12} className="text-white" />}
+                  </div>
+                </button>
+              </>
             );
           })
         )}
@@ -195,7 +206,7 @@ export default function Billing() {
   const [vendorCount, setVendorCount] = useState(null);
   const [planModalOpen, setPlanModalOpen] = useState(false);
   // const [cardModalOpen, setCardModalOpen] = useState(false);
-
+  const billingPortal = useBillingPortal();
   const { confirm, confirmEl } = useConfirm();
   const { toast } = useToast();
 
@@ -218,17 +229,21 @@ export default function Billing() {
   if (billingStatus !== prevBillingStatus) {
     setPrevBillingStatus(billingStatus);
     if (billingStatus) {
-      const resolvedPlanId = billingStatus.plan_id ?? billingStatus.plan?.id;
-      if (resolvedPlanId) setPlanSlug(resolvedPlanId);
+      const resolvedPlanSlug = billingStatus.plan ?? billingStatus.plan;
+      if (resolvedPlanSlug) setPlanSlug(resolvedPlanSlug);
       if (billingStatus.status) setStatus(billingStatus.status);
     }
   }
 
-  const plan = plans.find((p) => p.slug === planSlug) ?? plans[0] ?? {};
-  const effectiveVendorCount = billingStatus?.vendor_count ?? vendorCount;
+  // const plan = plans.find((p) => p.slug === planSlug) ?? plans[0] ?? {};
+  const effectiveVendorCount = billingStatus?.vendor?.used ?? vendorCount;
   const vendorLimit = billingStatus?.vendors?.limit;
+  const vendorUsed = billingStatus?.vendors?.used;
   const renewsOn = billingStatus?.current_period_end ?? billingStatus?.renews_at;
+  const planName = billingStatus?.plan;
   const usagePct = effectiveVendorCount == null || !Number.isFinite(vendorLimit)
+
+
     ? 0
     : Math.min(100, Math.round((effectiveVendorCount / vendorLimit) * 100));
 
@@ -237,7 +252,8 @@ export default function Billing() {
   //   setCardModalOpen(false);
   //   toast('Payment method updated.');
   // }
-
+  console.log(usagePct)
+  console.log(vendorUsed / vendorLimit)
   function handleReceiptClick() {
     toast('Receipt download is a preview — not a real file yet.', { variant: 'info' });
   }
@@ -245,13 +261,15 @@ export default function Billing() {
   async function handleCancel() {
     const ok = await confirm({
       title: 'Cancel Subscription',
-      message: 'Your workspace will lose access to paid features at the end of the current billing period. This is a preview — no real subscription is being canceled.',
-      confirmLabel: 'Cancel Subscription',
+      message:
+        'You’ll be redirected to Stripe to manage your subscription. Your subscription will remain active until the end of the current billing period unless Stripe indicates otherwise.',
+      confirmLabel: 'Continue to Stripe',
       variant: 'danger',
     });
+
     if (!ok) return;
-    setStatus('canceled');
-    toast('Subscription canceled.', { variant: 'info' });
+
+    billingPortal.mutate();
   }
 
   function handleReactivate() {
@@ -260,7 +278,7 @@ export default function Billing() {
   }
 
   return (
-    <AppLayout role="admin" searchPlaceholder="Search billing history...">
+    <AppLayout role="admin">
       {confirmEl}
       <ChangePlanModal
         key={planModalOpen ? `open-${planSlug}` : 'closed'}
@@ -294,18 +312,18 @@ export default function Billing() {
             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
               <div>
                 <div className="flex items-center gap-2">
-                  <p className="text-lg font-semibold text-on-surface">{plan.name} Plan</p>
+                  <p className="text-lg font-semibold text-on-surface capitalize">{planName} Plan</p>
                   <StatusChip status={status === 'active' ? 'Active' : 'Inactive'} />
                   {(statusLoading || plansLoading) && (
                     <Loader2 size={14} className="animate-spin text-on-surface-variant" />
                   )}
                 </div>
                 <p className="text-sm text-on-surface-variant mt-1">
-                  <span className="font-semibold text-on-surface">
+                  {/* <span className="font-semibold text-on-surface">
                     {plan.price?.amount === 0 ? 'Free' : plan.price?.amount != null ? `$${plan.price.amount}` : ''}
                   </span>
-                  {plan.price?.interval ? `/${plan.price.interval}` : ''}
-                  {status === 'active' ? ` · Renews ${formatDate(renewsOn ?? renewalDate())}` : ' · Access ends at period end'}
+                  {plan.price?.interval ? `/${plan.price.interval}` : ''} */}
+                  {status === 'active' ? `  Renews ${formatDate(renewsOn ?? renewalDate())}` : ' · Access ends at period end'}
                 </p>
               </div>
               <div className="flex items-center gap-2">
@@ -320,13 +338,13 @@ export default function Billing() {
               <div className="flex items-center justify-between text-sm mb-1.5">
                 <span className="text-on-surface-variant">Vendors used</span>
                 <span className="font-medium text-on-surface tnum">
-                  {effectiveVendorCount ?? '—'} / {Number.isFinite(vendorLimit) ? vendorLimit : 'Unlimited'}
+                  {vendorUsed ?? '—'} / {Number.isFinite(vendorLimit) ? vendorLimit : 'Unlimited'}
                 </span>
               </div>
               <div className="h-2 rounded-full bg-surface-container overflow-hidden">
                 <div
                   className={cn('h-full rounded-full transition-all', usagePct >= 90 ? 'bg-error' : 'bg-emerald')}
-                  style={{ width: `${Number.isFinite(vendorLimit) ? usagePct : 100}%` }}
+                  style={{ width: `${Number.isFinite(vendorLimit) ? (vendorUsed / vendorLimit) * 100 : 100}%` }}
                 />
               </div>
             </div>
@@ -418,11 +436,34 @@ export default function Billing() {
                 Your workspace will keep access until the end of the current billing period, then lose access to paid features.
               </p>
             </div>
-            {status === 'active' ? (
-              <Button variant="danger" size="sm" onClick={handleCancel}>Cancel Subscription</Button>
-            ) : (
-              <StatusChip status="Inactive" />
-            )}
+            <div className="flex flex-col items-end">
+              {status === 'active' ? (
+                <Button
+                  variant="danger"
+                  size="sm"
+                  onClick={handleCancel}
+                  disabled={billingPortal.isPending}
+                >
+                  {billingPortal.isPending ? (
+                    <span className="flex items-center gap-2">
+                      <Loader2 size={14} className="animate-spin" />
+                      Opening Stripe...
+                    </span>
+                  ) : (
+                    'Cancel Subscription'
+                  )}
+                </Button>
+              ) : (
+                <StatusChip status={status} />
+              )}
+
+              {billingPortal.isError && (
+                <p className="mt-2 max-w-xs text-right text-xs text-error">
+                  {billingPortal.error?.response?.data?.detail ||
+                    'Unable to open Stripe Billing Portal. Please try again.'}
+                </p>
+              )}
+            </div>
           </div>
         </Card>
       </div>

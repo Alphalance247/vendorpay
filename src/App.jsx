@@ -31,6 +31,7 @@ import VendorProfile from "./pages/vendor/VendorProfile";
 import Landing from "./pages/marketing/Landing";
 import CompanySignup from "./pages/signup/CompanySignup";
 import Settings from "./pages/admin/general-settings/settings";
+import BillingCancel from "./pages/admin/BillingCancel";
 
 export default function App() {
   const tenant = useTenantResolution();
@@ -216,6 +217,14 @@ export default function App() {
               element={
                 <ProtectedRoute role="admin">
                   <BillingSuccess />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/billing/cancel"
+              element={
+                <ProtectedRoute role="admin">
+                  <BillingCancel />
                 </ProtectedRoute>
               }
             />

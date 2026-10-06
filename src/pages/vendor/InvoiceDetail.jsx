@@ -18,6 +18,7 @@ import Button from "../../components/ui/Button";
 import StatusChip from "../../components/ui/StatusChip";
 import RejectModal from "../../components/ui/RejectModal";
 import DisputeModal from "../../components/ui/DisputeModal";
+import DocumentViewerCard from "../../components/ui/DocumentViewerCard";
 import { useAuth } from "../../lib/authContext";
 import {
   invoiceService,
@@ -26,7 +27,7 @@ import {
   invoiceMessageService,
 } from "../../lib/services/invoiceService";
 import { supportService } from "../../lib/services/supportService";
-import { formatCurrency, formatDate } from "../../lib/utils";
+import { formatCurrency, formatDate, extractErrorMessage } from "../../lib/utils";
 
 // Old audit records stored emails — convert to display name if needed
 function displayActor(performedBy) {
@@ -51,8 +52,9 @@ export default function InvoiceDetail() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [actionLoading, setActionLoading] = useState("");
-  const [pdfUrl, setPdfUrl] = useState(null);
-  const [pdfLoading, setPdfLoading] = useState(false);
+  const [docUrl, setDocUrl] = useState(null);
+  const [docContentType, setDocContentType] = useState(null);
+  const [docLoading, setDocLoading] = useState(false);
 
   const [aiMessages, setAiMessages] = useState([
     {
@@ -77,17 +79,18 @@ export default function InvoiceDetail() {
   useEffect(() => {
     if (!invoice) return;
     let url;
-    setPdfLoading(true);
+    setDocLoading(true);
     const loader = isAdmin
       ? invoiceService.getAdminInvoicePdfUrl(id)
       : invoiceService.getInvoicePdfUrl(id);
     loader
-      .then((blobUrl) => {
-        url = blobUrl;
-        setPdfUrl(blobUrl);
+      .then((doc) => {
+        url = doc.url;
+        setDocUrl(doc.url);
+        setDocContentType(doc.contentType);
       })
       .catch(() => {})
-      .finally(() => setPdfLoading(false));
+      .finally(() => setDocLoading(false));
     return () => {
       if (url) window.URL.revokeObjectURL(url);
     };
@@ -98,8 +101,12 @@ export default function InvoiceDetail() {
 
   // Rejection modal
   const [rejectOpen, setRejectOpen] = useState(false);
+  const [rejectSubmitting, setRejectSubmitting] = useState(false);
+  const [rejectError, setRejectError] = useState("");
   // Dispute modal
   const [disputeOpen, setDisputeOpen] = useState(false);
+  const [disputeSubmitting, setDisputeSubmitting] = useState(false);
+  const [disputeError, setDisputeError] = useState("");
 
   // Per-invoice messaging
   const [messages, setMessages] = useState([]);
@@ -151,8 +158,6 @@ export default function InvoiceDetail() {
     }
   }
 
-  const handleApprove = () =>
-    runAction("approve", () => adminInvoiceService.approveInvoice(id));
   const handleFund = () =>
     runAction("fund", () => adminInvoiceService.fundInvoice(id));
   const handleMarkPaid = () =>
@@ -164,48 +169,69 @@ export default function InvoiceDetail() {
     setInvoice(updated);
   }
 
-  const handleConfirmPayment = async () => {
-    const ok = await confirm({
+  async function handleApprove() {
+    await confirm({
+      title: "Approve Invoice",
+      message: `Approve invoice ${invoice.invoice_number}? It will move forward to funding.`,
+      confirmLabel: "Approve",
+      variant: "approve",
+      onConfirm: async () => {
+        await adminInvoiceService.approveInvoice(id);
+        await refreshInvoice();
+      },
+    });
+  }
+
+  async function handleConfirmPayment() {
+    await confirm({
       title: "Confirm Payment Receipt",
       message: "Confirm that you have received the payment for this invoice?",
       confirmLabel: "Confirm Receipt",
       variant: "warning",
+      onConfirm: async () => {
+        await vendorInvoiceService.confirmPayment(id);
+        await refreshInvoice();
+      },
     });
-    if (!ok) return;
-    setActionLoading("confirm-payment");
-    setActionError("");
-    try {
-      await vendorInvoiceService.confirmPayment(id);
-      await refreshInvoice();
-    } catch (err) {
-      setActionError(err?.response?.data?.detail ?? "Action failed.");
-    } finally {
-      setActionLoading("");
-    }
-  };
+  }
 
-  const handleDisputePayment = () => setDisputeOpen(true);
+  function handleDisputePayment() {
+    setDisputeError("");
+    setDisputeOpen(true);
+  }
 
-  const handleDisputeConfirm = async (reason) => {
-    setDisputeOpen(false);
-    setActionLoading("dispute-payment");
-    setActionError("");
+  async function handleDisputeConfirm(reason) {
+    setDisputeError("");
+    setDisputeSubmitting(true);
     try {
       await vendorInvoiceService.disputePayment(id, reason);
       await refreshInvoice();
+      setDisputeOpen(false);
     } catch (err) {
-      setActionError(err?.response?.data?.detail ?? "Action failed.");
+      setDisputeError(extractErrorMessage(err));
     } finally {
-      setActionLoading("");
+      setDisputeSubmitting(false);
     }
-  };
+  }
 
-  const handleReject = () => setRejectOpen(true);
+  function handleReject() {
+    setRejectError("");
+    setRejectOpen(true);
+  }
 
-  const handleRejectConfirm = (reason) => {
-    setRejectOpen(false);
-    runAction("reject", () => adminInvoiceService.rejectInvoice(id, reason));
-  };
+  async function handleRejectConfirm(reason) {
+    setRejectError("");
+    setRejectSubmitting(true);
+    try {
+      await adminInvoiceService.rejectInvoice(id, reason);
+      await refreshInvoice();
+      setRejectOpen(false);
+    } catch (err) {
+      setRejectError(extractErrorMessage(err));
+    } finally {
+      setRejectSubmitting(false);
+    }
+  }
 
   async function sendMessage() {
     if (!msgInput.trim() || msgSending) return;
@@ -378,13 +404,17 @@ export default function InvoiceDetail() {
       {confirmEl}
       <RejectModal
         open={rejectOpen}
-        invoiceNumber={invoice.invoice_number}
+        itemLabel={invoice.invoice_number}
+        loading={rejectSubmitting}
+        error={rejectError}
         onConfirm={handleRejectConfirm}
         onCancel={() => setRejectOpen(false)}
       />
       <DisputeModal
         open={disputeOpen}
         invoiceNumber={invoice.invoice_number}
+        loading={disputeSubmitting}
+        error={disputeError}
         onConfirm={handleDisputeConfirm}
         onCancel={() => setDisputeOpen(false)}
       />
@@ -432,11 +462,7 @@ export default function InvoiceDetail() {
                       disabled={!!actionLoading}
                       className="flex-1 sm:flex-none"
                     >
-                      {actionLoading === "approve" ? (
-                        <Loader2 size={14} className="animate-spin" />
-                      ) : (
-                        "Approve"
-                      )}
+                      Approve
                     </Button>
 
                     <Button
@@ -446,11 +472,7 @@ export default function InvoiceDetail() {
                       disabled={!!actionLoading}
                       className="flex-1 sm:flex-none text-error hover:bg-red-50"
                     >
-                      {actionLoading === "reject" ? (
-                        <Loader2 size={14} className="animate-spin" />
-                      ) : (
-                        "Reject"
-                      )}
+                      Reject
                     </Button>
                   </>
                 )}
@@ -477,11 +499,7 @@ export default function InvoiceDetail() {
                       disabled={!!actionLoading}
                       className="flex-1 sm:flex-none text-error hover:bg-red-50"
                     >
-                      {actionLoading === "reject" ? (
-                        <Loader2 size={14} className="animate-spin" />
-                      ) : (
-                        "Reject"
-                      )}
+                      Reject
                     </Button>
                   </>
                 )}
@@ -517,28 +535,18 @@ export default function InvoiceDetail() {
                     <Button
                       size="sm"
                       onClick={handleConfirmPayment}
-                      disabled={!!actionLoading}
                       className="flex-1 sm:flex-none"
                     >
-                      {actionLoading === "confirm-payment" ? (
-                        <Loader2 size={14} className="animate-spin" />
-                      ) : (
-                        "Confirm Receipt"
-                      )}
+                      Confirm Receipt
                     </Button>
 
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={handleDisputePayment}
-                      disabled={!!actionLoading}
                       className="flex-1 sm:flex-none text-error hover:bg-red-50"
                     >
-                      {actionLoading === "dispute-payment" ? (
-                        <Loader2 size={14} className="animate-spin" />
-                      ) : (
-                        "Dispute"
-                      )}
+                      Dispute
                     </Button>
                   </>
                 )}
@@ -675,93 +683,13 @@ export default function InvoiceDetail() {
               )}
             </Card>
 
-            {/* <Card className="p-0 overflow-hidden">
-                <div className="flex items-center justify-between px-4 py-2 border-b border-outline-variant bg-surface-low">
-                  <span className="text-xs font-medium text-on-surface-variant">
-                    Invoice Document
-                  </span>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="p-1.5"
-                    onClick={handleDownload}
-                  >
-                    <Download size={14} />
-                  </Button>
-                </div>
-                {pdfLoading ? (
-                  <div className="flex items-center justify-center min-h-[400px] bg-surface-low">
-                    <Loader2 size={24} className="animate-spin text-emerald" />
-                  </div>
-                ) : pdfUrl ? (
-                  <iframe
-                    src={pdfUrl}
-                    className="w-full border-0"
-                    style={{ height: "600px" }}
-                    title="Invoice Document"
-                  />
-                ) : (
-                  <div className="p-8 bg-surface-low min-h-[200px] flex items-center justify-center">
-                    <div className="text-center">
-                      <FileText
-                        size={48}
-                        className="text-outline mx-auto mb-3"
-                      />
-                      <p className="text-sm text-on-surface-variant">
-                        Document unavailable
-                      </p>
-                    </div>
-                  </div>
-                )}
-            </Card> */}
-            <Card className="p-0 overflow-hidden">
-              {/* Document header */}
-              <div className="flex items-center justify-between px-4 py-2 border-b border-outline-variant bg-surface-low">
-                <span className="text-xs font-medium text-on-surface-variant">
-                  Invoice Document
-                </span>
-
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="p-1.5 shrink-0"
-                  onClick={handleDownload}
-                >
-                  <Download size={14} />
-                </Button>
-              </div>
-
-              {/* PDF viewer */}
-              <div className="w-full overflow-x-auto overflow-y-hidden bg-[#252525]">
-                {pdfLoading ? (
-                  <div className="flex items-center justify-center min-h-[400px] bg-surface-low">
-                    <Loader2 size={24} className="animate-spin text-emerald" />
-                  </div>
-                ) : pdfUrl ? (
-                  <div className="w-[900px] max-w-none md:w-[900px] ">
-                    <iframe
-                      src={pdfUrl}
-                      title="Invoice Document"
-                      className="block w-full border-0"
-                      style={{ height: "600px" }}
-                    />
-                  </div>
-                ) : (
-                  <div className="p-8 bg-surface-low min-h-[200px] flex items-center justify-center">
-                    <div className="text-center">
-                      <FileText
-                        size={48}
-                        className="text-outline mx-auto mb-3"
-                      />
-
-                      <p className="text-sm text-on-surface-variant">
-                        Document unavailable
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </Card>
+            <DocumentViewerCard
+              title="Invoice Document"
+              url={docUrl}
+              contentType={docContentType}
+              loading={docLoading}
+              onDownload={handleDownload}
+            />
           </div>
 
           <div className="space-y-4">

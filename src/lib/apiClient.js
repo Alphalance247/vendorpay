@@ -4,9 +4,9 @@ import { withSubdomain, currentTenantBaseUrl } from "./tenantResolver";
 
 // Trailing slash stripped so every `${BASE_URL}/api/...` below produces a
 // single slash regardless of how environment.baseUrl is formatted.
-const BASE_URL =
-  import.meta.env.VITE_BACKEND_URL ||
-  environment.baseUrl.replace(/\/+$/, "");
+const BASE_URL = environment.baseUrl.replace(/\/+$/, "");
+
+console.log(BASE_URL);
 
 
 /**

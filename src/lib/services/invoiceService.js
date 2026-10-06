@@ -1,5 +1,30 @@
 import apiClient from "../apiClient";
 
+// Vendors can upload PDFs or images as their invoice document, but the
+// backend always serves them back from the same /pdf endpoint under a
+// generic 'pdf' form field — so the only reliable way to know what we
+// actually got back is to sniff the file's own magic bytes.
+async function detectBlobType(blob) {
+  const bytes = new Uint8Array(await blob.slice(0, 12).arrayBuffer());
+  const hex = [...bytes].map((b) => b.toString(16).padStart(2, '0')).join('');
+
+  if (hex.startsWith('25504446')) return 'application/pdf'; // %PDF
+  if (hex.startsWith('89504e47')) return 'image/png';
+  if (hex.startsWith('ffd8ff')) return 'image/jpeg';
+  if (hex.startsWith('47494638')) return 'image/gif'; // GIF87a / GIF89a
+  if (hex.startsWith('52494646') && hex.slice(16, 24) === '57454250') return 'image/webp'; // RIFF....WEBP
+
+  return blob.type || 'application/octet-stream';
+}
+
+const EXTENSION_BY_CONTENT_TYPE = {
+  'application/pdf': 'pdf',
+  'image/png': 'png',
+  'image/jpeg': 'jpg',
+  'image/gif': 'gif',
+  'image/webp': 'webp',
+};
+
 export const extractInvoiceWithAI = async (file) => {
   const formData = new FormData();
   formData.append('file', file);
@@ -70,40 +95,48 @@ export const invoiceService = {
     const response = await apiClient.get(`/invoices/all/${invoiceId}/pdf`, {
       responseType: 'blob',
     });
-    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const contentType = await detectBlobType(response.data);
+    const url = window.URL.createObjectURL(new Blob([response.data], { type: contentType }));
     const link = document.createElement('a');
     link.href = url;
-    link.setAttribute('download', `invoice-${invoiceId}.pdf`);
+    link.setAttribute('download', `invoice-${invoiceId}.${EXTENSION_BY_CONTENT_TYPE[contentType] ?? 'pdf'}`);
     document.body.appendChild(link);
     link.click();
     link.remove();
+    window.URL.revokeObjectURL(url);
   },
 
   getAdminInvoicePdfUrl: async (invoiceId) => {
     const response = await apiClient.get(`/invoices/all/${invoiceId}/pdf`, {
       responseType: 'blob',
     });
-    return window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
+    const contentType = await detectBlobType(response.data);
+    const url = window.URL.createObjectURL(new Blob([response.data], { type: contentType }));
+    return { url, contentType };
   },
 
   downloadInvoicePdf: async (invoiceId) => {
     const response = await apiClient.get(`/invoices/my/${invoiceId}/pdf`, {
       responseType: 'blob',
     });
-    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const contentType = await detectBlobType(response.data);
+    const url = window.URL.createObjectURL(new Blob([response.data], { type: contentType }));
     const link = document.createElement('a');
     link.href = url;
-    link.setAttribute('download', `invoice-${invoiceId}.pdf`);
+    link.setAttribute('download', `invoice-${invoiceId}.${EXTENSION_BY_CONTENT_TYPE[contentType] ?? 'pdf'}`);
     document.body.appendChild(link);
     link.click();
     link.remove();
+    window.URL.revokeObjectURL(url);
   },
 
   getInvoicePdfUrl: async (invoiceId) => {
     const response = await apiClient.get(`/invoices/my/${invoiceId}/pdf`, {
       responseType: 'blob',
     });
-    return window.URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
+    const contentType = await detectBlobType(response.data);
+    const url = window.URL.createObjectURL(new Blob([response.data], { type: contentType }));
+    return { url, contentType };
   },
   deleteInvoice: async (invoice_id) => {
     const res = await apiClient.delete(`/invoices/my/${invoice_id}`)

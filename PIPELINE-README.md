@@ -1329,7 +1329,7 @@ ssh-keyscan -H <EC2_HOST> | base64 -w0 | base64 -d
 | `SSH_HOST` | AWS Console → EC2 → Instances → your instance → **Public IPv4 DNS**, or your own domain if you have one pointed at it. **Attach an Elastic IP** or use a domain — a default public IP changes every time the instance stops, and your pipeline breaks silently. |
 | `SSH_USER` | `ubuntu` for Ubuntu AMIs. (`ec2-user` on Amazon Linux, `admin` on Debian.) Confirm it: it is the name in your own shell prompt, `ubuntu@ip-172-31-20-251`. |
 | `DEPLOY_PATH` | The absolute path from [1.3](#13-choose-and-create-the-deploy-directory), e.g. `/home/ubuntu/frontend_vp`. Get it exactly by running `pwd` inside that directory. Absolute path, no `~`, no trailing slash. |
-| `VITE_BACKEND_URL` | The public URL of the backend API this frontend calls, e.g. `https://str.ec2.alluvium.net/vendorpay`. No trailing slash. Must differ between test and production. |
+| `VITE_BACKEND_URL` | The public URL of the backend API this frontend calls, e.g. `https://vpay.goalluvium.net/`. **If you leave this variable unset entirely, the pipeline's deploy step already defaults to this same URL for both Test and Production** — only set it explicitly if a given environment must point somewhere else. A stale value here silently overrides that default and gets baked into the build; if the app is calling the wrong backend after a deploy, check this variable first. |
 
 ---
 

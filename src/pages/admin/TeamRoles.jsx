@@ -189,13 +189,11 @@ export default function TeamRoles() {
       message: `Remove "${member.full_name}" from your team? They'll lose access to this workspace immediately.`,
       confirmLabel: "Remove",
       variant: "danger",
+      onConfirm: () => deleteMember.mutateAsync(member.id),
     });
-    if (!ok) return;
-    deleteMember.mutate(member.id, {
-      onSuccess: () => {
-        toast(`Removed ${member.full_name} from the team.`);
-      },
-    });
+    if (ok) {
+      toast(`Removed ${member.full_name} from the team.`);
+    }
   }
 
   const filtered = team.filter((m) => {
@@ -208,7 +206,7 @@ export default function TeamRoles() {
   });
 
   return (
-    <AppLayout role="admin" searchPlaceholder="Search team members...">
+    <AppLayout role="admin">
       {confirmEl}
       <InviteModal
         open={inviteOpen}
