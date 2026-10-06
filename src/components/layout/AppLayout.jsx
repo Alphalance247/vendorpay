@@ -18,7 +18,7 @@ export default function AppLayout({ children, role = "vendor" }) {
       vendorService
         .getProfile()
         .then(setProfile)
-        .catch(() => {});
+        .catch(() => { });
     }
   }, [role]);
 
@@ -27,30 +27,38 @@ export default function AppLayout({ children, role = "vendor" }) {
   const user =
     role === "admin"
       ? {
-          name: currentUser?.full_name || "—",
-          role: capitalize(currentUser?.role) || "Team Member",
-        }
+        name: currentUser?.full_name || "—",
+        role: capitalize(currentUser?.role) || "Team Member",
+      }
       : {
-          name: profile
-            ? [profile.contact_first_name, profile.contact_last_name]
-                .filter(Boolean)
-                .join(" ") ||
-              profile.company_name ||
-              "Vendor"
-            : "—",
-          role: "Vendor",
-        };
+        name: profile
+          ? [profile.contact_first_name, profile.contact_last_name]
+            .filter(Boolean)
+            .join(" ") ||
+          profile.company_name ||
+          "Vendor"
+          : "—",
+        role: "Vendor",
+      };
 
   return (
-    <div className="min-h-screen bg-surface flex">
+    <div className="h-screen bg-surface flex overflow-hidden">
       <Sidebar
         role={role}
         user={user}
         open={mobileNavOpen}
         onClose={() => setMobileNavOpen(false)}
       />
-      <div className="flex-1 lg:ml-72 flex flex-col min-h-screen min-w-0 overflow-x-hidden">
-        <TopBar onMenuClick={() => setMobileNavOpen(true)} />
+
+      {/* Right side */}
+      <div className="flex-1 lg:ml-72 flex flex-col min-w-0 min-h-0 overflow-y-auto overflow-x-hidden">
+        {/* Sticky TopBar */}
+        <TopBar
+          // searchPlaceholder={searchPlaceholder}
+          onMenuClick={() => setMobileNavOpen(true)}
+        />
+
+        {/* Page content */}
         <main className="flex-1 p-4 sm:p-6 max-w-content mx-auto w-full">
           {children}
         </main>

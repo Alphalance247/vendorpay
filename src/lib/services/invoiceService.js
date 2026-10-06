@@ -138,6 +138,10 @@ export const invoiceService = {
     const url = window.URL.createObjectURL(new Blob([response.data], { type: contentType }));
     return { url, contentType };
   },
+  deleteInvoice: async (invoice_id) => {
+    const res = await apiClient.delete(`/invoices/my/${invoice_id}`)
+    return res.data
+  }
 };
 
 export const adminInvoiceService = {
@@ -186,6 +190,7 @@ export const vendorInvoiceService = {
     const response = await apiClient.patch(`/invoices/${invoiceId}/dispute-payment`, { reason: reason || null });
     return response.data;
   },
+
 };
 
 export const invoiceMessageService = {

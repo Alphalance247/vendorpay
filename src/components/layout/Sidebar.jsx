@@ -10,6 +10,7 @@ import {
   Shield,
   User,
   X,
+  Wallet,
 } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { useAuth } from "../../lib/authContext";
@@ -73,7 +74,7 @@ export default function Sidebar({
     { to: "/admin/invoices", icon: FileText, label: "Invoices" },
     { to: "/admin/payments", icon: CreditCard, label: "Payments" },
     { to: "/admin/team", icon: Shield, label: "Team" },
-    // { to: '/admin/billing', icon: Wallet, label: 'Billing' },
+    { to: '/admin/billing', icon: Wallet, label: 'Billing' },
   ];
 
   const navItems = role === "admin" ? adminNav : vendorNav;

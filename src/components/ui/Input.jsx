@@ -32,6 +32,7 @@ const Input = forwardRef(function Input(
           )}
           {...props}
         />
+        { }
         {suffix && (
           <span className="absolute right-3 flex items-center">{suffix}</span>
         )}

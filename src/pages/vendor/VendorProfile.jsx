@@ -710,7 +710,7 @@ export default function VendorProfile() {
                     value={bankingDraft.bank_code}
                     onChange={handleBankingDraftChange}
                     placeholder="Routing, sort, or branch code"
-                    // required
+                  // required
                   />
                   <Input
                     label="New Account Number"
@@ -718,7 +718,7 @@ export default function VendorProfile() {
                     value={bankingDraft.account_number}
                     onChange={handleBankingDraftChange}
                     placeholder="Enter new account number"
-                    // required
+                  // required
                   />
                   <Input
                     label="Confirm Account Number"
@@ -728,13 +728,13 @@ export default function VendorProfile() {
                     placeholder="Re-enter new account number"
                     error={
                       bankingDraft.account_number &&
-                      bankingDraft.confirm_account_number &&
-                      bankingDraft.account_number !==
+                        bankingDraft.confirm_account_number &&
+                        bankingDraft.account_number !==
                         bankingDraft.confirm_account_number
                         ? "Account numbers do not match"
                         : undefined
                     }
-                    // required
+                  // required
                   />
                   <Input
                     label="SWIFT / BIC"

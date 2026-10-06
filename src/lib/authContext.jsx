@@ -112,6 +112,8 @@ export function AuthProvider({ children }) {
     localStorage.setItem('refresh_token', data.refresh_token);
 
     const payload = parseJwt(data.access_token);
+    console.log("JWT PAYLOAD:", parseJwt(data.access_token));
+    console.log("JWT PAYLOAD:", payload);
     const userRole = payload?.role ?? 'vendor';
 
     localStorage.setItem('user_role', userRole);
@@ -121,7 +123,22 @@ export function AuthProvider({ children }) {
       localStorage.setItem('company_slug', data.company_slug);
       setCompanySlug(data.company_slug);
     }
+    if (userRole === "admin") {
+      try {
+        const profileRes = await apiClient.get("/admin/profile");
 
+        setUser({
+          ...profileRes.data,
+          id: payload.sub,
+          role: userRole,
+        });
+      } catch (error) {
+        console.error("Failed to load admin profile:", error);
+      }
+
+      setIsOnboarded(true);
+      localStorage.setItem("is_onboarded", "true");
+    }
     if (userRole === 'vendor') {
       try {
         const profileRes = await apiClient.get('/vendors/profile');

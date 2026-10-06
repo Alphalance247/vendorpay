@@ -912,7 +912,7 @@ const SECTIONS = [
     ],
   },
 ];
-function Toast({ message, show }) {
+export function Toast({ message, show }) {
   if (!show) return null;
 
   return (
