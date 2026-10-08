@@ -9,7 +9,7 @@ function Toggle({ checked, onChange }) {
       aria-checked={checked}
       onClick={() => onChange(!checked)}
       className={`relative w-[38px] h-[22px] rounded-full shrink-0 transition-colors duration-150 ${
-        checked ? "bg-[#1F6F54]" : "bg-gray-300"
+        checked ? "bg-primary" : "bg-outline"
       }`}
     >
       <span
@@ -70,21 +70,21 @@ export default function BankingSection() {
 
   return (
     <div className="w-full lg:w-[500px] xl:w-[700px] ">
-      <h1 className="text-xl sm:text-[20px] font-semibold text-gray-900 mb-1">
+      <h1 className="font-headline-lg text-xl sm:text-[20px] font-semibold text-on-surface mb-1">
         Banking &amp; payout rails
       </h1>
-      <p className="text-[13.5px] text-gray-500 mb-6">
+      <p className="text-[13.5px] text-on-surface-variant mb-6">
         Where funds settle, and which rails are available to vendors by country.
       </p>
 
       {/* Settlement account */}
-      <div className="bg-white border border-gray-200 rounded-xl p-5 sm:p-6 mb-5">
-        <h2 className="text-[15px] font-semibold text-gray-900 mb-4">
+      <div className="bg-white border border-outline-variant rounded-xl p-5 sm:p-6 mb-5">
+        <h2 className="text-[15px] font-semibold text-on-surface mb-4">
           Settlement account
         </h2>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <div>
-            {/* <label className="block text-[13px] font-medium text-gray-900 mb-1.5">
+            {/* <label className="block text-[13px] font-medium text-on-surface mb-1.5">
                             Account name
                         </label> */}
             <Input
@@ -95,7 +95,7 @@ export default function BankingSection() {
             />
           </div>
           <div>
-            {/* <label className="block text-[13px] font-medium text-gray-900 mb-1.5">
+            {/* <label className="block text-[13px] font-medium text-on-surface mb-1.5">
               Account number
             </label> */}
             {/* Read-only + masked: changing a settlement account should be
@@ -112,16 +112,16 @@ export default function BankingSection() {
       </div>
 
       {/* Enabled payout rails by country */}
-      <div className="bg-white border border-gray-200 rounded-xl p-5 sm:p-6">
-        <h2 className="text-[15px] font-semibold text-gray-900 mb-2">
+      <div className="bg-white border border-outline-variant rounded-xl p-5 sm:p-6">
+        <h2 className="text-[15px] font-semibold text-on-surface mb-2">
           Enabled payout rails by country
         </h2>
         {RAILS.map(({ country, rail, code }) => (
           <div
             key={code}
-            className="flex items-center justify-between py-3 border-b border-gray-200 last:border-b-0 gap-4"
+            className="flex items-center justify-between py-3 border-b border-outline-variant last:border-b-0 gap-4"
           >
-            <span className="text-[13.5px] text-gray-900">
+            <span className="text-[13.5px] text-on-surface">
               {country} — {rail}
             </span>
             <Toggle

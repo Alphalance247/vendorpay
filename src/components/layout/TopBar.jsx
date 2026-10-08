@@ -34,12 +34,12 @@ const STATUS_LABEL = {
 };
 
 const STATUS_COLOR = {
-  paid: "text-emerald",
-  payment_confirmed: "text-emerald",
+  paid: "text-success",
+  payment_confirmed: "text-success",
   rejected: "text-error",
   payment_disputed: "text-error",
-  flagged: "text-amber",
-  funding: "text-blue-600",
+  flagged: "text-warning",
+  funding: "text-primary",
   reviewed: "text-on-surface-variant",
   submitted: "text-on-surface-variant",
 };
@@ -229,7 +229,7 @@ export default function TopBar({ onMenuClick }) {
                     <li key={inv.id}>
                       <button
                         onClick={() => handleNotificationClick(inv)}
-                        className="w-full text-left px-4 py-3 hover:bg-surface-low transition-colors flex items-start gap-3"
+                        className="w-full text-left px-4 py-3 hover:bg-surface-container transition-colors flex items-start gap-3"
                       >
                         <div className="w-7 h-7 rounded-full bg-surface-container flex items-center justify-center flex-shrink-0 mt-0.5">
                           <FileText
@@ -308,7 +308,7 @@ export default function TopBar({ onMenuClick }) {
                   </div>
                 )}
                 <div className="min-w-0">
-                  <p className="text-sm font-semibold text-on-surface truncate">
+                  <p className="text-sm font-semibold text-on-surface truncate capitalize">
                     {displayName}
                   </p>
                   {displayEmail && (
@@ -328,14 +328,14 @@ export default function TopBar({ onMenuClick }) {
                       setShowSettings(false);
                       navigate("/vendor/profile");
                     }}
-                    className="w-full text-left px-4 py-2.5 text-sm text-on-surface hover:bg-surface-low transition-colors flex items-center gap-2.5"
+                    className="w-full text-left px-4 py-2.5 text-sm text-on-surface hover:bg-surface-container transition-colors flex items-center gap-2.5"
                   >
                     <User size={15} className="text-on-surface-variant" />
                     Edit Profile
                   </button>
                 ) : (
                   <button
-                    className="w-full text-left px-4 py-2.5 text-sm text-on-surface hover:bg-surface-low transition-colors flex items-center gap-2.5"
+                    className="w-full text-left px-4 py-2.5 text-sm text-on-surface hover:bg-surface-container transition-colors flex items-center gap-2.5"
                     onClick={() => {
                       setShowSettings(false);
                       navigate("/admin/general-settings/settings");
@@ -353,7 +353,7 @@ export default function TopBar({ onMenuClick }) {
                       role === "admin" ? "/admin/support" : "/vendor/support",
                     );
                   }}
-                  className="w-full text-left px-4 py-2.5 text-sm text-on-surface hover:bg-surface-low transition-colors flex items-center gap-2.5"
+                  className="w-full text-left px-4 py-2.5 text-sm text-on-surface hover:bg-surface-container transition-colors flex items-center gap-2.5"
                 >
                   <Bell size={15} className="text-on-surface-variant" />
                   Support
@@ -363,7 +363,7 @@ export default function TopBar({ onMenuClick }) {
                     setShowSettings(false);
                     setShowSignOutConfirm(true);
                   }}
-                  className="w-full text-left px-4 py-2.5 text-sm text-error hover:bg-red-50 transition-colors flex items-center gap-2.5"
+                  className="w-full text-left px-4 py-2.5 text-sm text-error hover:bg-error/5 transition-colors flex items-center gap-2.5"
                 >
                   <LogOut size={15} />
                   Sign out

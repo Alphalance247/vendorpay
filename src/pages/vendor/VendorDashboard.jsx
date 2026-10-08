@@ -28,7 +28,7 @@ function StatCard({
   value,
   values,
   sub,
-  subColor = "text-emerald",
+  subColor = "text-success",
   badge,
 }) {
   return (
@@ -97,7 +97,7 @@ export default function VendorDashboard() {
     return (
       <AppLayout role="vendor">
         <div className="flex items-center justify-center min-h-[60vh]">
-          <Loader2 size={28} className="animate-spin text-emerald" />
+          <Loader2 size={28} className="animate-spin text-secondary" />
         </div>
       </AppLayout>
     );
@@ -144,9 +144,9 @@ export default function VendorDashboard() {
 
   // Pie built from monetary amounts — slices and legend percentages are now value-based
   const rawPie = [
-    { name: "Settled", value: totalSettledAmt, color: "#059669" },
-    { name: "Rejected", value: totalRejectedAmt, color: "#ba1a1a" },
-    { name: "Pending", value: totalPendingAmt, color: "#74777c" },
+    { name: "Settled", value: totalSettledAmt, color: "#009BC0" },
+    { name: "Rejected", value: totalRejectedAmt, color: "#D6463C" },
+    { name: "Pending", value: totalPendingAmt, color: "#667085" },
   ].filter((s) => s.value > 0);
 
   const pieTotal = rawPie.reduce((sum, s) => sum + s.value, 0);
@@ -163,7 +163,7 @@ export default function VendorDashboard() {
       <div className="space-y-6">
         <div>
           <p className="text-xs text-on-surface-variant">{today}</p>
-          <h1 className="text-2xl font-semibold text-on-surface mt-0.5">
+          <h1 className="font-headline-lg text-2xl font-semibold text-on-surface mt-0.5">
             Good morning{" "}
             <span className="capitalize">
               {data.first_name ? `, ${data.first_name}` : ""}
@@ -231,12 +231,12 @@ export default function VendorDashboard() {
                 >
                   <XAxis
                     dataKey="month"
-                    tick={{ fontSize: 11, fill: "#74777c" }}
+                    tick={{ fontSize: 11, fill: "#667085" }}
                     axisLine={false}
                     tickLine={false}
                   />
                   <YAxis
-                    tick={{ fontSize: 11, fill: "#74777c" }}
+                    tick={{ fontSize: 11, fill: "#667085" }}
                     axisLine={false}
                     tickLine={false}
                     tickFormatter={axisFormatter}
@@ -249,7 +249,7 @@ export default function VendorDashboard() {
                     contentStyle={{
                       fontSize: 12,
                       borderRadius: 8,
-                      border: "1px solid #c4c6cc",
+                      border: "1px solid #D0D5DD",
                     }}
                   />
                   <Legend
@@ -260,19 +260,19 @@ export default function VendorDashboard() {
                   <Bar
                     dataKey="submitted"
                     name="Submitted"
-                    fill="#c4c6cc"
+                    fill="#D0D5DD"
                     radius={[3, 3, 0, 0]}
                   />
                   <Bar
                     dataKey="settled"
                     name="Settled"
-                    fill="#006c49"
+                    fill="#009BC0"
                     radius={[3, 3, 0, 0]}
                   />
                   <Bar
                     dataKey="rejected"
                     name="Rejected"
-                    fill="#ba1a1a"
+                    fill="#D6463C"
                     radius={[3, 3, 0, 0]}
                   />
                 </BarChart>
@@ -294,7 +294,7 @@ export default function VendorDashboard() {
                 <div className="w-full mt-2">
                   <button
                     onClick={() => navigate("/vendor/invoices/new")}
-                    className="w-full border border-orange-600 text-on-surface-variant py-2  rounded-[5px] flex justify-center gap-1 "
+                    className="w-full border border-brand-orange text-on-surface-variant py-2  rounded-[5px] flex justify-center gap-1 "
                   >
                     Submit an Invoice
                     <span>

@@ -246,23 +246,23 @@ export default function Security() {
   // };
   return (
     <div className="w-full lg:w-[500px] xl:w-[700px] ">
-      <h1 className="text-xl sm:text-[20px] font-semibold text-gray-900 mb-1">
+      <h1 className="font-headline-lg text-xl sm:text-[20px] font-semibold text-on-surface mb-1">
         Security
       </h1>
-      <p className="text-[13.5px] text-gray-500 mb-6">
+      <p className="text-[13.5px] text-on-surface-variant mb-6">
         Manage how you sign in and protect your account.
       </p>
       <SecuritySection />
       {/* <Toast show={!!justSaved} message={justSaved} /> */}
       {/* Password */}
-      {/* <div className="bg-white border border-gray-200 rounded-xl p-5 sm:p-6 mb-5">
-        <h2 className="text-[15px] font-semibold text-gray-900">Password</h2>
-        <p className="text-[13px] text-gray-500 mb-4">
+      {/* <div className="bg-white border border-outline-variant rounded-xl p-5 sm:p-6 mb-5">
+        <h2 className="text-[15px] font-semibold text-on-surface">Password</h2>
+        <p className="text-[13px] text-on-surface-variant mb-4">
           Last changed 3 months ago
         </p>
         <button
           onClick={handleChangePassword}
-          className="w-full sm:w-auto text-[13.5px] font-medium text-gray-900 bg-white border border-gray-200 rounded-md px-4 py-2 hover:bg-gray-50 transition-colors"
+          className="w-full sm:w-auto text-[13.5px] font-medium text-on-surface bg-white border border-outline-variant rounded-md px-4 py-2 hover:bg-surface-container-low transition-colors"
         >
           Change password
         </button>
@@ -302,8 +302,8 @@ export default function Security() {
         >
           {/* General error */}
       {/* {errors.form && (
-            <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2.5">
-              <p className="text-sm text-red-700">{errors.form}</p>
+            <div className="rounded-md border border-error/30 bg-error/5 px-3 py-2.5">
+              <p className="text-sm text-error">{errors.form}</p>
             </div>
           )}
           <div className="relative">
@@ -367,7 +367,7 @@ export default function Security() {
               )}
             </button>
           </div>
-          <div className="rounded-lg bg-surface-low border border-outline-variant px-3.5 py-3">
+          <div className="rounded-lg bg-surface-container border border-outline-variant px-3.5 py-3">
             <p className="text-xs font-medium text-on-surface mb-1">
               Password requirements
             </p>
@@ -381,13 +381,13 @@ export default function Security() {
         </form>
       </Modal> */}
       {/* Two-factor authentication */}
-      {/* <div className="bg-white border border-gray-200 rounded-xl p-5 sm:p-6 mb-5">
+      {/* <div className="bg-white border border-outline-variant rounded-xl p-5 sm:p-6 mb-5">
                 <div className="flex items-start justify-between gap-4">
                     <div>
-                        <h2 className="text-[15px] font-semibold text-gray-900">
+                        <h2 className="text-[15px] font-semibold text-on-surface">
                             Two-factor authentication
                         </h2>
-                        <p className="text-[13px] text-gray-500 mt-0.5">
+                        <p className="text-[13px] text-on-surface-variant mt-0.5">
                             Require a code from your authenticator app when signing in
                         </p>
                     </div>
@@ -396,8 +396,8 @@ export default function Security() {
             </div> */}
 
       {/* Active sessions */}
-      {/* <div className="bg-white border border-gray-200 rounded-xl p-5 sm:p-6">
-                <h2 className="text-[15px] font-semibold text-gray-900 mb-2">
+      {/* <div className="bg-white border border-outline-variant rounded-xl p-5 sm:p-6">
+                <h2 className="text-[15px] font-semibold text-on-surface mb-2">
                     Active sessions
                 </h2>
                 {sessions.map((s) => (

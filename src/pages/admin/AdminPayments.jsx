@@ -27,8 +27,8 @@ function formatTotals(items) {
 }
 
 const TABS = [
-  { key: 'Paid', dbStatus: 'paid', icon: CheckCircle, accent: 'text-emerald' },
-  { key: 'Awaiting Payment', dbStatus: 'funding', icon: Clock, accent: 'text-amber-600' },
+  { key: 'Paid', dbStatus: 'paid', icon: CheckCircle, accent: 'text-success' },
+  { key: 'Awaiting Payment', dbStatus: 'funding', icon: Clock, accent: 'text-warning' },
   { key: 'Denied', dbStatus: 'rejected', icon: XCircle, accent: 'text-error' },
 ];
 
@@ -134,7 +134,7 @@ export default function AdminPayments() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Filter by vendor, invoice, or rail..."
-                className="w-full pl-8 pr-3 py-1.5 text-sm bg-surface-low rounded border border-outline-variant focus:outline-none focus:ring-2 focus:ring-secondary"
+                className="w-full pl-8 pr-3 py-1.5 text-sm bg-surface-container rounded border border-outline-variant focus:outline-none focus:ring-2 focus:ring-secondary"
               />
             </div>
           </div>
@@ -156,7 +156,7 @@ export default function AdminPayments() {
               <div className="hidden md:block overflow-x-auto">
                 <table className="w-full">
                   <thead>
-                    <tr className="bg-surface-low border-b border-outline-variant">
+                    <tr className="bg-surface-container border-b border-outline-variant">
                       {['Vendor', 'Invoice #', 'Rail', 'Amount', 'Date', 'Status', 'Action'].map((h) => (
                         <th key={h} className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-on-surface-variant">
                           {h}
@@ -166,7 +166,7 @@ export default function AdminPayments() {
                   </thead>
                   <tbody className="divide-y divide-outline-variant">
                     {filtered.map((p) => (
-                      <tr key={p.id} className="hover:bg-surface-low/50 transition-colors cursor-pointer" onClick={() => navigate(`/admin/invoices/${p.id}`)}>
+                      <tr key={p.id} className="hover:bg-surface-container/50 transition-colors cursor-pointer" onClick={() => navigate(`/admin/invoices/${p.id}`)}>
                         <td className="px-6 py-4">
                           <p className="text-sm font-semibold text-on-surface">{p.vendor_name ?? '—'}</p>
                         </td>
@@ -200,7 +200,7 @@ export default function AdminPayments() {
                   <div
                     key={p.id}
                     onClick={() => navigate(`/admin/invoices/${p.id}`)}
-                    className="px-4 py-4 active:bg-surface-low/50 transition-colors cursor-pointer"
+                    className="px-4 py-4 active:bg-surface-container/50 transition-colors cursor-pointer"
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">

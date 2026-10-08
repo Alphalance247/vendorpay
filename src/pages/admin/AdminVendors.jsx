@@ -9,18 +9,20 @@ import {
   Trash2,
   UserPlus,
   Mail,
+  Eye,
 } from "lucide-react";
 import AppLayout from "../../components/layout/AppLayout";
 // import Card from "../../components/ui/Card";
 import Button from "../../components/ui/Button";
 import InviteVendorModal from "../../components/ui/InviteVendorModal";
 import StatusChip from "../../components/ui/StatusChip";
-// import Tooltip from "../../components/ui/Tooltip";
+import ActionMenu from "../../components/ui/ActionMenu";
 import { vendorService } from "../../lib/services/vendorService";
 import { useConfirm } from "../../hooks/useConfirm";
 import { useToast } from "../../components/ui/Toast";
 import { useResendInvite } from "../../hooks/useQueries/vendorAdmin/useResendInvite";
 import { useDeleteTeamMember } from "../../hooks/useQueries/vendorAdmin/useDeleteTeamMember";
+import { useNavigate } from "react-router-dom";
 // import { BsThreeDotsVertical } from "react-icons/bs";
 
 // function InviteVendorModal({ open, onClose, onInvite, submitting }) {
@@ -77,7 +79,7 @@ import { useDeleteTeamMember } from "../../hooks/useQueries/vendorAdmin/useDelet
 // }
 
 export default function AdminVendors() {
-  // const navigate = useNavigate();
+  const navigate = useNavigate();
   const [vendors, setVendors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -117,15 +119,15 @@ export default function AdminVendors() {
   async function handleCancelInvite(invite) {
     const email = invite.email ?? invite.contact_email ?? invite.user_email;
     const ok = await confirm({
-      title: "Cancel Invite",
-      message: `Cancel the invite sent to "${email}"?`,
-      confirmLabel: "Cancel Invite",
+      title: "Revoke Access",
+      message: `Revoke the invitation sent to "${email}"? Their invite link will stop working.`,
+      confirmLabel: "Revoke Access",
       variant: "danger",
       onConfirm: () => deleteInvite.mutateAsync(invite.id),
     });
     if (ok) {
       loadVendors();
-      toast(`Cancelled invite to ${email}.`);
+      toast(`Revoked access for ${email}.`);
     }
   }
 
@@ -227,7 +229,7 @@ export default function AdminVendors() {
             </div>
           </div>
         ) : error ? (
-          <div className="rounded-xl border border-red-200 bg-red-50 p-6 text-center">
+          <div className="rounded-xl border border-error/30 bg-error/5 p-6 text-center">
             <p className="text-sm font-medium text-error">{error}</p>
 
             <Button
@@ -243,7 +245,7 @@ export default function AdminVendors() {
           <div className="hidden md:block overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="bg-surface-low border-b border-outline-variant">
+                <tr className="bg-surface-container border-b border-outline-variant">
                   {["Company", "Contact", "Industry", "Status", "Action"].map(
                     (h) => (
                       <th
@@ -256,155 +258,182 @@ export default function AdminVendors() {
                   )}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-outline-variant">
-                {registeredVendors.map((vendor) => (
-                  <tr
-                    key={vendor.id}
-                    title="View full profile, banking details, and invoice history"
-                    className="hover:bg-surface-low/50 transition-colors cursor-pointer"
-                    // onClick={() => navigate(`/admin/vendors/${vendor.id}`)}
-                  >
-                    <td className="px-6 py-4">
-                      <p className="text-sm font-semibold text-on-surface">
-                        {vendor.company_name ?? "—"}
-                      </p>
-                      <p className="text-xs text-on-surface-variant mt-0.5">
-                        {vendor.business_type ?? ""}
-                      </p>
-                    </td>
-                    <td className="px-6 py-4">
-                      <p className="text-sm text-on-surface">
-                        {vendor.contact_first_name || vendor.contact_last_name
-                          ? `${vendor.contact_first_name ?? ""} ${vendor.contact_last_name ?? ""}`.trim()
-                          : "—"}
-                      </p>
-                      <p className="text-xs text-on-surface-variant">
-                        {vendor.contact_email ?? vendor.user_email ?? "—"}
-                      </p>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-on-surface-variant">
-                      {vendor.industry ?? "—"}
-                    </td>
-                    <td className="px-6 py-4">
-                      <StatusChip
-                        status={vendor.status}
-                        // status={vendor.is_active ? "Active" : "Inactive"}
-                      />
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="relative ">
-                        <button
-                          onClick={() => handleToggleStatus(vendor)}
-                          title={
-                            vendor.is_active
-                              ? "Deactivate vendor"
-                              : "Activate vendor"
-                          }
-                          className="p-1.5 rounded hover:bg-surface-container transition-colors"
-                        >
-                          {vendor.is_active ? (
-                            <PowerOff size={14} className="text-amber-600" />
-                          ) : (
-                            <Power size={14} className="text-emerald" />
-                          )}
-                        </button>
-                        <button
-                          onClick={() => handleDelete(vendor)}
-                          title="Delete vendor"
-                          className="p-1.5 rounded hover:bg-red-50 transition-colors"
-                        >
-                          <Trash2 size={14} className="text-error" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-
-                {pendingVendorInvites.map((invite) => {
-                  const resending =
-                    resendInvite.isPending &&
-                    resendInvite.variables === invite.id;
-                  const cancelling =
-                    deleteInvite.isPending &&
-                    deleteInvite.variables === invite.id;
-                  return (
+              {vendors.length > 0 ? (
+                <tbody className="divide-y divide-outline-variant">
+                  {registeredVendors.map((vendor) => (
                     <tr
-                      key={invite.id}
-                      className="hover:bg-surface-low/50 transition-colors cursor-pointer"
+                      key={vendor.id}
+                      title="View full profile, banking details, and invoice history"
+                      className="hover:bg-surface-container/50 transition-colors cursor-pointer"
+                    // onClick={() => navigate(`/admin/vendors/${vendor.id}`)}
                     >
                       <td className="px-6 py-4">
                         <p className="text-sm font-semibold text-on-surface">
-                          {invite.company_name ?? "—"}
+                          {vendor.company_name ?? "—"}
                         </p>
                         <p className="text-xs text-on-surface-variant mt-0.5">
-                          {invite.business_type ?? ""}
+                          {vendor.business_type ?? ""}
                         </p>
                       </td>
                       <td className="px-6 py-4">
                         <p className="text-sm text-on-surface">
-                          {invite.contact_first_name || invite.contact_last_name
-                            ? `${invite.contact_first_name ?? ""} ${invite.contact_last_name ?? ""}`.trim()
+                          {vendor.contact_first_name || vendor.contact_last_name
+                            ? `${vendor.contact_first_name ?? ""} ${vendor.contact_last_name ?? ""}`.trim()
                             : "—"}
                         </p>
                         <p className="text-xs text-on-surface-variant">
-                          {invite.contact_email ?? invite.user_email ?? "—"}
+                          {vendor.contact_email ?? vendor.user_email ?? "—"}
                         </p>
                       </td>
                       <td className="px-6 py-4 text-sm text-on-surface-variant">
-                        {invite.industry ?? "—"}
+                        {vendor.industry ?? "—"}
                       </td>
-                      <td className="px-6 py-4 ">
-                        <StatusChip status={invite.status} />
+                      <td className="px-6 py-4">
+                        <StatusChip
+                          status={vendor.status}
+                        // status={vendor.is_active ? "Active" : "Inactive"}
+                        />
                       </td>
                       <td
                         className="px-6 py-4"
                         onClick={(e) => e.stopPropagation()}
                       >
-                        <div className="relative flex items-center gap-1">
-                          {/* Resend Invite */}
-                          <button
-                            type="button"
-                            onClick={() => handleResendInvite(invite)}
-                            disabled={resending}
-                            title="Resend invite"
-                            className="p-1.5 rounded hover:bg-surface-container transition-colors disabled:opacity-50"
+                        <ActionMenu
+                          items={[
+                            {
+                              label: "View",
+                              icon: Eye,
+                              onClick: () => navigate(`/admin/vendors/${vendor.id}`),
+                            },
+                            {
+                              label: vendor.is_active ? "Deactivate" : "Activate",
+                              icon: vendor.is_active ? PowerOff : Power,
+                              onClick: () => handleToggleStatus(vendor),
+                            },
+                            {
+                              label: "Delete",
+                              icon: Trash2,
+                              danger: true,
+                              onClick: () => handleDelete(vendor),
+                            },
+                          ]}
+                        />
+                        {/* <div className="flex items-center gap-4">
+                          <Tooltip
+                            text={
+                              vendor.is_active
+                                ? "Deactivate vendor"
+                                : "Activate vendor"
+                            }
                           >
-                            {resending ? (
-                              <Loader2
-                                size={14}
-                                className="animate-spin text-on-surface-variant"
-                              />
-                            ) : (
-                              <Mail
-                                size={14}
-                                className="text-on-surface-variant"
-                              />
-                            )}
-                          </button>
-
-                          {/* Cancel Invite */}
-                          <button
-                            type="button"
-                            onClick={() => handleCancelInvite(invite)}
-                            disabled={cancelling}
-                            title="Cancel invite"
-                            className="p-1.5 rounded hover:bg-red-50 transition-colors disabled:opacity-50"
-                          >
-                            {cancelling ? (
-                              <Loader2
-                                size={14}
-                                className="animate-spin text-error"
-                              />
-                            ) : (
+                            <button
+                              type="button"
+                              onClick={() => handleToggleStatus(vendor)}
+                              aria-label={
+                                vendor.is_active
+                                  ? "Deactivate vendor"
+                                  : "Activate vendor"
+                              }
+                              className="p-1.5 rounded hover:bg-surface-container transition-colors"
+                            >
+                              {vendor.is_active ? (
+                                <PowerOff size={14} className="text-warning" />
+                              ) : (
+                                <Power size={14} className="text-success" />
+                              )}
+                            </button>
+                          </Tooltip>
+                          <Tooltip text="Delete vendor">
+                            <button
+                              type="button"
+                              onClick={() => handleDelete(vendor)}
+                              aria-label="Delete vendor"
+                              className="p-1.5 rounded hover:bg-error/5 transition-colors"
+                            >
                               <Trash2 size={14} className="text-error" />
-                            )}
-                          </button>
-                        </div>
+                            </button>
+                          </Tooltip>
+                        </div> */}
                       </td>
                     </tr>
-                  );
-                })}
-              </tbody>
+                  ))}
+
+                  {pendingVendorInvites.map((invite) => {
+                    const resending =
+                      resendInvite.isPending &&
+                      resendInvite.variables === invite.id;
+                    const cancelling =
+                      deleteInvite.isPending &&
+                      deleteInvite.variables === invite.id;
+                    return (
+                      <tr
+                        key={invite.id}
+                        className="hover:bg-surface-container/50 transition-colors cursor-pointer"
+                      >
+                        <td className="px-6 py-4">
+                          <p className="text-sm font-semibold text-on-surface">
+                            {invite.company_name ?? "—"}
+                          </p>
+                          <p className="text-xs text-on-surface-variant mt-0.5">
+                            {invite.business_type ?? ""}
+                          </p>
+                        </td>
+                        <td className="px-6 py-4">
+                          <p className="text-sm text-on-surface">
+                            {invite.contact_first_name || invite.contact_last_name
+                              ? `${invite.contact_first_name ?? ""} ${invite.contact_last_name ?? ""}`.trim()
+                              : "—"}
+                          </p>
+                          <p className="text-xs text-on-surface-variant">
+                            {invite.contact_email ?? invite.user_email ?? "—"}
+                          </p>
+                        </td>
+                        <td className="px-6 py-4 text-sm text-on-surface-variant">
+                          {invite.industry ?? "—"}
+                        </td>
+                        <td className="px-6 py-4 ">
+                          <StatusChip status={invite.status} />
+                        </td>
+                        <td
+                          className="px-6 py-4"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <ActionMenu
+                            items={[
+                              {
+                                label: resending ? "Resending…" : "Resend invitation",
+                                icon: resending ? Loader2 : Mail,
+                                loading: resending,
+                                disabled: resending,
+                                onClick: () => handleResendInvite(invite),
+                              },
+                              {
+                                label: cancelling ? "Revoking…" : "Revoke access",
+                                icon: cancelling ? Loader2 : Trash2,
+                                loading: cancelling,
+                                disabled: cancelling,
+                                danger: true,
+                                onClick: () => handleCancelInvite(invite),
+                              },
+                            ]}
+                          />
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>) : (
+                <tbody>
+                  <tr>
+                    <td
+                      colSpan={5}
+                      className="px-6 py-16 text-center text-sm text-on-surface-variant"
+                    >
+                      No vendors found.
+                    </td>
+                  </tr>
+                </tbody>
+              )
+              }
             </table>
           </div>
         )}

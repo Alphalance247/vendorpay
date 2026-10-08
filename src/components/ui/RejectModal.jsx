@@ -41,7 +41,7 @@ export default function RejectModal({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="p-6">
-          <div className="w-11 h-11 rounded-full flex items-center justify-center mb-4 bg-red-50 text-error">
+          <div className="w-11 h-11 rounded-full flex items-center justify-center mb-4 bg-error/5 text-error">
             <XCircle size={20} />
           </div>
           <h3 className="text-base font-semibold text-on-surface">{title}</h3>
@@ -59,13 +59,13 @@ export default function RejectModal({
             placeholder="Enter rejection reason (required)..."
             rows={4}
             disabled={loading}
-            className="w-full rounded border border-outline-variant px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-error disabled:bg-surface-low disabled:cursor-not-allowed"
+            className="w-full rounded border border-outline-variant px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-error disabled:bg-surface-container disabled:cursor-not-allowed"
           />
           {reason.trim().length === 0 && (
             <p className="text-xs text-error mt-1">A reason is required before rejecting.</p>
           )}
           {error && (
-            <p className="text-sm text-error mt-2 bg-red-50 border border-red-200 rounded px-3 py-2">{error}</p>
+            <p className="text-sm text-error mt-2 bg-error/5 border border-error/30 rounded px-3 py-2">{error}</p>
           )}
         </div>
         <div className="flex items-center justify-end gap-2 px-6 pb-5">

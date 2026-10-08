@@ -11,19 +11,19 @@ const ICONS = {
 };
 
 const ICON_COLORS = {
-  danger: 'bg-red-50 text-error',
-  warning: 'bg-amber-50 text-amber-600',
-  reject: 'bg-red-50 text-error',
+  danger: 'bg-error/5 text-error',
+  warning: 'bg-warning-container text-warning',
+  reject: 'bg-error/5 text-error',
   neutral: 'bg-navy/5 text-navy',
-  approve: 'bg-emerald/10 text-emerald',
+  approve: 'bg-success/10 text-success',
 };
 
 const CONFIRM_VARIANTS = {
   danger: 'bg-error text-white hover:bg-error/90',
-  warning: 'bg-amber-500 text-white hover:bg-amber-600',
+  warning: 'bg-warning text-navy hover:bg-warning/90',
   reject: 'bg-error text-white hover:bg-error/90',
   neutral: 'bg-navy text-white hover:bg-navy/90',
-  approve: 'bg-emerald text-white hover:bg-emerald/90',
+  approve: 'bg-primary text-white hover:bg-primary/90',
 };
 
 export default function ConfirmModal({
@@ -72,7 +72,7 @@ export default function ConfirmModal({
           <h3 className="text-base font-semibold text-on-surface">{title}</h3>
           <p className="text-sm text-on-surface-variant mt-1.5 leading-relaxed">{message}</p>
           {error && (
-            <p className="text-sm text-error mt-3 bg-red-50 border border-red-200 rounded px-3 py-2">{error}</p>
+            <p className="text-sm text-error mt-3 bg-error/5 border border-error/30 rounded px-3 py-2">{error}</p>
           )}
         </div>
         <div className="flex items-center justify-end gap-2 px-6 pb-5">

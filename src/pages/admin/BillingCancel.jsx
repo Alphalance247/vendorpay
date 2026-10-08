@@ -18,11 +18,11 @@ export default function BillingCancel() {
         <AppLayout role="admin">
             <div className="flex items-center justify-center min-h-[70vh]">
                 <Card className="max-w-md w-full text-center py-10 px-8">
-                    <div className="w-16 h-16 rounded-full bg-emerald/10 flex items-center justify-center mx-auto mb-5">
-                        <CheckCircle size={32} className="text-emerald" />
+                    <div className="w-16 h-16 rounded-full bg-success/10 flex items-center justify-center mx-auto mb-5">
+                        <CheckCircle size={32} className="text-success" />
                     </div>
 
-                    <h1 className="text-xl font-semibold text-on-surface">
+                    <h1 className="font-headline-lg text-xl font-semibold text-on-surface">
                         Payment Canceled
                     </h1>
 

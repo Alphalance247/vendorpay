@@ -8,8 +8,8 @@ import { formatDate, extractErrorMessage } from '../../lib/utils';
 import { supportService } from '../../lib/services/supportService';
 
 const STATUS_STYLES = {
-  open:        { label: 'Open',        className: 'bg-amber-100 text-amber-700', Icon: Clock },
-  in_progress: { label: 'In Progress', className: 'bg-blue-100 text-blue-700',  Icon: AlertCircle },
+  open:        { label: 'Open',        className: 'bg-navy/10 text-navy', Icon: Clock },
+  in_progress: { label: 'In Progress', className: 'bg-primary-fixed text-primary',  Icon: AlertCircle },
   closed:      { label: 'Closed',      className: 'bg-surface-container text-on-surface-variant', Icon: CheckCircle },
 };
 
@@ -82,11 +82,11 @@ function TicketThread({ ticketId, isAdmin, onBack }) {
     }
   }
 
-  if (!ticket) return <div className="flex items-center justify-center py-20"><Loader2 size={24} className="animate-spin text-emerald" /></div>;
+  if (!ticket) return <div className="flex items-center justify-center py-20"><Loader2 size={24} className="animate-spin text-secondary" /></div>;
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex items-center justify-between px-4 py-3 border-b border-outline-variant bg-surface-low">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-outline-variant bg-surface-container">
         <div className="flex items-center gap-3">
           <button onClick={onBack} className="p-1 rounded hover:bg-surface-container text-on-surface-variant">
             <X size={16} />
@@ -118,7 +118,7 @@ function TicketThread({ ticketId, isAdmin, onBack }) {
           return (
             <div key={msg.id} className={`flex gap-3 ${isOwnMessage ? 'flex-row-reverse' : ''}`}>
               <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold ${
-                msg.sender_role === 'admin' ? 'bg-navy text-white' : 'bg-emerald/10 text-emerald'
+                msg.sender_role === 'admin' ? 'bg-navy text-white' : 'bg-success/10 text-success'
               }`}>
                 {msg.sender_name.charAt(0).toUpperCase()}
               </div>
@@ -148,7 +148,7 @@ function TicketThread({ ticketId, isAdmin, onBack }) {
             onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendReply(); } }}
             placeholder="Type a reply... (Enter to send, Shift+Enter for newline)"
             rows={2}
-            className="flex-1 rounded border border-outline-variant px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-emerald"
+            className="flex-1 rounded border border-outline-variant px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-success"
           />
           <Button onClick={sendReply} disabled={sending || !replyText.trim()} className="self-end p-2">
             {sending ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
@@ -190,7 +190,7 @@ function TicketList({ tickets, onSelect, onNew, isAdmin }) {
           <button
             key={t.id}
             onClick={() => onSelect(t.id)}
-            className="w-full text-left px-4 py-3 hover:bg-surface-low/60 transition-colors flex items-start justify-between gap-3"
+            className="w-full text-left px-4 py-3 hover:bg-surface-container/60 transition-colors flex items-start justify-between gap-3"
           >
             <div className="min-w-0 flex-1">
               <p className="text-sm font-medium text-on-surface truncate">{t.subject}</p>
@@ -247,7 +247,7 @@ function NewTicketForm({ onSubmit, onCancel }) {
             value={subject}
             onChange={(e) => setSubject(e.target.value)}
             placeholder="Brief description of your issue"
-            className="w-full rounded border border-outline-variant px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald"
+            className="w-full rounded border border-outline-variant px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-success"
           />
         </div>
         <div>
@@ -257,7 +257,7 @@ function NewTicketForm({ onSubmit, onCancel }) {
             onChange={(e) => setBody(e.target.value)}
             placeholder="Describe your issue in detail..."
             rows={6}
-            className="w-full rounded border border-outline-variant px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-emerald"
+            className="w-full rounded border border-outline-variant px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-success"
           />
         </div>
         {error && <p className="text-xs text-error">{error}</p>}
@@ -347,10 +347,10 @@ function AiChat() {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="px-4 py-3 border-b border-outline-variant bg-emerald/5 flex items-center gap-2">
-        <Bot size={16} className="text-emerald" />
+      <div className="px-4 py-3 border-b border-outline-variant bg-success/5 flex items-center gap-2">
+        <Bot size={16} className="text-secondary" />
         <span className="text-sm font-semibold text-on-surface">AI Assistant</span>
-        <span className="text-xs text-emerald bg-emerald/10 px-2 py-0.5 rounded-full ml-1">Online</span>
+        <span className="text-xs text-success bg-success/10 px-2 py-0.5 rounded-full ml-1">Online</span>
         <span className="text-xs text-on-surface-variant ml-auto">
           {messages.length > 1 ? `${messages.length - 1} message${messages.length > 2 ? 's' : ''}` : 'New conversation'}
         </span>
@@ -358,7 +358,7 @@ function AiChat() {
           <button
             onClick={clearHistory}
             title="Clear chat history"
-            className="p-1 rounded text-on-surface-variant hover:text-error hover:bg-red-50 transition-colors"
+            className="p-1 rounded text-on-surface-variant hover:text-error hover:bg-error/5 transition-colors"
           >
             <Trash2 size={13} />
           </button>
@@ -368,8 +368,8 @@ function AiChat() {
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.map((msg, i) => (
           <div key={i} className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${msg.role === 'assistant' ? 'bg-emerald/10' : 'bg-navy'}`}>
-              {msg.role === 'assistant' ? <Bot size={14} className="text-emerald" /> : <User size={14} className="text-white" />}
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${msg.role === 'assistant' ? 'bg-success/10' : 'bg-navy'}`}>
+              {msg.role === 'assistant' ? <Bot size={14} className="text-secondary" /> : <User size={14} className="text-white" />}
             </div>
             <div className={`max-w-[72%] rounded-lg px-3 py-2 text-sm leading-relaxed ${
               msg.role === 'assistant' ? 'bg-surface-container text-on-surface' : 'bg-navy text-white'
@@ -382,11 +382,11 @@ function AiChat() {
         ))}
         {loading && (
           <div className="flex gap-3">
-            <div className="w-8 h-8 rounded-full bg-emerald/10 flex items-center justify-center flex-shrink-0">
-              <Bot size={14} className="text-emerald" />
+            <div className="w-8 h-8 rounded-full bg-success/10 flex items-center justify-center flex-shrink-0">
+              <Bot size={14} className="text-secondary" />
             </div>
             <div className="bg-surface-container rounded-lg px-3 py-2">
-              <Loader2 size={14} className="animate-spin text-emerald" />
+              <Loader2 size={14} className="animate-spin text-secondary" />
             </div>
           </div>
         )}
@@ -400,7 +400,7 @@ function AiChat() {
           onKeyDown={(e) => e.key === 'Enter' && send()}
           placeholder="Ask about your invoice, payment, or account..."
           disabled={loading}
-          className="flex-1 rounded border border-outline-variant px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald disabled:opacity-50"
+          className="flex-1 rounded border border-outline-variant px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-success disabled:opacity-50"
         />
         <Button onClick={send} disabled={loading || !input.trim()} className="p-2">
           <Send size={16} />
@@ -470,7 +470,7 @@ export default function Support({ admin = false }) {
   return (
     <AppLayout role={role}>
       <div className="space-y-4">
-        <h1 className="text-2xl font-semibold text-on-surface">
+        <h1 className="font-headline-lg text-2xl font-semibold text-on-surface">
           {admin ? 'Vendor Support' : 'Support'}
         </h1>
 
@@ -506,7 +506,7 @@ export default function Support({ admin = false }) {
                 onClick={() => { setTab(key); setAT(null); setNewForm(false); }}
                 className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
                   tab === key
-                    ? 'border-emerald text-emerald'
+                    ? 'border-success text-success'
                     : 'border-transparent text-on-surface-variant hover:text-on-surface'
                 }`}
               >
@@ -526,7 +526,7 @@ export default function Support({ admin = false }) {
               <NewTicketForm onSubmit={handleNewTicket} onCancel={() => setNewForm(false)} />
             ) : loadingTickets ? (
               <div className="flex items-center justify-center py-20">
-                <Loader2 size={24} className="animate-spin text-emerald" />
+                <Loader2 size={24} className="animate-spin text-secondary" />
               </div>
             ) : (
               <TicketList

@@ -31,7 +31,7 @@ export default function DisputeModal({ open, invoiceNumber, loading = false, err
         onClick={(e) => e.stopPropagation()}
       >
         <div className="p-6">
-          <div className="w-11 h-11 rounded-full flex items-center justify-center mb-4 bg-amber/10 text-amber">
+          <div className="w-11 h-11 rounded-full flex items-center justify-center mb-4 bg-warning/10 text-warning">
             <AlertTriangle size={20} />
           </div>
           <h3 className="text-base font-semibold text-on-surface">Dispute Payment</h3>
@@ -46,13 +46,13 @@ export default function DisputeModal({ open, invoiceNumber, loading = false, err
             placeholder="e.g. Payment received is less than the invoice amount..."
             rows={4}
             disabled={loading}
-            className="w-full rounded border border-outline-variant px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-amber focus:border-amber transition-colors disabled:bg-surface-low disabled:cursor-not-allowed"
+            className="w-full rounded border border-outline-variant px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-warning focus:border-warning transition-colors disabled:bg-surface-container disabled:cursor-not-allowed"
           />
           {reason.trim().length === 0 && (
             <p className="text-xs text-error mt-1">Please provide a reason before disputing.</p>
           )}
           {error && (
-            <p className="text-sm text-error mt-2 bg-red-50 border border-red-200 rounded px-3 py-2">{error}</p>
+            <p className="text-sm text-error mt-2 bg-error/5 border border-error/30 rounded px-3 py-2">{error}</p>
           )}
         </div>
         <div className="flex items-center justify-end gap-2 px-6 pb-5">
@@ -60,7 +60,7 @@ export default function DisputeModal({ open, invoiceNumber, loading = false, err
           <button
             onClick={() => reason.trim() && onConfirm(reason.trim())}
             disabled={!reason.trim() || loading}
-            className="px-4 py-1.5 rounded text-sm font-medium transition-colors bg-amber text-white hover:bg-amber-dark disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5"
+            className="px-4 py-1.5 rounded text-sm font-medium transition-colors bg-primary text-white hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1.5"
           >
             {loading && <Loader2 size={14} className="animate-spin" />}
             Submit Dispute

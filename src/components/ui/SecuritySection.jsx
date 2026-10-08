@@ -145,14 +145,14 @@ const SecuritySection = () => {
     <div>
       <Toast show={!!justSaved} message={justSaved} />
       {/* Password */}
-      <div className="bg-white border border-gray-200 rounded-xl p-5 sm:p-6 mb-5">
-        <h2 className="text-[15px] font-semibold text-gray-900">Password</h2>
-        <p className="text-[13px] text-gray-500 mb-4">
+      <div className="bg-white border border-outline-variant rounded-xl p-5 sm:p-6 mb-5">
+        <h2 className="text-[15px] font-semibold text-on-surface">Password</h2>
+        <p className="text-[13px] text-on-surface-variant mb-4">
           Last changed 3 months ago
         </p>
         <button
           onClick={handleChangePassword}
-          className="w-full sm:w-auto text-[13.5px] font-medium text-gray-900 bg-white border border-gray-200 rounded-md px-4 py-2 hover:bg-gray-50 transition-colors"
+          className="w-full sm:w-auto text-[13.5px] font-medium text-on-surface bg-white border border-outline-variant rounded-md px-4 py-2 hover:bg-surface-container-low transition-colors"
         >
           Change password
         </button>
@@ -192,8 +192,8 @@ const SecuritySection = () => {
         >
           {/* General error */}
           {errors.form && (
-            <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2.5">
-              <p className="text-sm text-red-700">{errors.form}</p>
+            <div className="rounded-md border border-error/30 bg-error/5 px-3 py-2.5">
+              <p className="text-sm text-error">{errors.form}</p>
             </div>
           )}
           <div className="relative">
@@ -257,7 +257,7 @@ const SecuritySection = () => {
               )}
             </button>
           </div>
-          <div className="rounded-lg bg-surface-low border border-outline-variant px-3.5 py-3">
+          <div className="rounded-lg bg-surface-container border border-outline-variant px-3.5 py-3">
             <p className="text-xs font-medium text-on-surface mb-1">
               Password requirements
             </p>
