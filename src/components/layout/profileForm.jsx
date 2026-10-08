@@ -1,8 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import {
-  // Camera,
-  Upload,
-} from "lucide-react";
+import { Camera, Loader2, Trash2 } from "lucide-react";
 import Input from "../ui/Input";
 import { resolveMediaUrl } from "../../lib/apiClient";
 // import Select from "../ui/Select";
@@ -19,6 +16,7 @@ export default function ProfileForm({
   onSubmit,
   onCancel,
   onUploadPhoto,
+  onRemovePhoto,
   loading = false,
 }) {
   const fileInputRef = useRef(null);
@@ -39,6 +37,17 @@ export default function ProfileForm({
   );
   const [photoError, setPhotoError] = useState("");
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  // The parent's confirm modal handles the request, its spinner and any
+  // error; this only clears the preview once the photo is actually gone.
+  const handleRemovePhoto = async () => {
+    if (!onRemovePhoto) return;
+    setPhotoError("");
+    const removed = await onRemovePhoto();
+    if (removed) {
+      setProfileImage(null);
+      setFormData((prev) => ({ ...prev, avatar_url: "" }));
+    }
+  };
 
   // Revoke the local preview URL whenever it's replaced or the component
   // unmounts (only blob: URLs are ours to revoke — the initial value may be
@@ -150,8 +159,8 @@ export default function ProfileForm({
       className="w-full rounded-2xl border border-outline-variant  p-5 sm:p-6 lg:p-8 bg-white"
     >
       {/* Profile photo */}
-      <div className="flex flex-col sm:flex-row sm:items-center gap-5 sm:gap-6">
-        {/* Avatar */}
+      {/* <div className="flex flex-col sm:flex-row sm:items-center gap-5 sm:gap-6">
+   
         <div className="relative flex-shrink-0">
           <div className={profileImage ? "w-16 h-16 sm:w-20 sm:h-20 rounded-full overflow-hidden border border-outline-variant bg-surface-container-low flex items-center justify-center" : "border border-primary-fixed-dim bg-primary w-16 h-16 sm:w-20 sm:h-20 rounded-full"}>
             {profileImage ? (
@@ -174,38 +183,139 @@ export default function ProfileForm({
             )}
           </div>
 
-
-        </div>
-
-        {/* Upload */}
-        <div className="space-y-1.5">
+         
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
             disabled={uploadingPhoto}
-            className="w-full inline-flex items-center justify-center gap-2 rounded-md border border-outline-variant bg-surface px-5 py-3 text-sm font-semibold text-on-surface hover:bg-surface-container transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            aria-label={profileImage ? "Change photo" : "Upload photo"}
+            title={profileImage ? "Change photo" : "Upload photo"}
+            className="absolute -bottom-0.5 -right-0.5 w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white border border-outline-variant shadow-card flex items-center justify-center text-on-surface hover:bg-surface-container transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            <Upload size={17} />
-            {uploadingPhoto ? "Uploading..." : "Upload photo"}
+            {uploadingPhoto ? (
+              <Loader2 size={14} className="animate-spin" />
+            ) : (
+              <Camera size={14} />
+            )}
           </button>
+        </div>
 
-          <p className="text-sm text-on-surface-variant">
-            JPG or PNG, at least 200×200px
-          </p>
+      
+        <div className="space-y-1">
+          <div>
+            <p className="text-sm font-semibold text-on-surface truncate capitalize">
+              {formData.full_name}
+            </p>
+            <p className="text-xs text-on-surface-variant truncate">
+              {formData.email}
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+
+            {profileImage && onRemovePhoto && !uploadingPhoto && (
+              <button
+                type="button"
+                onClick={handleRemovePhoto}
+                className="inline-flex items-center gap-1 text-xs font-semibold text-error hover:underline"
+              >
+                <Trash2 size={12} /> Remove photo
+              </button>
+            )}
+            <span className="text-[11px] text-on-surface-variant">
+              JPG or PNG, at least 200×200px
+            </span>
+          </div>
 
           {photoError && <p className="text-xs text-error">{photoError}</p>}
         </div>
 
         {/* Hidden file input */}
-        <Input
-          ref={fileInputRef}
-          type="file"
-          accept="image/jpeg,image/png,image/jpg"
-          onChange={handleImageChange}
-          className="hidden"
-        />
-      </div>
+      <Input
+        ref={fileInputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/jpg"
+        onChange={handleImageChange}
+        className="hidden"
+      />
+      {/* </div> */}
+      <div>
+        <div className="flex items-center gap-4 min-w-0">
+          <div className="relative flex-shrink-0">
+            <div className="relative w-16 h-16 rounded-full bg-primary flex items-center justify-center overflow-hidden border border-outline-variant">
+              {profileImage ? (
+                <img
+                  src={profileImage}
+                  alt="Profile"
+                  className="w-full h-full object-cover"
+                  onLoad={() => {
+                    console.log("✅ IMAGE LOADED:", profileImage);
+                  }}
+                  onError={(e) => {
+                    console.log("❌ IMAGE FAILED:", profileImage);
+                    console.log("Image element:", e.currentTarget);
+                  }}
+                />
+              ) : (
 
+                <span className="text-on-primary text-xl sm:text-4xl font-bold uppercase">
+                  {formData.full_name?.charAt(0)}
+                </span>
+              )}
+              {uploadingPhoto && (
+                <div className="absolute inset-0 bg-navy/50 flex items-center justify-center">
+                  <Loader2 size={18} className="animate-spin text-white" />
+                </div>
+              )}
+            </div>
+
+            {/* Camera button — opens the file picker */}
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploadingPhoto}
+              aria-label={profileImage ? "Change photo" : "Upload photo"}
+              title={profileImage ? "Change photo" : "Upload photo"}
+              className="absolute -bottom-0.5 -right-0.5 w-7 h-7 rounded-full bg-white border border-outline-variant shadow-card flex items-center justify-center text-on-surface hover:bg-surface-container transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              <Camera size={14} />
+            </button>
+          </div>
+          <div className="min-w-0">
+            <p className="text-sm font-semibold text-on-surface truncate capitalize">
+              {formData.full_name || "Your Name"}
+            </p>
+            <p className="text-xs text-on-surface-variant truncate">
+              {formData.email || "contact email"}
+            </p>
+
+            {/* Photo actions — beside the avatar */}
+            <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
+              {profileImage && onRemovePhoto && !uploadingPhoto && (
+                <button
+                  type="button"
+                  onClick={handleRemovePhoto}
+                  className="inline-flex items-center gap-1 text-xs font-semibold text-error hover:underline"
+                >
+                  <Trash2 size={12} /> Remove photo
+                </button>
+              )}
+              <span className="text-[11px] text-on-surface-variant">
+                JPG, PNG or WebP, up to 2MB.
+              </span>
+            </div>
+            {photoError && (
+              <p className="mt-1 text-xs text-error">{photoError}</p>
+            )}
+            <Input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/jpg"
+              onChange={handleImageChange}
+              className="hidden"
+            />
+          </div>
+        </div>
+      </div>
       {/* Form fields */}
       <div className="mt-8 space-y-6">
         {/* First + Last name */}

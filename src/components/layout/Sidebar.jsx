@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { useAuth } from "../../lib/authContext";
+import { resolveMediaUrl } from "../../lib/apiClient";
 import ConfirmModal from "../ui/ConfirmModal";
 import Logo from "../ui/Logo";
 
@@ -46,6 +47,14 @@ export default function Sidebar({
   const navigate = useNavigate();
   const { logout } = useAuth();
   const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
+  // Fall back to the initial if the avatar URL is broken; reset whenever the
+  // URL changes (e.g. after uploading a new photo).
+  const [avatarFailed, setAvatarFailed] = useState(false);
+  const [prevAvatar, setPrevAvatar] = useState(user?.avatar_url);
+  if (user?.avatar_url !== prevAvatar) {
+    setPrevAvatar(user?.avatar_url);
+    setAvatarFailed(false);
+  }
 
   useEffect(() => {
     if (!open) return;
@@ -139,9 +148,19 @@ export default function Sidebar({
 
         {user && (
           <div className="px-4 py-4 border-t border-white/10 flex items-center gap-3">
-            <div className="w-9 h-9 rounded-full bg-primary flex items-center justify-center text-on-primary text-sm font-semibold flex-shrink-0 capitalize">
-              {user.name?.charAt(0) ?? "U"}
-            </div>
+            {user.avatar_url && !avatarFailed ? (
+              <img
+                src={resolveMediaUrl(user.avatar_url)}
+                alt={user.name}
+                className="w-9 h-9 rounded-full object-cover"
+                width={36}
+                height={36}
+              />
+            ) : (
+              <div className="w-9 h-9 rounded-full bg-primary flex items-center justify-center text-on-primary text-sm font-semibold flex-shrink-0 capitalize">
+                {user.name?.charAt(0) ?? "U"}
+              </div>
+            )}
             <div className="min-w-0">
               <p className="text-inverse-on-surface text-sm font-medium truncate capitalize">
                 {user.name}

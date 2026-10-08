@@ -1,4 +1,5 @@
 import apiClient from "../apiClient";
+import { authService } from "./authService";
 
 export const adminService = {
   getProfile: async () => {
@@ -21,22 +22,9 @@ export const adminService = {
     return res.data;
   },
 
-  uploadAvatar: async (file) => {
-    const formData = new FormData();
-
-    formData.append("avatar", file);
-
-    const res = await apiClient.post(
-      "/auth/me/avatar",
-      formData,
-      // Let the browser set the multipart boundary itself — the instance's
-      // default "application/json" header would otherwise strip it and the
-      // file wouldn't upload correctly.
-      { headers: { "Content-Type": undefined } },
-    );
-
-    return res.data;
-  },
+  // The photo belongs to the user account, so it's shared with vendors.
+  uploadAvatar: authService.uploadAvatar,
+  removeAvatar: authService.removeAvatar,
 
   uploadCompanyLogo: async (file) => {
     const formData = new FormData();
@@ -49,6 +37,11 @@ export const adminService = {
       { headers: { "Content-Type": undefined } },
     );
 
+    return res.data;
+  },
+
+  removeCompanyLogo: async () => {
+    const res = await apiClient.delete("/auth/company/logo");
     return res.data;
   },
 };
