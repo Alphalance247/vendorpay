@@ -35,7 +35,7 @@ function InvalidInvite({ reason }) {
           <div className="w-12 h-12 rounded-full bg-error-container flex items-center justify-center mx-auto mb-4">
             <AlertTriangle size={22} className="text-error" />
           </div>
-          <h1 className="text-xl font-semibold text-on-surface tracking-tight">
+          <h1 className="font-headline-lg text-xl font-semibold text-on-surface tracking-tight">
             Invite link invalid
           </h1>
           <p className="text-on-surface-variant text-sm mt-2 leading-relaxed">
@@ -54,7 +54,7 @@ function LoadingInvite() {
   return (
     <div className="min-h-screen bg-surface flex flex-col items-center justify-center px-6 py-12">
       <Brand />
-      <Loader2 size={24} className="animate-spin text-emerald" />
+      <Loader2 size={24} className="animate-spin text-secondary" />
       <p className="text-sm text-on-surface-variant mt-3">
         Loading your invite...
       </p>
@@ -67,10 +67,10 @@ function SuccessScreen() {
   return (
     <div className="min-h-screen bg-surface flex items-center justify-center px-6 py-12">
       <div className="w-full max-w-sm text-center">
-        <div className="w-14 h-14 rounded-full bg-emerald/10 flex items-center justify-center mx-auto mb-4">
-          <PartyPopper size={26} className="text-emerald" />
+        <div className="w-14 h-14 rounded-full bg-success/10 flex items-center justify-center mx-auto mb-4">
+          <PartyPopper size={26} className="text-success" />
         </div>
-        <h1 className="text-2xl font-semibold text-on-surface tracking-tight">
+        <h1 className="font-headline-lg text-2xl font-semibold text-on-surface tracking-tight">
           You're all set
         </h1>
         <p className="text-on-surface-variant text-sm mt-1.5">
@@ -169,7 +169,7 @@ export default function AcceptInvite() {
         <Brand />
 
         <div className="mb-6 text-center">
-          <h1 className="text-2xl font-semibold text-on-surface tracking-tight">
+          <h1 className="font-headline-lg text-2xl font-semibold text-on-surface tracking-tight">
             Accept your invite
           </h1>
           <p className="text-on-surface-variant text-sm mt-1">
@@ -177,7 +177,7 @@ export default function AcceptInvite() {
           </p>
         </div>
 
-        <div className="bg-surface-low border border-outline-variant rounded-lg px-4 py-3 mb-6">
+        <div className="bg-surface-container border border-outline-variant rounded-lg px-4 py-3 mb-6">
           <p className="text-sm text-on-surface-variant">
             {invite?.invited_by_name && (
               <span className="font-medium text-on-surface">
@@ -190,7 +190,7 @@ export default function AcceptInvite() {
             </span>
           </p>
           <div className="flex items-center gap-2 mt-2">
-            <span className="inline-flex items-center rounded-full bg-emerald/10 text-emerald text-xs font-semibold px-2.5 py-1 capitalize">
+            <span className="inline-flex items-center rounded-full bg-success/10 text-success text-xs font-semibold px-2.5 py-1 capitalize">
               {role || "Member"}
             </span>
             {invite?.email && (
@@ -202,7 +202,7 @@ export default function AcceptInvite() {
         </div>
 
         {error && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded text-red-600 text-sm">
+          <div className="mb-4 p-3 bg-error/5 border border-error/30 rounded text-error text-sm">
             {error}
           </div>
         )}
@@ -233,7 +233,7 @@ export default function AcceptInvite() {
                 name="password"
                 value={form.password}
                 onChange={handleChange}
-                placeholder="••••••••"
+                // placeholder=""
                 hint="At least 8 characters"
                 error={
                   tooShort
@@ -258,7 +258,7 @@ export default function AcceptInvite() {
                 name="confirmPassword"
                 value={form.confirmPassword}
                 onChange={handleChange}
-                placeholder="••••••••"
+                // placeholder=""
                 error={mismatch ? "Passwords do not match" : undefined}
                 required
                 suffix={

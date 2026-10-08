@@ -226,7 +226,7 @@ export default function VendorProfile() {
     return (
       <AppLayout role="vendor">
         <div className="flex items-center justify-center min-h-[60vh]">
-          <Loader2 size={28} className="animate-spin text-emerald" />
+          <Loader2 size={28} className="animate-spin text-secondary" />
         </div>
       </AppLayout>
     );
@@ -243,7 +243,7 @@ export default function VendorProfile() {
         </button>
 
         <div>
-          <h1 className="text-2xl font-semibold text-on-surface">My Profile</h1>
+          <h1 className="font-headline-lg text-2xl font-semibold text-on-surface">My Profile</h1>
           <p className="text-sm text-on-surface-variant mt-0.5">
             {TAB_SUBTITLES[activeTab]}
           </p>
@@ -251,7 +251,7 @@ export default function VendorProfile() {
 
         {/* Identity header — persistent across tabs */}
         <div className="flex items-center gap-4">
-          <div className="w-16 h-16 rounded-full bg-amber flex items-center justify-center flex-shrink-0">
+          <div className="w-16 h-16 rounded-full bg-warning flex items-center justify-center flex-shrink-0">
             <span className="text-white text-xl font-bold">{initials}</span>
           </div>
           <div>
@@ -278,7 +278,7 @@ export default function VendorProfile() {
                 className={cn(
                   "relative py-3 text-sm font-medium transition-colors flex items-center gap-2",
                   active
-                    ? "text-amber"
+                    ? "text-warning"
                     : "text-on-surface-variant hover:text-on-surface",
                 )}
               >
@@ -290,7 +290,7 @@ export default function VendorProfile() {
                   />
                 )}
                 {active && (
-                  <span className="absolute left-0 right-0 -bottom-px h-0.5 bg-amber rounded-full" />
+                  <span className="absolute left-0 right-0 -bottom-px h-0.5 bg-warning rounded-full" />
                 )}
               </button>
             );
@@ -300,13 +300,13 @@ export default function VendorProfile() {
         {activeTab === "contact" && (
           <form onSubmit={handleSubmit} className="space-y-5">
             {error && (
-              <div className="p-3 bg-red-50 border border-red-200 rounded text-red-600 text-sm">
+              <div className="p-3 bg-error/5 border border-error/30 rounded text-error text-sm">
                 {error}
               </div>
             )}
 
             {saved && (
-              <div className="p-3 bg-emerald/10 border border-emerald/30 rounded text-emerald text-sm flex items-center gap-2">
+              <div className="p-3 bg-success/10 border border-success/30 rounded text-success text-sm flex items-center gap-2">
                 <CheckCircle size={15} /> Profile updated successfully.
               </div>
             )}
@@ -348,7 +348,7 @@ export default function VendorProfile() {
                     <button
                       type="button"
                       onClick={() => navigate("/vendor/support")}
-                      className="text-amber underline hover:no-underline"
+                      className="text-warning underline hover:no-underline"
                     >
                       contact support
                     </button>
@@ -371,7 +371,7 @@ export default function VendorProfile() {
                     <button
                       type="button"
                       onClick={() => navigate("/vendor/support")}
-                      className="text-amber underline hover:no-underline"
+                      className="text-warning underline hover:no-underline"
                     >
                       contact support
                     </button>
@@ -423,13 +423,13 @@ export default function VendorProfile() {
         {activeTab === "company" && (
           <form onSubmit={handleSubmit} className="space-y-5">
             {error && (
-              <div className="p-3 bg-red-50 border border-red-200 rounded text-red-600 text-sm">
+              <div className="p-3 bg-error/5 border border-error/30 rounded text-error text-sm">
                 {error}
               </div>
             )}
 
             {saved && (
-              <div className="p-3 bg-emerald/10 border border-emerald/30 rounded text-emerald text-sm flex items-center gap-2">
+              <div className="p-3 bg-success/10 border border-success/30 rounded text-success text-sm flex items-center gap-2">
                 <CheckCircle size={15} /> Profile updated successfully.
               </div>
             )}
@@ -455,7 +455,7 @@ export default function VendorProfile() {
                     name="business_type"
                     value={form.business_type}
                     onChange={handleChange}
-                    className="w-full rounded border border-outline-variant bg-white px-3 py-2 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-amber focus:border-amber transition-colors"
+                    className="w-full rounded border border-outline-variant bg-white px-3 py-2 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-warning focus:border-warning transition-colors"
                   >
                     <option value="">Select type</option>
                     {BUSINESS_TYPES.map((t) => (
@@ -473,7 +473,7 @@ export default function VendorProfile() {
                     name="industry"
                     value={form.industry}
                     onChange={handleChange}
-                    className="w-full rounded border border-outline-variant bg-white px-3 py-2 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-amber focus:border-amber transition-colors"
+                    className="w-full rounded border border-outline-variant bg-white px-3 py-2 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-warning focus:border-warning transition-colors"
                   >
                     <option value="">Select industry</option>
                     {INDUSTRIES.map((i) => (
@@ -506,7 +506,7 @@ export default function VendorProfile() {
                     name="currency"
                     value={form.currency}
                     onChange={handleChange}
-                    className="w-full rounded border border-outline-variant bg-white px-3 py-2 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-amber focus:border-amber transition-colors"
+                    className="w-full rounded border border-outline-variant bg-white px-3 py-2 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-warning focus:border-warning transition-colors"
                   >
                     <option value="">Select currency</option>
                     {Object.keys(CURRENCY_SYMBOLS).map((code) => (
@@ -552,16 +552,16 @@ export default function VendorProfile() {
         )}
 
         {activeTab === "banking" && (
-          <Card className="border-amber/30">
+          <Card className="border-warning/30">
             <div className="flex items-center justify-between mb-4">
               <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant flex items-center gap-1.5">
-                <Landmark size={12} className="text-amber" /> Banking Details
+                <Landmark size={12} className="text-warning" /> Banking Details
               </p>
               {!bankingEditing && !bankingQuery.isLoading && (
                 <button
                   type="button"
                   onClick={startBankingEdit}
-                  className="text-xs font-medium text-amber hover:underline flex items-center gap-1"
+                  className="text-xs font-medium text-secondary hover:underline flex items-center gap-1"
                 >
                   <Pencil size={12} /> {banking ? "Edit" : "Add"}
                 </button>
@@ -570,7 +570,7 @@ export default function VendorProfile() {
 
             {bankingQuery.isLoading ? (
               <div className="flex items-center justify-center py-8">
-                <Loader2 size={20} className="animate-spin text-emerald" />
+                <Loader2 size={20} className="animate-spin text-secondary" />
               </div>
             ) : !bankingEditing ? (
               !banking ? (
@@ -580,7 +580,7 @@ export default function VendorProfile() {
               ) : (
                 <div className="space-y-4">
                   {bankingStatus === "rejected" && banking.rejection_reason && (
-                    <div className="p-3 bg-red-50 border border-red-200 rounded text-sm text-red-700">
+                    <div className="p-3 bg-error/5 border border-error/30 rounded text-sm text-error">
                       <span className="font-medium">Rejected:</span>{" "}
                       {banking.rejection_reason}
                     </div>
@@ -645,7 +645,7 @@ export default function VendorProfile() {
               )
             ) : (
               <form onSubmit={submitBanking} className="space-y-4">
-                <div className="bg-amber/5 border border-amber/20 rounded-lg p-3 text-sm text-amber-900">
+                <div className="bg-warning/5 border border-warning/20 rounded-lg p-3 text-sm text-on-surface">
                   Updated banking details must be re-verified before use —
                   payouts will wait on admin review before going to the new
                   account.
@@ -676,7 +676,7 @@ export default function VendorProfile() {
                       name="account_type"
                       value={bankingDraft.account_type}
                       onChange={handleBankingDraftChange}
-                      className="w-full rounded border border-outline-variant bg-white px-3 py-2 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-amber focus:border-amber transition-colors"
+                      className="w-full rounded border border-outline-variant bg-white px-3 py-2 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-warning focus:border-warning transition-colors"
                     >
                       <option value="">Select account type</option>
                       {ACCOUNT_TYPES.map((t) => (
@@ -694,7 +694,7 @@ export default function VendorProfile() {
                       name="country_type"
                       value={bankingDraft.country_type}
                       onChange={handleBankingDraftChange}
-                      className="w-full rounded border border-outline-variant bg-white px-3 py-2 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-amber focus:border-amber transition-colors"
+                      className="w-full rounded border border-outline-variant bg-white px-3 py-2 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-warning focus:border-warning transition-colors"
                     >
                       <option value="">Select country type</option>
                       {COUNTRY_TYPES.map((t) => (

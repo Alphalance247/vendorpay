@@ -162,7 +162,7 @@ export default function SettingsSidebar({
 
         {/* Settings heading */}
         <div className="px-5 pb-5">
-          <h2 className="text-xl font-semibold text-inverse-on-surface">
+          <h2 className="font-headline-lg text-xl font-semibold text-inverse-on-surface">
             Settings
           </h2>
 

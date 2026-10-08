@@ -61,7 +61,7 @@ export default function Profile() {
     <div className="w-full  lg:w-[500px] xl:w-[700px]">
       {/* Page heading */}
       <div className="mb-6">
-        <h1 className="text-2xl sm:text-3xl font-semibold text-on-surface">
+        <h1 className="font-headline-lg text-2xl sm:text-3xl font-semibold text-on-surface">
           Profile
         </h1>
 
@@ -71,13 +71,13 @@ export default function Profile() {
       </div>
 
       {error && (
-        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded text-red-600 text-sm">
+        <div className="mb-4 p-3 bg-error/5 border border-error/30 rounded text-error text-sm">
           {error}
         </div>
       )}
 
       {saved && (
-        <div className="mb-4 p-3 bg-emerald/10 border border-emerald/30 rounded text-emerald text-sm flex items-center gap-2">
+        <div className="mb-4 p-3 bg-success/10 border border-success/30 rounded text-success text-sm flex items-center gap-2">
           <CheckCircle size={15} /> Profile updated successfully.
         </div>
       )}

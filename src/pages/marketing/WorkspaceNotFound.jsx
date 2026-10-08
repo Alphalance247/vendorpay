@@ -2,8 +2,8 @@ import { SearchX, Mail } from 'lucide-react';
 import Card from '../../components/ui/Card';
 
 const linkBase = 'inline-flex items-center justify-center gap-2 rounded transition-colors duration-150 px-4 py-2 text-sm font-medium';
-const primaryLink = `${linkBase} bg-amber text-white hover:bg-amber-dark`;
-const secondaryLink = `${linkBase} bg-white text-navy border border-outline-variant hover:bg-surface-low`;
+const primaryLink = `${linkBase} bg-primary text-white hover:bg-primary/90`;
+const secondaryLink = `${linkBase} bg-white text-navy border border-outline-variant hover:bg-surface-container`;
 
 export default function WorkspaceNotFound({ slug, rootDomain }) {
   const attemptedHost = `${slug}.${rootDomain}`;
@@ -17,7 +17,7 @@ export default function WorkspaceNotFound({ slug, rootDomain }) {
             <SearchX size={22} className="text-error" />
           </div>
 
-          <h1 className="text-xl font-semibold text-on-surface tracking-tight">Workspace unavailable</h1>
+          <h1 className="font-headline-lg text-xl font-semibold text-on-surface tracking-tight">Workspace unavailable</h1>
 
           <p className="text-on-surface-variant text-sm mt-3 leading-relaxed">
             We couldn't find a VendorPay workspace at

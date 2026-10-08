@@ -81,7 +81,7 @@ function GettingStartedPanel({ onInviteVendors }) {
                 {step.actionLabel}
               </Button>
             ) : (
-              <span className="flex-shrink-0 text-xs font-medium text-on-surface-variant bg-surface-low px-2.5 py-1 rounded-full">
+              <span className="flex-shrink-0 text-xs font-medium text-on-surface-variant bg-surface-container px-2.5 py-1 rounded-full">
                 Coming soon
               </span>
             )}
@@ -115,7 +115,7 @@ export default function AdminDashboard() {
       label: "Total Vendors",
       value: loading ? "—" : (dash?.total_vendors ?? "—"),
       sub: "",
-      subColor: "text-emerald",
+      subColor: "text-success",
       tip: "Vendors currently active in your workspace.",
     },
     {
@@ -255,12 +255,12 @@ export default function AdminDashboard() {
                   );
                   const pct = total ? Math.round((count / total) * 100) : 0;
                   const colorMap = {
-                    submitted: "bg-amber-400",
-                    reviewed: "bg-sky-400",
-                    funding: "bg-violet-400",
-                    paid: "bg-emerald",
+                    submitted: "bg-outline",
+                    reviewed: "bg-navy",
+                    funding: "bg-brand-orange",
+                    paid: "bg-success",
                     rejected: "bg-error",
-                    flagged: "bg-orange-400",
+                    flagged: "bg-warning",
                   };
                   return (
                     <div key={key} className="flex items-center gap-3">
@@ -269,7 +269,7 @@ export default function AdminDashboard() {
                       </span>
                       <div className="flex-1 h-2 bg-surface-container rounded-full overflow-hidden">
                         <div
-                          className={`h-full rounded-full ${colorMap[key] ?? "bg-emerald"}`}
+                          className={`h-full rounded-full ${colorMap[key] ?? "bg-success"}`}
                           style={{ width: `${pct}%` }}
                         />
                       </div>
@@ -305,7 +305,7 @@ export default function AdminDashboard() {
                 <button
                   key={label}
                   onClick={onClick ?? (() => navigate(path))}
-                  className="w-full flex items-center gap-3 px-5 py-4 hover:bg-surface-low/50 transition-colors text-left"
+                  className="w-full flex items-center gap-3 px-5 py-4 hover:bg-surface-container/50 transition-colors text-left"
                 >
                   <Icon size={16} className="text-on-surface-variant" />
                   <span className="text-sm text-on-surface">{label}</span>

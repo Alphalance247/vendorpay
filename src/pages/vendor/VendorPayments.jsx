@@ -77,7 +77,7 @@ export default function VendorPayments() {
     <AppLayout role="vendor">
       <div className="space-y-6">
         <div>
-          <h1 className="text-2xl font-semibold text-on-surface">Payments</h1>
+          <h1 className="font-headline-lg text-2xl font-semibold text-on-surface">Payments</h1>
           <p className="text-sm text-on-surface-variant mt-0.5">All invoices that have been paid or settled.</p>
         </div>
 
@@ -101,7 +101,7 @@ export default function VendorPayments() {
             <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant">Payments Count</p>
             <p className="text-2xl font-bold text-on-surface">{total}</p>
             {confirmedCount > 0 && (
-              <p className="text-xs mt-0.5 text-emerald">{confirmedCount} confirmed by you</p>
+              <p className="text-xs mt-0.5 text-success">{confirmedCount} confirmed by you</p>
             )}
           </Card>
           <Card className="py-4">
@@ -109,7 +109,7 @@ export default function VendorPayments() {
             <p className="text-2xl font-bold text-on-surface">{disputedCount}</p>
             {disputedCount > 0
               ? <p className="text-xs mt-0.5 text-error">Under review</p>
-              : <p className="text-xs mt-0.5 text-emerald">None disputed</p>
+              : <p className="text-xs mt-0.5 text-success">None disputed</p>
             }
           </Card>
           <Card className="py-4">
@@ -121,7 +121,7 @@ export default function VendorPayments() {
         <Card className="p-0 overflow-hidden">
           {loading ? (
             <div className="flex items-center justify-center py-12">
-              <Loader2 size={24} className="animate-spin text-emerald" />
+              <Loader2 size={24} className="animate-spin text-secondary" />
               <span className="ml-2 text-sm text-on-surface-variant">Loading payments...</span>
             </div>
           ) : error ? (
@@ -130,7 +130,7 @@ export default function VendorPayments() {
             <div className="w-full overflow-x-auto">
               <table className="w-full min-w-[900px]">
                 <thead>
-                  <tr className="bg-surface-low border-b border-outline-variant">
+                  <tr className="bg-surface-container border-b border-outline-variant">
                     {['Invoice #', 'Date Paid', 'Amount', 'Currency', 'Status'].map((h) => (
                       <th key={h} className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-on-surface-variant whitespace-nowrap">
                         {h}
@@ -146,7 +146,7 @@ export default function VendorPayments() {
                       </td>
                     </tr>
                   ) : invoices.map((inv) => (
-                    <tr key={inv.id} className="hover:bg-surface-low/50 transition-colors cursor-pointer " onClick={() => navigate(`/vendor/invoices/${inv.id}`)}>
+                    <tr key={inv.id} className="hover:bg-surface-container/50 transition-colors cursor-pointer " onClick={() => navigate(`/vendor/invoices/${inv.id}`)}>
                       <td className="px-4 py-3 text-sm font-semibold text-on-surface">{inv.invoice_number}</td>
                       <td className="px-4 py-3 text-sm text-on-surface-variant">
                         {inv.payment_date ? formatDate(inv.payment_date) : '—'}

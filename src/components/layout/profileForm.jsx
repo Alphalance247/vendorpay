@@ -153,7 +153,7 @@ export default function ProfileForm({
       <div className="flex flex-col sm:flex-row sm:items-center gap-5 sm:gap-6">
         {/* Avatar */}
         <div className="relative flex-shrink-0">
-          <div className={profileImage ? "w-16 h-16 sm:w-20 sm:h-20 rounded-full overflow-hidden border border-gray-200 bg-gray-50 flex items-center justify-center" : "border border-amber-200 bg-amber-600 w-16 h-16 sm:w-20 sm:h-20 rounded-full"}>
+          <div className={profileImage ? "w-16 h-16 sm:w-20 sm:h-20 rounded-full overflow-hidden border border-outline-variant bg-surface-container-low flex items-center justify-center" : "border border-primary-fixed-dim bg-primary w-16 h-16 sm:w-20 sm:h-20 rounded-full"}>
             {profileImage ? (
               <img
                 src={profileImage}
@@ -183,7 +183,7 @@ export default function ProfileForm({
             type="button"
             onClick={() => fileInputRef.current?.click()}
             disabled={uploadingPhoto}
-            className="w-full inline-flex items-center justify-center gap-2 rounded-md border border-outline-variant bg-surface px-5 py-3 text-sm font-semibold text-on-surface hover:bg-surface-low transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full inline-flex items-center justify-center gap-2 rounded-md border border-outline-variant bg-surface px-5 py-3 text-sm font-semibold text-on-surface hover:bg-surface-container transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Upload size={17} />
             {uploadingPhoto ? "Uploading..." : "Upload photo"}
@@ -257,7 +257,7 @@ export default function ProfileForm({
         <button
           onClick={onCancel}
           type="button"
-          className="w-full sm:w-auto px-4 py-2 rounded-xl border border-on-primary-fixed-variant text-sm font-semibold text-on-surface hover:bg-surface-low transition-colors"
+          className="w-full sm:w-auto px-4 py-2 rounded-xl border border-primary text-sm font-semibold text-on-surface hover:bg-surface-container transition-colors"
         >
           Cancel
         </button>
@@ -265,7 +265,7 @@ export default function ProfileForm({
         <button
           type="submit"
           disabled={loading}
-          className="w-full sm:w-auto px-4 py-2 rounded-xl bg-on-primary-fixed-variant text-white text-sm font-semibold hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
+          className="w-full sm:w-auto px-4 py-2 rounded-xl bg-primary text-white text-sm font-semibold hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
         >
           {loading ? "Saving..." : "Save changes"}
         </button>

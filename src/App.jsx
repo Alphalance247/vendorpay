@@ -40,7 +40,7 @@ export default function App() {
   if (tenant.status === "checking") {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <Loader2 size={28} className="animate-spin text-emerald" />
+        <Loader2 size={28} className="animate-spin text-secondary" />
       </div>
     );
   }
@@ -57,7 +57,7 @@ export default function App() {
       <Landing />
     ) : loading ? (
       <div className="min-h-screen flex items-center justify-center">
-        <Loader2 size={28} className="animate-spin text-emerald" />
+        <Loader2 size={28} className="animate-spin text-secondary" />
       </div>
     ) : token && role ? (
       <Navigate to={dashboardPathForRole(role)} replace />

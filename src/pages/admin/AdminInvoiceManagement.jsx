@@ -72,7 +72,7 @@ function InvoiceActions({
           variant="ghost"
           onClick={onReject}
           disabled={!!loading}
-          className="text-error hover:bg-red-50"
+          className="text-error hover:bg-error/5"
         >
           Reject
         </Button>
@@ -99,7 +99,7 @@ function InvoiceActions({
           variant="ghost"
           onClick={onReject}
           disabled={!!loading}
-          className="text-error hover:bg-red-50"
+          className="text-error hover:bg-error/5"
         >
           Reject
         </Button>
@@ -282,7 +282,7 @@ export default function AdminInvoiceManagement() {
         />
 
         {error && (
-          <div className="p-3 bg-red-50 border border-red-200 rounded text-red-600 text-sm flex items-center justify-between">
+          <div className="p-3 bg-error/5 border border-error/30 rounded text-error text-sm flex items-center justify-between">
             {error}
             <button
               onClick={() => setError("")}
@@ -356,7 +356,7 @@ export default function AdminInvoiceManagement() {
                 value={search}
                 onChange={handleSearchChange}
                 placeholder="Search invoice # or vendor..."
-                className="w-full pl-8 pr-3 py-1.5 text-sm bg-surface-low rounded border border-outline-variant focus:outline-none focus:ring-2 focus:ring-secondary"
+                className="w-full pl-8 pr-3 py-1.5 text-sm bg-surface-container rounded border border-outline-variant focus:outline-none focus:ring-2 focus:ring-secondary"
               />
             </div>
             {search && (
@@ -393,7 +393,7 @@ export default function AdminInvoiceManagement() {
               <div className="hidden md:block overflow-x-auto">
                 <table className="w-full min-w-[820px]">
                   <thead>
-                    <tr className="bg-surface-low border-b border-outline-variant">
+                    <tr className="bg-surface-container border-b border-outline-variant">
                       {[
                         "Vendor",
                         "Invoice #",
@@ -423,7 +423,7 @@ export default function AdminInvoiceManagement() {
                       return (
                         <tr
                           key={inv.id}
-                          className="hover:bg-surface-low/50 transition-colors cursor-pointer"
+                          className="hover:bg-surface-container/50 transition-colors cursor-pointer"
                           onClick={() => navigate(`/admin/invoices/${inv.id}`)}
                         >
                           <td className="px-3 py-2.5">
@@ -507,7 +507,7 @@ export default function AdminInvoiceManagement() {
                     <div
                       key={inv.id}
                       onClick={() => navigate(`/admin/invoices/${inv.id}`)}
-                      className="px-4 py-4 active:bg-surface-low/50 transition-colors cursor-pointer"
+                      className="px-4 py-4 active:bg-surface-container/50 transition-colors cursor-pointer"
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">

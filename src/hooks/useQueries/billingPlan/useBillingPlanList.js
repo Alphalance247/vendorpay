@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery } from '@tanstack/react-query';
 import apiClient from '../../../lib/apiClient';
 
 
@@ -26,10 +26,15 @@ const createBillingPortalSession = async () => {
     const res = await apiClient.post("/billing/portal-session", {})
     return res.data
 }
-// const getBillingPlan = async (planId) => {
-//     const res = await apiClient.get(`/billing/plans/${planId}`)
-//     return res.data
-// }
+// Cursor-paginated (Stripe-style): `limit` sets the page size and
+// `starting_after` is the id of the last invoice on the previous page; the
+// response's `has_more` says whether another page exists.
+const getBillingHistory = async ({ limit, startingAfter }) => {
+    const params = { limit };
+    if (startingAfter) params.starting_after = startingAfter;
+    const res = await apiClient.get("/billing/invoices", { params })
+    return res.data
+}
 export const useBillingPlanList = () => {
     return useQuery({
         queryKey: ['billing-plans'],
@@ -68,4 +73,13 @@ export const useBillingPortal = () => {
             }
         },
     });
+}
+export const useBillingHistory = ({ limit = 10, startingAfter = null } = {}) => {
+    return useQuery({
+        queryKey: ['billing-history', limit, startingAfter],
+        queryFn: () => getBillingHistory({ limit, startingAfter }),
+        // Keep showing the current page while the next one loads, instead of
+        // flashing an empty table on every page change.
+        placeholderData: keepPreviousData,
+    })
 }

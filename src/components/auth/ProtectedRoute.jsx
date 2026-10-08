@@ -10,7 +10,7 @@ export default function ProtectedRoute({ children, role: requiredRole }) {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <Loader2 size={28} className="animate-spin text-emerald" />
+        <Loader2 size={28} className="animate-spin text-secondary" />
       </div>
     );
   }

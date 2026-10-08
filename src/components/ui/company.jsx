@@ -4,13 +4,14 @@ import Input from "./Input";
 import Select from "./Select";
 import { adminService } from "../../lib/services/adminService";
 import { resolveMediaUrl } from "../../lib/apiClient";
+import { extractErrorMessage } from "../../lib/utils";
 
 
 const industry_type = [
   { value: "Technology", label: "Technology" },
   { value: "Manufacturing", label: "Manufacturing" },
   { value: 'Logistics', label: "Logistics" },
-  { value: " Retail", label: "Retail" },
+  { value: "Retail", label: "Retail" },
   { value: "Professional Services", label: "Professional Services" },
   { value: "Healthcare", label: "Healthcare" },
   { value: "Other", label: "Other" },
@@ -187,11 +188,7 @@ export default function VendorCompany() {
         error?.response?.data
       );
 
-      setLogoError(
-        error?.response?.data?.detail ||
-        error?.response?.data?.message ||
-        "Failed to upload company logo."
-      );
+      setLogoError(extractErrorMessage(error));
 
       // Remove preview only when the actual upload failed
       setLogoPreview(null);
@@ -209,6 +206,14 @@ export default function VendorCompany() {
 
     if (!form.name?.trim()) {
       setError("Company name is required.");
+      return;
+    }
+    if (!form.industry?.trim()) {
+      setError("Industry is required.");
+      return;
+    }
+    if (!form.company_size?.trim()) {
+      setError("Company size is required.");
       return;
     }
 
@@ -249,11 +254,7 @@ export default function VendorCompany() {
         error
       );
 
-      setError(
-        error?.response?.data?.detail ||
-        error?.response?.data?.message ||
-        "Failed to update company details."
-      );
+      setError(extractErrorMessage(error));
     } finally {
       setLoading(false);
     }
@@ -268,35 +269,35 @@ export default function VendorCompany() {
   };
   return (
     <div className="w-full lg:w-[500px] xl:w-[700px] py-6 sm:py-10 pb-24">
-      <h1 className="text-xl sm:text-[20px] font-semibold text-gray-900 mb-1">
+      <h1 className="font-headline-lg text-xl sm:text-[20px] font-semibold text-on-surface mb-1">
         Company
       </h1>
-      <p className="text-[13.5px] text-gray-500 mb-6">
+      <p className="text-[13.5px] text-on-surface-variant mb-6">
         Your business details, shown on invoices and used for verification.
       </p>
       {error && (
-        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded text-red-600 text-sm">
+        <div className="mb-4 p-3 bg-error/5 border border-error/30 rounded text-error text-sm">
           {error}
         </div>
       )}
 
       {saved && (
-        <div className="mb-4 p-3 bg-emerald/10 border border-emerald/30 rounded text-emerald text-sm flex items-center gap-2">
+        <div className="mb-4 p-3 bg-success/10 border border-success/30 rounded text-success text-sm flex items-center gap-2">
           <CheckCircle size={15} /> Profile updated successfully.
         </div>
       )}
       <form
         onSubmit={handleSubmit}
-        className="bg-white border border-gray-200 rounded-xl p-5 sm:p-6 space-y-5"
+        className="bg-white border border-outline-variant rounded-xl p-5 sm:p-6 space-y-5"
       >
         <div>
-          <label className="block text-[13px] font-medium text-gray-700 mb-1.5">
+          <label className="block text-[13px] font-medium text-on-surface mb-1.5">
             Company Logo
           </label>
 
           <div className="flex items-center gap-4">
             {/* Logo preview */}
-            <div className="w-16 h-16 rounded-full border border-gray-200 bg-gray-50 flex items-center justify-center overflow-hidden shrink-0">
+            <div className="w-16 h-16 rounded-full border border-outline-variant bg-surface-container-low flex items-center justify-center overflow-hidden shrink-0">
               {logoPreview || form.logo_url ? (
                 <img
                   src={
@@ -320,13 +321,13 @@ export default function VendorCompany() {
                   }}
                 />
               ) : (
-                <ImagePlus className="w-5 h-5 text-gray-400" />
+                <ImagePlus className="w-5 h-5 text-outline" />
               )}
             </div>
 
             {/* Upload controls */}
             <div className="flex items-center gap-3">
-              <label className="cursor-pointer px-3.5 py-2 rounded-lg border border-gray-200 bg-white text-[13px] font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+              <label className="cursor-pointer px-3.5 py-2 rounded-lg border border-outline-variant bg-white text-[13px] font-medium text-on-surface hover:bg-surface-container-low transition-colors">
                 {logoPreview || form.logo_url
                   ? "Change"
                   : "Upload"}
@@ -343,7 +344,7 @@ export default function VendorCompany() {
                 <button
                   type="button"
                   onClick={handleLogoRemove}
-                  className="text-[13px] font-medium text-red-600 hover:underline"
+                  className="text-[13px] font-medium text-error hover:underline"
                 >
                   Remove
                 </button>
@@ -351,12 +352,12 @@ export default function VendorCompany() {
             </div>
           </div>
 
-          <p className="text-[12px] text-gray-500 mt-1.5">
+          <p className="text-[12px] text-on-surface-variant mt-1.5">
             PNG, JPG, WEBP. Max 5MB.
           </p>
 
           {logoError && (
-            <p className="text-[12px] text-red-600 mt-1">
+            <p className="text-[12px] text-error mt-1">
               {logoError}
             </p>
           )}
@@ -396,14 +397,14 @@ export default function VendorCompany() {
           <button
             type="button"
             onClick={handleCancel}
-            className="w-full sm:w-auto px-4 py-2 rounded-xl border border-on-primary-fixed-variant text-sm font-semibold text-on-surface hover:bg-surface-low transition-colors"
+            className="w-full sm:w-auto px-4 py-2 rounded-xl border border-primary text-sm font-semibold text-on-surface hover:bg-surface-container transition-colors"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={loading}
-            className="w-full sm:w-auto px-4 py-2 rounded-xl bg-on-primary-fixed-variant text-white text-sm font-semibold hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
+            className="w-full sm:w-auto px-4 py-2 rounded-xl bg-primary text-white text-sm font-semibold hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
           >
             {loading ? "Saving..." : "Save changes"}
           </button>
@@ -633,9 +634,9 @@ function Input({
 }) {
   return (
     <div>
-      <label className="block text-[13px] font-medium text-gray-700 mb-1.5">
+      <label className="block text-[13px] font-medium text-on-surface mb-1.5">
         {label}
-        {required && <span className="text-red-500 ml-1">*</span>}
+        {required && <span className="text-error ml-1">*</span>}
       </label>
 
       <input
@@ -644,7 +645,7 @@ function Input({
         value={value || ""}
         onChange={onChange}
         placeholder={placeholder}
-        className="w-full h-11 px-3.5 rounded-lg border border-gray-200 bg-white text-[13.5px] text-gray-900 outline-none transition focus:border-gray-400 focus:ring-2 focus:ring-gray-100"
+        className="w-full h-11 px-3.5 rounded-lg border border-outline-variant bg-white text-[13.5px] text-on-surface outline-none transition focus:border-outline focus:ring-2 focus:ring-outline-variant"
       />
     </div>
   );
@@ -653,16 +654,16 @@ function Input({
 function Select({ label, name, value, onChange, children, required = false }) {
   return (
     <div>
-      <label className="block text-[13px] font-medium text-gray-700 mb-1.5">
+      <label className="block text-[13px] font-medium text-on-surface mb-1.5">
         {label}
-        {required && <span className="text-red-500 ml-1">*</span>}
+        {required && <span className="text-error ml-1">*</span>}
       </label>
 
       <select
         name={name}
         value={value || ""}
         onChange={onChange}
-        className="w-full h-11 px-3.5 rounded-lg border border-gray-200 bg-white text-[13.5px] text-gray-900 outline-none transition focus:border-gray-400 focus:ring-2 focus:ring-gray-100"
+        className="w-full h-11 px-3.5 rounded-lg border border-outline-variant bg-white text-[13.5px] text-on-surface outline-none transition focus:border-outline focus:ring-2 focus:ring-outline-variant"
       >
         {children}
       </select>
@@ -777,13 +778,13 @@ function PayoutAccountModal({ mode, account, onClose, onSave }) {
 {
   /* Header */
 }
-//         <div className="sticky top-0 z-10 bg-white border-b border-gray-100 px-5 sm:px-6 py-4 flex items-center justify-between">
+//         <div className="sticky top-0 z-10 bg-white border-b border-outline-variant px-5 sm:px-6 py-4 flex items-center justify-between">
 //           <div>
-//             <h2 className="text-[16px] font-semibold text-gray-900">
+//             <h2 className="text-[16px] font-semibold text-on-surface">
 //               {isEdit ? "Edit payout account" : "Add payout account"}
 //             </h2>
 
-//             <p className="text-[12.5px] text-gray-500 mt-0.5">
+//             <p className="text-[12.5px] text-on-surface-variant mt-0.5">
 //               {isEdit
 //                 ? "Update the details for this payout account."
 //                 : "Add a bank account where you receive payments."}
@@ -793,7 +794,7 @@ function PayoutAccountModal({ mode, account, onClose, onSave }) {
 //           <button
 //             type="button"
 //             onClick={onClose}
-//             className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-900 transition"
+//             className="w-8 h-8 flex items-center justify-center rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition"
 //           >
 //             <X size={18} />
 //           </button>
@@ -803,13 +804,13 @@ function PayoutAccountModal({ mode, account, onClose, onSave }) {
 //           <div className="px-5 sm:px-6 py-5 space-y-5">
 //             {/* Error */}
 //             {error && (
-//               <div className="rounded-lg border border-red-200 bg-red-50 px-3.5 py-3 text-[13px] text-red-700">
+//               <div className="rounded-lg border border-error/30 bg-error/5 px-3.5 py-3 text-[13px] text-error">
 //                 {error}
 //               </div>
 //             )}
 
 //             <div>
-//               <h3 className="text-[13.5px] font-semibold text-gray-900 mb-3">
+//               <h3 className="text-[13.5px] font-semibold text-on-surface mb-3">
 //                 Bank information
 //               </h3>
 
@@ -875,8 +876,8 @@ function PayoutAccountModal({ mode, account, onClose, onSave }) {
 
 //             {/* Account details */}
 //             {selectedCountry && (
-//               <div className="border-t border-gray-100 pt-5">
-//                 <h3 className="text-[13.5px] font-semibold text-gray-900 mb-3">
+//               <div className="border-t border-outline-variant pt-5">
+//                 <h3 className="text-[13.5px] font-semibold text-on-surface mb-3">
 //                   Account details
 //                 </h3>
 
@@ -935,22 +936,22 @@ function PayoutAccountModal({ mode, account, onClose, onSave }) {
 //               </div>
 //             )}
 
-//             <div className="border-t border-gray-100 pt-5">
+//             <div className="border-t border-outline-variant pt-5">
 //               <label className="flex items-start gap-3 cursor-pointer">
 //                 <input
 //                   type="checkbox"
 //                   name="isDefault"
 //                   checked={form.isDefault}
 //                   onChange={handleChange}
-//                   className="mt-0.5 w-4 h-4 rounded border-gray-300 text-gray-900 focus:ring-gray-300"
+//                   className="mt-0.5 w-4 h-4 rounded border-outline text-on-surface focus:ring-outline"
 //                 />
 
 //                 <div>
-//                   <p className="text-[13.5px] font-medium text-gray-900">
+//                   <p className="text-[13.5px] font-medium text-on-surface">
 //                     Make this my default payout account
 //                   </p>
 
-//                   <p className="text-[12px] text-gray-500 mt-0.5">
+//                   <p className="text-[12px] text-on-surface-variant mt-0.5">
 //                     Future payments will be sent to this account.
 //                   </p>
 //                 </div>
@@ -958,18 +959,18 @@ function PayoutAccountModal({ mode, account, onClose, onSave }) {
 //             </div>
 //           </div>
 
-//           <div className="sticky bottom-0 bg-white border-t border-gray-100 px-5 sm:px-6 py-4 flex flex-col-reverse sm:flex-row sm:justify-end gap-2.5">
+//           <div className="sticky bottom-0 bg-white border-t border-outline-variant px-5 sm:px-6 py-4 flex flex-col-reverse sm:flex-row sm:justify-end gap-2.5">
 //             <button
 //               type="button"
 //               onClick={onClose}
-//               className="w-full sm:w-auto px-4 py-2.5 rounded-lg border border-gray-200 text-[13.5px] font-medium text-gray-700 hover:bg-gray-50 transition"
+//               className="w-full sm:w-auto px-4 py-2.5 rounded-lg border border-outline-variant text-[13.5px] font-medium text-on-surface hover:bg-surface-container-low transition"
 //             >
 //               Cancel
 //             </button>
 
 //             <button
 //               type="submit"
-//               className="w-full sm:w-auto px-5 py-2.5 rounded-lg bg-gray-900 text-white text-[13.5px] font-medium hover:bg-gray-800 transition"
+//               className="w-full sm:w-auto px-5 py-2.5 rounded-lg bg-inverse-surface text-white text-[13.5px] font-medium hover:bg-inverse-surface transition"
 //             >
 //               {isEdit ? "Save changes" : "Add account"}
 //             </button>
@@ -982,27 +983,27 @@ function PayoutAccountModal({ mode, account, onClose, onSave }) {
 
 // function AccountCard({ account, onEdit, onSetDefault, onRemove }) {
 //   return (
-//     <div className="bg-white border border-gray-200 rounded-xl p-5 sm:p-6 mb-4">
+//     <div className="bg-white border border-outline-variant rounded-xl p-5 sm:p-6 mb-4">
 //       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-1">
-//         <span className="text-[13.5px] font-medium text-gray-900">
+//         <span className="text-[13.5px] font-medium text-on-surface">
 //           {account.bankName} — {account.masked}
 //         </span>
 
 //         {account.isDefault && (
-//           <span className="self-start sm:self-auto text-[11.5px] font-medium bg-[#E7F1EC] text-[#1F6F54] rounded-full px-2.5 py-1 w-fit">
+//           <span className="self-start sm:self-auto text-[11.5px] font-medium bg-success-container text-success rounded-full px-2.5 py-1 w-fit">
 //             Default
 //           </span>
 //         )}
 //       </div>
 
-//       <p className="text-[12.5px] text-gray-500 mb-3">
+//       <p className="text-[12.5px] text-on-surface-variant mb-3">
 //         {account.country} · {account.currency} · Added {account.addedDate}
 //       </p>
 
 //       {account.isDefault ? (
 //         <button
 //           onClick={() => onEdit(account.id)}
-//           className="w-full sm:w-auto text-[13.5px] font-medium text-gray-900 bg-white border border-gray-200 rounded-md px-4 py-2 hover:bg-gray-50 transition-colors"
+//           className="w-full sm:w-auto text-[13.5px] font-medium text-on-surface bg-white border border-outline-variant rounded-md px-4 py-2 hover:bg-surface-container-low transition-colors"
 //         >
 //           Edit
 //         </button>
@@ -1010,14 +1011,14 @@ function PayoutAccountModal({ mode, account, onClose, onSave }) {
 //         <div className="flex gap-4">
 //           <button
 //             onClick={() => onSetDefault(account.id)}
-//             className="text-[13px] font-medium text-[#1F6F54] hover:underline"
+//             className="text-[13px] font-medium text-success hover:underline"
 //           >
 //             Set as default
 //           </button>
 
 //           <button
 //             onClick={() => onRemove(account.id)}
-//             className="text-[13px] font-medium text-red-700 hover:underline"
+//             className="text-[13px] font-medium text-error hover:underline"
 //           >
 //             Remove
 //           </button>
@@ -1164,18 +1165,18 @@ function PayoutAccountModal({ mode, account, onClose, onSave }) {
 //       <div className="w-full lg:w-[500px] xl:w-[700px] px-4 sm:px-0 py-6 sm:py-10">
 //         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-6">
 //           <div>
-//             <h1 className="text-xl sm:text-[20px] font-semibold text-gray-900 mb-1">
+//             <h1 className="font-headline-lg text-xl sm:text-[20px] font-semibold text-on-surface mb-1">
 //               Payout accounts
 //             </h1>
 
-//             <p className="text-[13.5px] text-gray-500">
+//             <p className="text-[13.5px] text-on-surface-variant">
 //               Where you receive payments from businesses on VendorPay.
 //             </p>
 //           </div>
 
 //           <button
 //             onClick={handleAddAccount}
-//             className="shrink-0 text-[13.5px] font-medium text-white bg-gray-900 rounded-md px-4 py-2.5 hover:opacity-85 transition-opacity w-full sm:w-auto"
+//             className="shrink-0 text-[13.5px] font-medium text-white bg-inverse-surface rounded-md px-4 py-2.5 hover:opacity-85 transition-opacity w-full sm:w-auto"
 //           >
 //             Add account
 //           </button>

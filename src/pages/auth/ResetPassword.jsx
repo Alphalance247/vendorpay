@@ -18,8 +18,8 @@ export default function ResetPassword() {
   if (!token) {
     return (
       <div className="max-w-sm mx-auto p-6 text-center space-y-3">
-        <h2 className="text-xl font-semibold">Invalid Link</h2>
-        <p className="text-sm text-gray-500">This password reset link is missing a token. Please request a new one.</p>
+        <h2 className="font-headline-lg text-xl font-semibold">Invalid Link</h2>
+        <p className="text-sm text-on-surface-variant">This password reset link is missing a token. Please request a new one.</p>
         <Button variant="secondary" onClick={() => navigate('/forgot-password')}>
           Request New Link
         </Button>
@@ -55,8 +55,8 @@ export default function ResetPassword() {
   if (done) {
     return (
       <div className="max-w-sm mx-auto p-6 text-center space-y-3">
-        <h2 className="text-xl font-semibold">Password Updated</h2>
-        <p className="text-sm text-gray-500">Your password has been reset. You can now log in.</p>
+        <h2 className="font-headline-lg text-xl font-semibold">Password Updated</h2>
+        <p className="text-sm text-on-surface-variant">Your password has been reset. You can now log in.</p>
         <Button onClick={() => navigate('/login')}>Go to Login</Button>
       </div>
     );
@@ -64,7 +64,7 @@ export default function ResetPassword() {
 
   return (
     <form onSubmit={handleSubmit} className="max-w-sm mx-auto p-6 space-y-4">
-      <h2 className="text-xl font-semibold">Set New Password</h2>
+      <h2 className="font-headline-lg text-xl font-semibold">Set New Password</h2>
 
       <Input
         label="New Password"
@@ -83,13 +83,13 @@ export default function ResetPassword() {
         required
       />
 
-      {error && <p className="text-red-500 text-sm">{error}</p>}
+      {error && <p className="text-error text-sm">{error}</p>}
 
       <Button type="submit" className="w-full" disabled={loading}>
         {loading ? 'Updating…' : 'Reset Password'}
       </Button>
 
-      <p className="text-center text-sm text-gray-500">
+      <p className="text-center text-sm text-on-surface-variant">
         <button type="button" className="underline" onClick={() => navigate('/login')}>
           Back to login
         </button>

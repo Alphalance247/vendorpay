@@ -8,7 +8,7 @@ export default function SaveBar() {
 
     return (
         <div
-            className={`fixed left-1/2 bottom-5 -translate-x-1/2 z-50 flex items-center gap-3.5 bg-gray-900 text-white rounded-xl pl-4.5 pr-3.5 py-3 shadow-2xl transition-all duration-200`}
+            className={`fixed left-1/2 bottom-5 -translate-x-1/2 z-50 flex items-center gap-3.5 bg-inverse-surface text-white rounded-xl pl-4.5 pr-3.5 py-3 shadow-2xl transition-all duration-200`}
         //  ${isDirty
         // ? 'translate-y-0 opacity-100'
         // : 'translate-y-[140%] opacity-0 pointer-events-none'
@@ -27,7 +27,7 @@ export default function SaveBar() {
                 <button
                     // onClick={save}
                     // disabled={isSaving}
-                    className="text-[13px] font-medium text-white bg-[#1F6F54] rounded-md px-3.5 py-1.5 hover:opacity-85 transition-opacity disabled:opacity-50"
+                    className="text-[13px] font-medium text-white bg-primary rounded-md px-3.5 py-1.5 hover:opacity-85 transition-opacity disabled:opacity-50"
                 >
                     save  {/* {isSaving ? 'Saving…' : 'Save changes'} */}
                 </button>

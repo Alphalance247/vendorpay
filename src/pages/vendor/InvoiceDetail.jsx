@@ -317,7 +317,7 @@ export default function InvoiceDetail() {
     return (
       <AppLayout role={isAdmin ? "admin" : "vendor"}>
         <div className="flex items-center justify-center min-h-[60vh]">
-          <Loader2 size={28} className="animate-spin text-emerald" />
+          <Loader2 size={28} className="animate-spin text-secondary" />
         </div>
       </AppLayout>
     );
@@ -445,7 +445,7 @@ export default function InvoiceDetail() {
               Invoice #{invoice.invoice_number}
             </p>
 
-            <h1 className="text-xl sm:text-2xl font-semibold text-on-surface mt-0.5">
+            <h1 className="font-headline-lg text-xl sm:text-2xl font-semibold text-on-surface mt-0.5">
               Invoice Details
             </h1>
           </div>
@@ -470,7 +470,7 @@ export default function InvoiceDetail() {
                       size="sm"
                       onClick={handleReject}
                       disabled={!!actionLoading}
-                      className="flex-1 sm:flex-none text-error hover:bg-red-50"
+                      className="flex-1 sm:flex-none text-error hover:bg-error/5"
                     >
                       Reject
                     </Button>
@@ -497,7 +497,7 @@ export default function InvoiceDetail() {
                       size="sm"
                       onClick={handleReject}
                       disabled={!!actionLoading}
-                      className="flex-1 sm:flex-none text-error hover:bg-red-50"
+                      className="flex-1 sm:flex-none text-error hover:bg-error/5"
                     >
                       Reject
                     </Button>
@@ -544,7 +544,7 @@ export default function InvoiceDetail() {
                       variant="ghost"
                       size="sm"
                       onClick={handleDisputePayment}
-                      className="flex-1 sm:flex-none text-error hover:bg-red-50"
+                      className="flex-1 sm:flex-none text-error hover:bg-error/5"
                     >
                       Dispute
                     </Button>
@@ -566,7 +566,7 @@ export default function InvoiceDetail() {
         </div>
 
         {actionError && (
-          <div className="p-3 bg-red-50 border border-red-200 rounded text-red-600 text-sm flex items-center justify-between">
+          <div className="p-3 bg-error/5 border border-error/30 rounded text-error text-sm flex items-center justify-between">
             {actionError}
             <button
               onClick={() => setActionError("")}
@@ -578,18 +578,18 @@ export default function InvoiceDetail() {
         )}
 
         {rejectionLog && (
-          <div className="p-4 bg-red-50 border border-red-200 rounded-lg flex gap-3">
-            <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
+          <div className="p-4 bg-error/5 border border-error/30 rounded-lg flex gap-3">
+            <div className="w-8 h-8 rounded-full bg-error/10 flex items-center justify-center flex-shrink-0">
               <span className="text-error text-sm font-bold">!</span>
             </div>
             <div>
               <p className="text-sm font-semibold text-error">
                 Invoice Rejected
               </p>
-              <p className="text-sm text-red-700 mt-0.5">
+              <p className="text-sm text-error mt-0.5">
                 {rejectionLog.notes}
               </p>
-              <p className="text-xs text-red-400 mt-1">
+              <p className="text-xs text-error mt-1">
                 By {displayActor(rejectionLog.performed_by)} ·{" "}
                 {formatDate(rejectionLog.timestamp)}
               </p>
@@ -603,13 +603,13 @@ export default function InvoiceDetail() {
                 <div key={step.label} className="flex items-center flex-1">
                   <div className="flex flex-col items-center text-center min-w-[100px]">
                     <div
-                      className={`w-7 h-7 rounded-full flex items-center justify-center mb-1.5 border-2 ${step.done ? "bg-emerald border-emerald" : step.active ? "bg-white border-emerald" : "bg-white border-outline-variant"}`}
+                      className={`w-7 h-7 rounded-full flex items-center justify-center mb-1.5 border-2 ${step.done ? "bg-success border-success" : step.active ? "bg-white border-success" : "bg-white border-outline-variant"}`}
                     >
                       {step.done ? (
                         <Check size={13} className="text-white" />
                       ) : (
                         <span
-                          className={`w-2 h-2 rounded-full ${step.active ? "bg-emerald" : "bg-outline-variant"}`}
+                          className={`w-2 h-2 rounded-full ${step.active ? "bg-success" : "bg-outline-variant"}`}
                         />
                       )}
                     </div>
@@ -629,7 +629,7 @@ export default function InvoiceDetail() {
                   </div>
                   {i < arr.length - 1 && (
                     <div
-                      className={`flex-1 h-0.5 mx-2 mb-6 ${step.done ? "bg-emerald" : "bg-outline-variant"}`}
+                      className={`flex-1 h-0.5 mx-2 mb-6 ${step.done ? "bg-success" : "bg-outline-variant"}`}
                     />
                   )}
                 </div>
@@ -701,7 +701,7 @@ export default function InvoiceDetail() {
                 {invoice.audit_logs?.length > 0 ? (
                   invoice.audit_logs.map((log, i) => (
                     <div key={i} className="flex gap-2">
-                      <div className="w-1.5 h-1.5 rounded-full bg-emerald mt-1.5 flex-shrink-0" />
+                      <div className="w-1.5 h-1.5 rounded-full bg-success mt-1.5 flex-shrink-0" />
                       <div>
                         <p className="text-xs text-on-surface">
                           {log.action}
@@ -730,7 +730,7 @@ export default function InvoiceDetail() {
                   Messages {messages.length > 0 && `(${messages.length})`}
                 </p>
               </div>
-              <div className="p-3 space-y-3 max-h-[260px] overflow-y-auto bg-surface-low/20">
+              <div className="p-3 space-y-3 max-h-[260px] overflow-y-auto bg-surface-container/20">
                 {messages.length === 0 ? (
                   <p className="text-xs text-center text-on-surface-variant py-4">
                     No messages yet.{" "}
@@ -749,7 +749,7 @@ export default function InvoiceDetail() {
                         className={`flex gap-2 ${isOwn ? "flex-row-reverse" : ""}`}
                       >
                         <div
-                          className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 text-[10px] font-bold ${msg.sender_role === "admin" ? "bg-navy text-white" : "bg-emerald/10 text-emerald"}`}
+                          className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 text-[10px] font-bold ${msg.sender_role === "admin" ? "bg-navy text-white" : "bg-success/10 text-success"}`}
                         >
                           {msg.sender_name.charAt(0).toUpperCase()}
                         </div>
@@ -779,7 +779,7 @@ export default function InvoiceDetail() {
                   placeholder={
                     isAdmin ? "Message vendor..." : "Message admin team..."
                   }
-                  className="flex-1 text-xs rounded border border-outline-variant px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-emerald"
+                  className="flex-1 text-xs rounded border border-outline-variant px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-success"
                 />
                 <button
                   onClick={sendMessage}
@@ -798,27 +798,27 @@ export default function InvoiceDetail() {
             <Card className="p-0 overflow-hidden">
               <div className="px-4 py-3 border-b border-outline-variant bg-navy">
                 <div className="flex items-center gap-2">
-                  <Bot size={14} className="text-emerald" />
-                  <p className="text-xs font-semibold uppercase tracking-wide text-emerald">
+                  <Bot size={14} className="text-secondary" />
+                  <p className="text-xs font-semibold uppercase tracking-wide text-success">
                     AI Support
                   </p>
-                  <span className="ml-auto text-xs text-emerald bg-emerald/10 px-2 py-0.5 rounded-full flex items-center gap-1">
-                    <span className="w-1 h-1 rounded-full bg-emerald animate-pulse" />
+                  <span className="ml-auto text-xs text-success bg-success/10 px-2 py-0.5 rounded-full flex items-center gap-1">
+                    <span className="w-1 h-1 rounded-full bg-success animate-pulse" />
                     Online
                   </span>
                 </div>
               </div>
-              <div className="p-4 space-y-3 max-h-[200px] overflow-y-auto bg-surface-low/30">
+              <div className="p-4 space-y-3 max-h-[200px] overflow-y-auto bg-surface-container/30">
                 {aiMessages.map((msg, i) => (
                   <div
                     key={i}
                     className={`flex gap-2 ${msg.role === "user" ? "flex-row-reverse" : ""}`}
                   >
                     <div
-                      className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${msg.role === "ai" ? "bg-emerald/10" : "bg-navy"}`}
+                      className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${msg.role === "ai" ? "bg-success/10" : "bg-navy"}`}
                     >
                       {msg.role === "ai" ? (
-                        <Bot size={12} className="text-emerald" />
+                        <Bot size={12} className="text-secondary" />
                       ) : (
                         <User size={12} className="text-white" />
                       )}
@@ -832,14 +832,14 @@ export default function InvoiceDetail() {
                 ))}
                 {aiTyping && (
                   <div className="flex gap-2">
-                    <div className="w-6 h-6 rounded-full bg-emerald/10 flex items-center justify-center">
-                      <Bot size={12} className="text-emerald" />
+                    <div className="w-6 h-6 rounded-full bg-success/10 flex items-center justify-center">
+                      <Bot size={12} className="text-secondary" />
                     </div>
                     <div className="bg-white border border-outline-variant rounded-lg p-2">
                       <div className="flex gap-1">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald animate-bounce" />
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald animate-bounce delay-100" />
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald animate-bounce delay-200" />
+                        <span className="w-1.5 h-1.5 rounded-full bg-success animate-bounce" />
+                        <span className="w-1.5 h-1.5 rounded-full bg-success animate-bounce delay-100" />
+                        <span className="w-1.5 h-1.5 rounded-full bg-success animate-bounce delay-200" />
                       </div>
                     </div>
                   </div>
@@ -855,7 +855,7 @@ export default function InvoiceDetail() {
                     onChange={(e) => setAiInput(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && sendAiMessage()}
                     placeholder="e.g. When will this be paid?"
-                    className="flex-1 text-xs border border-outline-variant rounded px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-emerald"
+                    className="flex-1 text-xs border border-outline-variant rounded px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-success"
                   />
                   <Button
                     size="sm"
@@ -872,7 +872,7 @@ export default function InvoiceDetail() {
                       <button
                         key={q}
                         onClick={() => setAiInput(q)}
-                        className="text-xs px-2 py-1 rounded bg-surface-low text-on-surface-variant hover:bg-emerald/10 hover:text-emerald transition-colors"
+                        className="text-xs px-2 py-1 rounded bg-surface-container text-on-surface-variant hover:bg-success/10 hover:text-success transition-colors"
                       >
                         {q}
                       </button>

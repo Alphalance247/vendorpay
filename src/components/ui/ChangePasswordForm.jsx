@@ -42,7 +42,7 @@ const ChangePasswordForm = ({ open, onClose, title, subtitle, children, footer, 
             </div>
             <div className="flex-1 overflow-y-auto px-5 py-4">{children}</div>
             {footer && (
-                <div className="px-5 py-3 border-t border-outline-variant bg-surface-low flex items-center justify-end gap-2">
+                <div className="px-5 py-3 border-t border-outline-variant bg-surface-container flex items-center justify-end gap-2">
                     {footer}
                 </div>
             )}
