@@ -1,10 +1,12 @@
-import { useEffect, useState } from "react";
-import { CheckCircle, ImagePlus } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { CheckCircle, Camera, Loader2, Trash2 } from "lucide-react";
 import Input from "./Input";
 import Select from "./Select";
 import { adminService } from "../../lib/services/adminService";
 import { resolveMediaUrl } from "../../lib/apiClient";
 import { extractErrorMessage } from "../../lib/utils";
+import { useConfirm } from "../../hooks/useConfirm";
+import { useToast } from "./Toast";
 
 
 const industry_type = [
@@ -23,7 +25,7 @@ const COMPANY_SIZES = [
   "201-500 employees",
   "500+ employees",
 ];
-const MAX_LOGO_SIZE = 5 * 1024 * 1024; // 2MB
+const MAX_LOGO_SIZE = 5 * 1024 * 1024; // 5MB
 const ALLOWED_LOGO_TYPES = [
   "image/jpeg",
   "image/png",
@@ -45,6 +47,23 @@ export default function VendorCompany() {
   });
   const [logoPreview, setLogoPreview] = useState(null);
   const [logoError, setLogoError] = useState("");
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const logoInputRef = useRef(null);
+  const { confirm, confirmEl } = useConfirm();
+  const { toast } = useToast();
+
+  // Fall back to the company initial if the stored logo URL fails to load;
+  // reset whenever the URL changes (e.g. after a new upload).
+  const [logoFailed, setLogoFailed] = useState(false);
+  const [prevLogoUrl, setPrevLogoUrl] = useState(form.logo_url);
+  if (form.logo_url !== prevLogoUrl) {
+    setPrevLogoUrl(form.logo_url);
+    setLogoFailed(false);
+  }
+  const logoSrc =
+    logoPreview ||
+    (form.logo_url && !logoFailed ? resolveMediaUrl(form.logo_url) : null);
+  const hasLogo = !!form.logo_url;
   // Re-runs whenever resetKey changes (see handleCancel), re-fetching the
   // last-saved company data to discard any unsaved edits.
   useEffect(() => {
@@ -90,117 +109,65 @@ export default function VendorCompany() {
 
   const handleLogoChange = async (e) => {
     const file = e.target.files?.[0];
-
     // Allow the same file to be selected again
     e.target.value = "";
-
     if (!file) return;
 
-    // Validate file type
     if (!ALLOWED_LOGO_TYPES.includes(file.type)) {
-      setLogoError(
-        "Please upload a JPG, PNG, or WebP image."
-      );
+      setLogoError("Please upload a JPG, PNG, or WebP image.");
       return;
     }
-
-    // Validate file size
     if (file.size > MAX_LOGO_SIZE) {
-      setLogoError(
-        "Image must be smaller than 2MB."
-      );
+      setLogoError("Image must be smaller than 5MB.");
       return;
     }
 
     setLogoError("");
     setError("");
     setSaved(false);
-
-    // Create a local preview immediately
-    const previewUrl = URL.createObjectURL(file);
-
-    setLogoPreview(previewUrl);
+    // Show the chosen image immediately while it uploads.
+    setLogoPreview(URL.createObjectURL(file));
+    setUploadingLogo(true);
 
     try {
-      setLoading(true);
+      const response = await adminService.uploadCompanyLogo(file);
+      // "Returns the new logo URL" — as a bare string or on an object.
+      const uploadedLogo =
+        typeof response === "string"
+          ? response
+          : response?.logo_url || response?.url || response?.logo || "";
 
-      const response =
-        await adminService.uploadCompanyLogo(file);
-
-      console.log(
-        "COMPANY LOGO UPLOAD RESPONSE:",
-        response
-      );
-
-      /*
-       * The API documentation says:
-       * "Returns the new logo URL."
-       *
-       * Depending on the actual response format, it could
-       * be logo_url, url, or simply a string.
-       */
-
-      let uploadedLogo = "";
-
-      if (typeof response === "string") {
-        uploadedLogo = response;
-      } else {
-        uploadedLogo =
-          response?.logo_url ||
-          response?.url ||
-          response?.logo ||
-          "";
-      }
-
-      console.log(
-        "UPLOADED LOGO URL:",
-        uploadedLogo
-      );
-
-      /*
-       * Only save the backend URL if we actually received one.
-       *
-       * The local preview remains active, so even if the
-       * backend returns a bad URL, the page won't suddenly
-       * lose the selected image.
-       */
       if (uploadedLogo) {
-        setForm((prev) => ({
-          ...prev,
-          logo_url: uploadedLogo,
-        }));
+        setForm((prev) => ({ ...prev, logo_url: uploadedLogo }));
+        setLogoPreview(null);
       }
-
-      setSaved(true);
-    } catch (error) {
-      console.error(
-        "COMPANY LOGO UPLOAD ERROR:",
-        error
-      );
-
-      console.error(
-        "STATUS:",
-        error?.response?.status
-      );
-
-      console.error(
-        "RESPONSE:",
-        error?.response?.data
-      );
-
-      setLogoError(extractErrorMessage(error));
-
-      // Remove preview only when the actual upload failed
+      toast("Company logo updated.");
+    } catch (err) {
       setLogoPreview(null);
+      setLogoError(extractErrorMessage(err));
     } finally {
-      setLoading(false);
+      setUploadingLogo(false);
     }
   };
 
   const handleLogoRemove = () => {
     setLogoError("");
-    setLogoPreview(null);
+    confirm({
+      title: "Remove company logo",
+      message:
+        "Remove your company logo? Your company initial will be shown instead.",
+      confirmLabel: "Remove",
+      variant: "danger",
+      onConfirm: async () => {
+        await adminService.removeCompanyLogo();
+        setForm((prev) => ({ ...prev, logo_url: "" }));
+        setLogoPreview(null);
+      },
+    }).then((removed) => {
+      if (removed) toast("Company logo removed.");
+    });
   };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -269,6 +236,7 @@ export default function VendorCompany() {
   };
   return (
     <div className="w-full lg:w-[500px] xl:w-[700px] py-6 sm:py-10 pb-24">
+      {confirmEl}
       <h1 className="font-headline-lg text-xl sm:text-[20px] font-semibold text-on-surface mb-1">
         Company
       </h1>
@@ -296,71 +264,72 @@ export default function VendorCompany() {
           </label>
 
           <div className="flex items-center gap-4">
-            {/* Logo preview */}
-            <div className="w-16 h-16 rounded-full border border-outline-variant bg-surface-container-low flex items-center justify-center overflow-hidden shrink-0">
-              {logoPreview || form.logo_url ? (
-                <img
-                  src={
-                    logoPreview ||
-                    resolveMediaUrl(form.logo_url)
-                  }
-                  alt="Company logo preview"
-                  className="w-full h-full object-cover"
-                  onLoad={() => {
-                    console.log(
-                      "COMPANY LOGO LOADED:",
-                      logoPreview ||
-                      resolveMediaUrl(form.logo_url)
-                    );
-                  }}
-                  onError={(e) => {
-                    console.error(
-                      "COMPANY LOGO FAILED:",
-                      e.currentTarget.src
-                    );
-                  }}
-                />
-              ) : (
-                <ImagePlus className="w-5 h-5 text-outline" />
+            <div className="relative flex-shrink-0">
+              <div className="relative w-16 h-16 rounded-full bg-primary flex items-center justify-center overflow-hidden border border-outline-variant">
+                {logoSrc ? (
+                  <img
+                    src={logoSrc}
+                    alt="Company logo"
+                    className="w-full h-full object-cover"
+                    onError={() => setLogoFailed(true)}
+                  />
+                ) : (
+                  <span className="text-on-primary text-xl font-bold uppercase">
+                    {form.name?.trim()?.charAt(0) || "C"}
+                  </span>
+                )}
+                {uploadingLogo && (
+                  <div className="absolute inset-0 bg-navy/50 flex items-center justify-center">
+                    <Loader2 size={18} className="animate-spin text-white" />
+                  </div>
+                )}
+              </div>
+
+              {/* Camera button — opens the file picker */}
+              <button
+                type="button"
+                onClick={() => logoInputRef.current?.click()}
+                disabled={uploadingLogo}
+                aria-label={hasLogo ? "Change logo" : "Upload logo"}
+                title={hasLogo ? "Change logo" : "Upload logo"}
+                className="absolute -bottom-0.5 -right-0.5 w-7 h-7 rounded-full bg-white border border-outline-variant shadow-card flex items-center justify-center text-on-surface hover:bg-surface-container transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                <Camera size={14} />
+              </button>
+            </div>
+
+            {/* Logo actions — beside the logo */}
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-on-surface truncate">
+                {form.name || "Your company"}
+              </p>
+              <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
+                {hasLogo && !uploadingLogo && (
+                  <button
+                    type="button"
+                    onClick={handleLogoRemove}
+                    className="inline-flex items-center gap-1 text-xs font-semibold text-error hover:underline"
+                  >
+                    <Trash2 size={12} /> Remove logo
+                  </button>
+                )}
+                <span className="text-[11px] text-on-surface-variant">
+                  JPG, PNG or WebP, up to 5MB.
+                </span>
+              </div>
+              {logoError && (
+                <p className="mt-1 text-xs text-error">{logoError}</p>
               )}
             </div>
 
-            {/* Upload controls */}
-            <div className="flex items-center gap-3">
-              <label className="cursor-pointer px-3.5 py-2 rounded-lg border border-outline-variant bg-white text-[13px] font-medium text-on-surface hover:bg-surface-container-low transition-colors">
-                {logoPreview || form.logo_url
-                  ? "Change"
-                  : "Upload"}
-
-                <input
-                  type="file"
-                  accept="image/png,image/jpeg,image/webp"
-                  onChange={handleLogoChange}
-                  className="hidden"
-                />
-              </label>
-
-              {logoPreview && (
-                <button
-                  type="button"
-                  onClick={handleLogoRemove}
-                  className="text-[13px] font-medium text-error hover:underline"
-                >
-                  Remove
-                </button>
-              )}
-            </div>
+            <input
+              ref={logoInputRef}
+              type="file"
+              accept="image/png,image/jpeg,image/webp"
+              onChange={handleLogoChange}
+              className="hidden"
+            />
           </div>
-
-          <p className="text-[12px] text-on-surface-variant mt-1.5">
-            PNG, JPG, WEBP. Max 5MB.
-          </p>
-
-          {logoError && (
-            <p className="text-[12px] text-error mt-1">
-              {logoError}
-            </p>
-          )}
         </div>
 
         {/* <div className="grid grid-cols-1 sm:grid-cols-2 gap-5"> */}

@@ -294,7 +294,7 @@ export default function TopBar({ onMenuClick }) {
             <div className="absolute right-0 top-full mt-2 w-64 max-w-[90vw] bg-white rounded-xl shadow-dropdown border border-outline-variant overflow-hidden">
               {/* User info */}
               <div className="px-4 py-3 border-b border-outline-variant flex items-center gap-3">
-                {currentUser ? (
+                {currentUser?.avatar_url ? (
                   <div className="h-9 w-9 flex justify-center items-center ">
                     <img
                       src={resolveMediaUrl(currentUser.avatar_url)}

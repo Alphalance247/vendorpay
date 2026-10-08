@@ -233,7 +233,7 @@ export default function AdminVendors() {
           ]}
         />
         <Card className="p-0 overflow-hidden">
-          <div className="flex items-center gap-3 px-4 py-3 border-b border-outline-variant">
+          <div className="flex items-center gap-3  py-3 border-b border-outline-variant">
             <div className="relative flex-1 max-w-sm">
               <Search
                 size={14}

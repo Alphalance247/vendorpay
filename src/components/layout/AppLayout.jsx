@@ -22,13 +22,15 @@ export default function AppLayout({ children, role = "vendor" }) {
     }
   }, [role]);
 
-  const { data: currentUser } = useCurrentUser(role === "admin");
+  // The profile photo lives on the user account (/auth/me) for every role.
+  const { data: currentUser } = useCurrentUser();
 
   const user =
     role === "admin"
       ? {
         name: currentUser?.full_name || "—",
         role: capitalize(currentUser?.role) || "Team Member",
+        avatar_url: currentUser?.avatar_url,
       }
       : {
         name: profile
@@ -39,6 +41,7 @@ export default function AppLayout({ children, role = "vendor" }) {
           "Vendor"
           : "—",
         role: "Vendor",
+        avatar_url: currentUser?.avatar_url ?? profile?.avatar_url,
       };
 
   return (

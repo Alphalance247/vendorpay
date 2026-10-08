@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
@@ -9,6 +10,8 @@ import {
   Landmark,
   Pencil,
   X,
+  Camera,
+  Trash2,
 } from "lucide-react";
 import AppLayout from "../../components/layout/AppLayout";
 import Card from "../../components/ui/Card";
@@ -19,7 +22,14 @@ import { useToast } from "../../components/ui/Toast";
 import { useBanking } from "../../hooks/useQueries/vendorAdmin/useBanking";
 import { useUpdateBanking } from "../../hooks/useQueries/vendorAdmin/useUpdateBanking";
 import { vendorService } from "../../lib/services/vendorService";
+import { authService } from "../../lib/services/authService";
+import { resolveMediaUrl } from "../../lib/apiClient";
+import { useCurrentUser } from "../../hooks/useQueries/vendorAdmin/useCurrentUser";
+import { useConfirm } from "../../hooks/useConfirm";
 import { extractErrorMessage, CURRENCY_SYMBOLS, cn } from "../../lib/utils";
+
+const MAX_PHOTO_SIZE = 2 * 1024 * 1024; // 2MB
+const ALLOWED_PHOTO_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
 const BUSINESS_TYPES = [
   "LLC",
@@ -97,6 +107,78 @@ export default function VendorProfile() {
   });
 
   const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const { confirm, confirmEl } = useConfirm();
+
+  // Profile photo — stored on the user account (/auth/me), same as admins.
+  const { data: currentUser } = useCurrentUser();
+  const avatarUrl = currentUser?.avatar_url;
+  const photoInputRef = useRef(null);
+  const [photoPreview, setPhotoPreview] = useState(null);
+  const [photoError, setPhotoError] = useState("");
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [photoFailed, setPhotoFailed] = useState(false);
+  const [prevAvatarUrl, setPrevAvatarUrl] = useState(avatarUrl);
+  if (avatarUrl !== prevAvatarUrl) {
+    setPrevAvatarUrl(avatarUrl);
+    setPhotoFailed(false);
+  }
+  const photoSrc =
+    photoPreview || (avatarUrl && !photoFailed ? resolveMediaUrl(avatarUrl) : null);
+
+  // Revoke the local preview URL whenever it's replaced or on unmount.
+  useEffect(() => {
+    return () => {
+      if (photoPreview) URL.revokeObjectURL(photoPreview);
+    };
+  }, [photoPreview]);
+
+  async function handlePhotoChange(e) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+
+    if (!ALLOWED_PHOTO_TYPES.includes(file.type)) {
+      setPhotoError("Please upload a JPG, PNG, or WebP image.");
+      return;
+    }
+    if (file.size > MAX_PHOTO_SIZE) {
+      setPhotoError("Image must be smaller than 2MB.");
+      return;
+    }
+
+    setPhotoError("");
+    setPhotoPreview(URL.createObjectURL(file));
+    setUploadingPhoto(true);
+    try {
+      await authService.uploadAvatar(file);
+      // Refresh the photo here, in the sidebar and in the top bar.
+      await queryClient.invalidateQueries({ queryKey: ["current-user"] });
+      setPhotoPreview(null);
+      toast("Profile photo updated.");
+    } catch (err) {
+      setPhotoPreview(null);
+      setPhotoError(extractErrorMessage(err));
+    } finally {
+      setUploadingPhoto(false);
+    }
+  }
+
+  function handlePhotoRemove() {
+    setPhotoError("");
+    confirm({
+      title: "Remove profile photo",
+      message: "Remove your profile photo? Your initials will be shown instead.",
+      confirmLabel: "Remove",
+      variant: "danger",
+      onConfirm: async () => {
+        await authService.removeAvatar();
+        await queryClient.invalidateQueries({ queryKey: ["current-user"] });
+      },
+    }).then((removed) => {
+      if (removed) toast("Profile photo removed.");
+    });
+  }
   const bankingQuery = useBanking();
   const banking = bankingQuery.data ?? null;
   const [bankingEditing, setBankingEditing] = useState(false);
@@ -234,6 +316,7 @@ export default function VendorProfile() {
 
   return (
     <AppLayout role="vendor">
+      {confirmEl}
       <div className="space-y-6 max-w-2xl">
         <button
           onClick={() => navigate(-1)}
@@ -250,19 +333,77 @@ export default function VendorProfile() {
         </div>
 
         {/* Identity header — persistent across tabs */}
-        <div className="flex items-center gap-4">
-          <div className="w-16 h-16 rounded-full bg-warning flex items-center justify-center flex-shrink-0">
-            <span className="text-white text-xl font-bold">{initials}</span>
-          </div>
-          <div>
-            <p className="text-sm font-semibold text-on-surface">
-              {[form.contact_first_name, form.contact_last_name]
-                .filter(Boolean)
-                .join(" ") || "Your Name"}
-            </p>
-            <p className="text-xs text-on-surface-variant">
-              {form.contact_email || "contact email"}
-            </p>
+        <div>
+          <div className="flex items-center gap-4 min-w-0">
+            <div className="relative flex-shrink-0">
+              <div className="relative w-16 h-16 rounded-full bg-primary flex items-center justify-center overflow-hidden border border-outline-variant">
+                {photoSrc ? (
+                  <img
+                    src={photoSrc}
+                    alt="Profile"
+                    className="w-full h-full object-cover"
+                    onError={() => setPhotoFailed(true)}
+                  />
+                ) : (
+                  <span className="text-on-primary text-xl font-bold ">
+                    {initials}
+                  </span>
+                )}
+                {uploadingPhoto && (
+                  <div className="absolute inset-0 bg-navy/50 flex items-center justify-center">
+                    <Loader2 size={18} className="animate-spin text-white" />
+                  </div>
+                )}
+              </div>
+
+              {/* Camera button — opens the file picker */}
+              <button
+                type="button"
+                onClick={() => photoInputRef.current?.click()}
+                disabled={uploadingPhoto}
+                aria-label={avatarUrl ? "Change photo" : "Upload photo"}
+                title={avatarUrl ? "Change photo" : "Upload photo"}
+                className="absolute -bottom-0.5 -right-0.5 w-7 h-7 rounded-full bg-white border border-outline-variant shadow-card flex items-center justify-center text-on-surface hover:bg-surface-container transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                <Camera size={14} />
+              </button>
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-on-surface truncate capitalize">
+                {[form.contact_first_name, form.contact_last_name]
+                  .filter(Boolean)
+                  .join(" ") || "Your Name"}
+              </p>
+              <p className="text-xs text-on-surface-variant truncate">
+                {form.contact_email || "contact email"}
+              </p>
+
+              {/* Photo actions — beside the avatar */}
+              <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
+                {avatarUrl && !uploadingPhoto && (
+                  <button
+                    type="button"
+                    onClick={handlePhotoRemove}
+                    className="inline-flex items-center gap-1 text-xs font-semibold text-error hover:underline"
+                  >
+                    <Trash2 size={12} /> Remove photo
+                  </button>
+                )}
+                <span className="text-[11px] text-on-surface-variant">
+                  JPG, PNG or WebP, up to 2MB.
+                </span>
+              </div>
+              {photoError && (
+                <p className="mt-1 text-xs text-error">{photoError}</p>
+              )}
+              <input
+                ref={photoInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                onChange={handlePhotoChange}
+                className="hidden"
+              />
+            </div>
           </div>
         </div>
 
