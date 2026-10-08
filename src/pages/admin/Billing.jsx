@@ -381,6 +381,9 @@ export default function Billing() {
   const renewsOn =
     billingStatus?.current_period_end ?? billingStatus?.renews_at;
   const planName = billingStatus?.plan;
+  const planPrice = billingStatus?.price?.amount;
+  const planInterval = billingStatus?.price?.interval;
+  const planCurrency = billingStatus?.price?.currency ?? "USD";
   const invoiceUsed = billingStatus?.invoices_this_month?.used;
   const invoiceLimit = billingStatus?.invoices_this_month?.limit;
   const usagePct =
@@ -474,13 +477,17 @@ export default function Billing() {
                     />
                   )}
                 </div>
-                <p className="text-sm text-on-surface-variant mt-1">
-                  {/* <span className="font-semibold text-on-surface">
-                    {plan.price?.amount === 0 ? 'Free' : plan.price?.amount != null ? `$${plan.price.amount}` : ''}
+                <p className="text-sm text-on-surface-variant mt-1 capitalize">
+                  <span className="font-semibold text-on-surface ">
+                    {planPrice === 0
+                      ? "Free"
+                      : planPrice != null
+                        ? formatCurrency(planPrice, planCurrency)
+                        : ""}
                   </span>
-                  {plan.price?.interval ? `/${plan.price.interval}` : ''} */}
+                  {planInterval ? `/${planInterval}` : ""}
                   {status === "active"
-                    ? `  Renews ${formatDate(renewsOn ?? renewalDate())}`
+                    ? ` . Renews ${formatDate(renewsOn ?? renewalDate())}`
                     : " · Access ends at period end"}
                 </p>
               </div>

@@ -7,6 +7,7 @@ import {
   Building2,
 } from "lucide-react";
 import { cn } from "../../lib/utils";
+import Logo from "../ui/Logo";
 import { useEffect } from "react";
 
 export default function SettingsSidebar({
@@ -110,31 +111,15 @@ export default function SettingsSidebar({
         {/* Logo */}
         <div className="px-5 py-6 border-b border-white/10">
           <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3 min-w-0">
-              {/* Logo icon */}
-              <div className="w-10 h-10 bg-secondary rounded-lg flex items-center justify-center flex-shrink-0">
-                <span
-                  className="text-white text-lg font-bold leading-none"
-                  style={{
-                    fontFamily: "Georgia, serif",
-                    letterSpacing: "-1px",
-                  }}
-                >
-                  ~
-                </span>
-              </div>
-
-              {/* Logo text */}
-              <div className="min-w-0">
-                <p className="font-headline-sm text-headline-sm text-inverse-on-surface uppercase leading-none truncate">
-                  Alluvium
-                </p>
-
-                <p className="font-label-eyebrow text-label-eyebrow text-secondary-fixed-dim uppercase tracking-widest mt-1">
-                  VendorPay
-                </p>
-              </div>
-            </div>
+            {/* Same brand lockup as the main sidebar */}
+            <Logo
+              variant="dark"
+              className="min-w-0"
+              onClick={() => {
+                navigate("/");
+                onClose?.();
+              }}
+            />
 
             {/* Mobile close button */}
             <button
