@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { getCountries } from "../../lib/country";
 import Logo from "../../components/ui/Logo";
+import { useBillingPlanList } from "../../hooks/useQueries/billingPlan/useBillingPlanList";
 
 function Icon({ name, className = "", filled = false }) {
   return (
@@ -110,7 +111,8 @@ const NAV_LINKS = [
 
 export default function Landing() {
   const navigate = useNavigate();
-
+  const { data: billingPlanList, isLoading: plansLoading } =
+    useBillingPlanList();
   useEffect(() => {
     document.documentElement.classList.add("scroll-smooth");
     return () => document.documentElement.classList.remove("scroll-smooth");
@@ -118,7 +120,7 @@ export default function Landing() {
 
   // Quick test wiring — logs the REST Countries call to the console on load.
   useEffect(() => {
-    getCountries().catch(() => {});
+    getCountries().catch(() => { });
   }, []);
 
   return (
@@ -149,7 +151,7 @@ export default function Landing() {
             </a>
             <a
               onClick={() => navigate("/signup-company")}
-              className="inline-flex items-center justify-center px-space-24 py-space-12 rounded-lg bg-primary text-on-primary font-label-caps text-label-caps uppercase tracking-wider hover:bg-primary-container transition-colors shadow-sm cursor-pointer"
+              className="inline-flex items-center justify-center px-space-24 py-space-12 rounded-lg bg-primary text-on-primary font-label-caps text-label-caps uppercase tracking-wider hover:bg-primary/90 transition-colors shadow-sm cursor-pointer"
             >
               GET STARTED
             </a>
@@ -186,7 +188,7 @@ export default function Landing() {
                   <div className="flex flex-wrap items-center gap-space-16 mb-space-40">
                     <a
                       onClick={() => navigate("/signup-company")}
-                      className="inline-flex items-center justify-center px-space-24 py-space-12 rounded-lg bg-primary text-on-primary font-label-caps text-label-caps uppercase tracking-wider hover:bg-primary-container transition-all shadow-sm cursor-pointer"
+                      className="inline-flex items-center justify-center px-space-24 py-space-12 rounded-lg bg-primary text-on-primary font-label-caps text-label-caps uppercase tracking-wider hover:bg-primary/90 transition-all shadow-sm cursor-pointer"
                     >
                       GET STARTED →
                     </a>
@@ -228,7 +230,7 @@ export default function Landing() {
                     <div className="p-space-20 lg:p-space-24 bg-surface-container-lowest flex flex-col gap-space-16">
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-space-12 pb-space-8 border-b border-surface-variant/20">
                         <div>
-                          <h3 className="font-headline-sm text-headline-sm text-on-surface font-bold text-[20px]">
+                          <h3 className="font-sans text-headline-sm text-on-surface font-bold text-[20px]">
                             Finance Dashboard
                           </h3>
                           <p className="font-body-sm text-body-sm text-on-surface-variant text-[12px]">
@@ -249,14 +251,14 @@ export default function Landing() {
                           </button>
                           <button
                             type="button"
-                            className="inline-flex items-center gap-space-4 px-space-12 py-1.5 rounded-lg bg-primary text-on-primary font-label-caps text-label-caps text-[11px] hover:bg-primary-container transition-colors shadow-sm"
+                            className="inline-flex items-center gap-space-4 px-space-12 py-1.5 rounded-lg bg-primary text-on-primary font-label-caps text-label-caps text-[11px] hover:bg-primary/90 transition-colors shadow-sm"
                           >
                             + Review Invoices
                           </button>
                         </div>
                       </div>
 
-                      <div className="rounded-lg bg-[#fff8f2] border border-[#f5d9c2] p-space-12 flex items-center justify-between gap-space-8 text-on-surface">
+                      <div className="rounded-lg bg-primary-fixed border border-primary-fixed-dim p-space-12 flex items-center justify-between gap-space-8 text-on-surface">
                         <div className="flex items-center gap-space-8 min-w-0">
                           <div className="w-6 h-6 rounded-full bg-primary-fixed flex items-center justify-center text-primary shrink-0">
                             <Icon name="lightbulb" className="text-[15px]" />
@@ -297,10 +299,10 @@ export default function Landing() {
                             Pending Approvals
                           </span>
                           <div className="mt-space-8">
-                            <span className="font-headline-md text-headline-md font-bold text-[24px] text-[#ba1a1a]">
+                            <span className="font-headline-md text-headline-md font-bold text-[24px] text-error">
                               2
                             </span>
-                            <span className="block text-[10px] font-body-sm text-[#ba1a1a] font-medium">
+                            <span className="block text-[10px] font-body-sm text-error font-medium">
                               Requires action
                             </span>
                           </div>
@@ -495,7 +497,7 @@ export default function Landing() {
                       <span className="w-8 h-8 rounded-full bg-error flex items-center justify-center text-on-error">
                         <Icon name="close" className="text-[18px]" />
                       </span>
-                      <h3 className="font-headline-sm text-headline-sm text-error font-bold">
+                      <h3 className="font-sans text-headline-sm text-error font-bold">
                         Without it
                       </h3>
                     </div>
@@ -527,7 +529,7 @@ export default function Landing() {
                       <span className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center text-on-secondary">
                         <Icon name="check" className="text-[18px]" />
                       </span>
-                      <h3 className="font-headline-sm text-headline-sm text-secondary font-bold">
+                      <h3 className="font-sans text-headline-sm text-secondary font-bold">
                         With VendorPay
                       </h3>
                     </div>
@@ -580,7 +582,7 @@ export default function Landing() {
                     <div className="w-12 h-12 rounded-full bg-surface-container flex items-center justify-center text-secondary mb-space-20">
                       <Icon name={f.icon} className="text-[26px]" />
                     </div>
-                    <h3 className="font-headline-sm text-headline-sm text-on-surface mb-space-8">
+                    <h3 className="font-sans text-headline-sm text-on-surface mb-space-8">
                       {f.title}
                     </h3>
                     <p className="font-body-md text-body-md text-on-surface-variant">
@@ -613,7 +615,7 @@ export default function Landing() {
                       <span className="inline-flex items-center justify-center px-space-12 py-space-4 rounded bg-inverse-surface text-inverse-on-surface font-code-mono-sm text-code-mono-sm font-bold mb-space-16">
                         {step.num}
                       </span>
-                      <h3 className="font-headline-sm text-headline-sm text-on-surface mb-space-8">
+                      <h3 className="font-sans text-headline-sm text-on-surface mb-space-8">
                         {step.title}
                       </h3>
                       <p className="font-body-sm text-body-sm text-on-surface-variant">
@@ -656,7 +658,7 @@ export default function Landing() {
                       <Icon name="verified" className="text-[28px]" filled />
                     </div>
                     <div>
-                      <h3 className="font-headline-sm text-headline-sm text-on-surface mb-space-8">
+                      <h3 className="font-sans text-headline-sm text-on-surface mb-space-8">
                         SOC 2 Compliant
                       </h3>
                       <p className="font-body-sm text-body-sm text-on-surface-variant">
@@ -673,7 +675,7 @@ export default function Landing() {
                       />
                     </div>
                     <div>
-                      <h3 className="font-headline-sm text-headline-sm text-on-surface mb-space-8">
+                      <h3 className="font-sans text-headline-sm text-on-surface mb-space-8">
                         256-bit Encryption
                       </h3>
                       <p className="font-body-sm text-body-sm text-on-surface-variant">
@@ -700,142 +702,55 @@ export default function Landing() {
                   Start free, change plans anytime as your vendor list grows.
                 </p>
               </div>
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-space-24 items-stretch">
-                {/* Starter */}
-                <div className="p-space-32 rounded-xl bg-surface-container-lowest shadow-sm flex flex-col justify-between">
-                  <div>
-                    <span className="font-label-eyebrow text-label-eyebrow uppercase tracking-wider text-secondary font-bold">
-                      STARTER
-                    </span>
-                    <div className="mt-space-16 mb-space-8 flex items-baseline">
-                      <span className="font-headline-xl text-headline-xl text-on-surface font-bold">
-                        $49
-                      </span>
-                      <span className="font-body-md text-body-md text-on-surface-variant ml-space-4">
-                        /mo
-                      </span>
-                    </div>
-                    <p className="font-body-sm text-body-sm text-on-surface-variant mb-space-24">
-                      For small teams getting started
-                    </p>
-                    <ul className="space-y-space-16 pt-space-16 pb-space-32">
-                      {[
-                        "Up to 25 vendors",
-                        "Email support",
-                        "Standard payment rails",
-                      ].map((f) => (
-                        <li
-                          key={f}
-                          className="flex items-center gap-space-8 text-on-surface font-body-sm text-body-sm"
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-space-24 items-stretch">
+                {plansLoading ? (
+                  <p className="col-span-full text-center font-body-md text-body-md text-on-surface-variant">
+                    Loading plans...
+                  </p>
+                ) : (
+                  (billingPlanList ?? []).map((plan) => {
+                    return (
+                      <div key={plan.slug} className="p-space-32 rounded-xl bg-surface-container-lowest shadow-sm flex flex-col justify-between">
+                        <div>
+                          <span className="font-label-eyebrow text-label-eyebrow uppercase tracking-wider text-secondary font-bold ">
+                            {plan.name}
+                          </span>
+                          <div className="mt-space-16 mb-space-8 flex items-baseline">
+                            <span className="font-headline-xl text-headline-xl text-on-surface font-bold">
+                              {plan.price.amount === 0 ? 'Free' : `$${plan.price.amount}`}
+                            </span>
+                            <span className="font-body-md text-body-md text-on-surface-variant ml-space-4">
+                              /{plan.price.interval}
+                            </span>
+                          </div>
+                          <p className="font-body-sm text-body-sm text-on-surface-variant mb-space-24">
+                            For small teams getting started
+                          </p>
+                          <ul className="space-y-space-16 pt-space-16 pb-space-32">
+                            {(plan.plan_detail ?? []).map((f) => (
+                              <li
+                                key={f}
+                                className="flex items-center gap-space-8 text-on-surface font-body-sm text-body-sm"
+                              >
+                                <Icon
+                                  name="check"
+                                  className="text-secondary text-[18px]"
+                                />
+                                {f}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                        <a
+                          onClick={() => navigate("/signup-company")}
+                          className="w-full inline-flex items-center justify-center py-space-12 rounded-lg bg-surface-container text-on-surface font-label-caps text-label-caps uppercase tracking-wider hover:bg-surface-container-high transition-colors shadow-sm cursor-pointer"
                         >
-                          <Icon
-                            name="check"
-                            className="text-secondary text-[18px]"
-                          />{" "}
-                          {f}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                  <a
-                    onClick={() => navigate("/signup-company")}
-                    className="w-full inline-flex items-center justify-center py-space-12 rounded-lg bg-surface-container text-on-surface font-label-caps text-label-caps uppercase tracking-wider hover:bg-surface-container-high transition-colors shadow-sm cursor-pointer"
-                  >
-                    GET STARTED
-                  </a>
-                </div>
-
-                {/* Growth (Highlighted) */}
-                <div className="p-space-32 rounded-xl bg-surface-container-lowest shadow-lg flex flex-col justify-between relative transform lg:-translate-y-2">
-                  <div>
-                    <div className="flex items-center justify-between">
-                      <span className="font-label-eyebrow text-label-eyebrow uppercase tracking-wider text-secondary font-bold">
-                        GROWTH
-                      </span>
-                      <span className="px-space-8 py-space-2 rounded-full bg-surface-container text-secondary font-label-eyebrow text-label-eyebrow uppercase font-bold">
-                        MOST POPULAR
-                      </span>
-                    </div>
-                    <div className="mt-space-16 mb-space-8 flex items-baseline">
-                      <span className="font-headline-xl text-headline-xl text-on-surface font-bold">
-                        $149
-                      </span>
-                      <span className="font-body-md text-body-md text-on-surface-variant ml-space-4">
-                        /mo
-                      </span>
-                    </div>
-                    <p className="font-body-sm text-body-sm text-on-surface-variant mb-space-24">
-                      For growing finance teams
-                    </p>
-                    <ul className="space-y-space-16 pt-space-16 pb-space-32">
-                      {[
-                        "Up to 250 vendors",
-                        "Priority support",
-                        "All payment rails",
-                        "Custom branding",
-                      ].map((f) => (
-                        <li
-                          key={f}
-                          className="flex items-center gap-space-8 text-on-surface font-body-sm text-body-sm"
-                        >
-                          <Icon
-                            name="check"
-                            className="text-secondary text-[18px]"
-                          />{" "}
-                          {f}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                  <a
-                    onClick={() => navigate("/signup-company")}
-                    className="w-full inline-flex items-center justify-center py-space-12 rounded-lg bg-primary text-on-primary font-label-caps text-label-caps uppercase tracking-wider hover:bg-primary-container transition-colors shadow-sm cursor-pointer"
-                  >
-                    GET STARTED
-                  </a>
-                </div>
-
-                {/* Enterprise */}
-                <div className="p-space-32 rounded-xl bg-surface-container-lowest shadow-sm flex flex-col justify-between">
-                  <div>
-                    <span className="font-label-eyebrow text-label-eyebrow uppercase tracking-wider text-secondary font-bold">
-                      ENTERPRISE
-                    </span>
-                    <div className="mt-space-16 mb-space-8 flex items-baseline">
-                      <span className="font-headline-xl text-headline-xl text-on-surface font-bold">
-                        Custom
-                      </span>
-                    </div>
-                    <p className="font-body-sm text-body-sm text-on-surface-variant mb-space-24">
-                      For large organizations
-                    </p>
-                    <ul className="space-y-space-16 pt-space-16 pb-space-32">
-                      {[
-                        "Unlimited vendors",
-                        "Dedicated success manager",
-                        "SSO & audit logs",
-                        "Custom domain",
-                      ].map((f) => (
-                        <li
-                          key={f}
-                          className="flex items-center gap-space-8 text-on-surface font-body-sm text-body-sm"
-                        >
-                          <Icon
-                            name="check"
-                            className="text-secondary text-[18px]"
-                          />{" "}
-                          {f}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                  <a
-                    href="mailto:sales@alluvium.net"
-                    className="w-full inline-flex items-center justify-center py-space-12 rounded-lg bg-surface-container text-on-surface font-label-caps text-label-caps uppercase tracking-wider hover:bg-surface-container-high transition-colors shadow-sm"
-                  >
-                    TALK TO SALES
-                  </a>
-                </div>
+                          GET STARTED
+                        </a>
+                      </div>
+                    );
+                  })
+                )}
               </div>
             </div>
           </section>
@@ -862,7 +777,7 @@ export default function Landing() {
                       <div className="w-12 h-12 rounded-full bg-surface-container flex items-center justify-center text-secondary mb-space-20">
                         <Icon name={role.icon} className="text-[26px]" />
                       </div>
-                      <h3 className="font-headline-sm text-headline-sm text-on-surface mb-space-12">
+                      <h3 className="font-sans text-headline-sm text-on-surface mb-space-12">
                         {role.title}
                       </h3>
                       <p className="font-body-md text-body-md text-on-surface-variant">
@@ -910,7 +825,7 @@ export default function Landing() {
               </p>
               <a
                 onClick={() => navigate("/signup-company")}
-                className="inline-flex items-center justify-center px-space-32 py-space-16 rounded-lg bg-primary text-on-primary font-label-caps text-label-caps uppercase tracking-wider hover:bg-primary-container transition-all shadow-md cursor-pointer"
+                className="inline-flex items-center justify-center px-space-32 py-space-16 rounded-lg bg-primary text-on-primary font-label-caps text-label-caps uppercase tracking-wider hover:bg-primary/90 transition-all shadow-md cursor-pointer"
               >
                 GET STARTED →
               </a>

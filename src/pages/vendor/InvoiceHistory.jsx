@@ -33,6 +33,7 @@ import { vendorService } from "../../lib/services/vendorService";
 import { BsThreeDotsVertical } from "react-icons/bs";
 import { BiBarChartAlt2 } from "react-icons/bi";
 import { IoEyeOutline, IoTrash } from "react-icons/io5";
+import ConfirmModal from "../../components/ui/ConfirmModal";
 
 const PAGE_SIZE = 20;
 const STATUS_OPTIONS = [
@@ -69,6 +70,9 @@ export default function InvoiceHistory() {
   const [statusFilter, setStatusFilter] = useState("All");
   const [downloadingId, setDownloadingId] = useState(null);
   const [openAction, setOpenAction] = useState(false);
+  const [selectedInvoice, setSelectedInvoice] = useState(null);
+  const [openDeleteModal, setOpenDeleteModal] = useState(false);
+  const [invoiceToDelete, setInvoiceToDelete] = useState(null);
   useEffect(() => {
     let cancelled = false;
     const fetchAll = async () => {
@@ -135,7 +139,25 @@ export default function InvoiceHistory() {
       label: formatCurrency(amount, currency),
     }));
   }
-
+  const handleDelete = async (invoice) => {
+    if (!invoice || selectedInvoice) return;
+    if (invoice.status !== "submitted") {
+      setError("Only invoices that haven't been reviewed yet can be deleted.");
+      return;
+    }
+    setSelectedInvoice(invoice.id);
+    setError("");
+    try {
+      await invoiceService.deleteInvoice(invoice.id);
+      setInvoices((prev) => prev.filter((inv) => inv.id !== invoice.id));
+      setOpenDeleteModal(false);
+      setInvoiceToDelete(null);
+    } catch (error) {
+      setError(extractErrorMessage(error));
+    } finally {
+      setSelectedInvoice(null);
+    }
+  };
   const trendRaw = dash?.payment_trends ?? [];
   const histPrimaryCurrency =
     trendRaw.flatMap((pt) => Object.keys(pt.submitted_by_currency ?? {}))[0] ??
@@ -157,7 +179,7 @@ export default function InvoiceHistory() {
       <div className="space-y-6">
         <div className="flex flex-col md:flex-row md:items-center justify-between md:gap-0 gap-6">
           <div>
-            <h1 className="text-2xl font-semibold text-on-surface">
+            <h1 className="font-headline-lg text-2xl font-semibold text-on-surface">
               Invoice History
             </h1>
             <p className="text-sm text-on-surface-variant mt-0.5">
@@ -182,7 +204,7 @@ export default function InvoiceHistory() {
         />
 
         {error && (
-          <div className="p-3 bg-red-50 border border-red-200 rounded text-red-600 text-sm">
+          <div className="p-3 bg-error/5 border border-error/30 rounded text-error text-sm">
             {error}
           </div>
         )}
@@ -220,7 +242,7 @@ export default function InvoiceHistory() {
               <p className="text-xl font-bold text-on-surface mt-1">—</p>
             )}
             {dash && (
-              <div className="mt-1 space-y-0 text-xs text-emerald">
+              <div className="mt-1 space-y-0 text-xs text-success">
                 {formatByCurrency(dash.total_amount_paid_ytd).map(
                   ({ key, label }) => (
                     <p key={key}>YTD: {label}</p>
@@ -253,7 +275,7 @@ export default function InvoiceHistory() {
                 {dash.overdue_count !== 1 ? "s" : ""}
               </p>
             ) : (
-              <p className="text-xs mt-0.5 text-emerald">None overdue</p>
+              <p className="text-xs mt-0.5 text-success">None overdue</p>
             )}
           </Card>
           <Card className="py-4">
@@ -286,7 +308,7 @@ export default function InvoiceHistory() {
                     setPage(1);
                   }}
                   placeholder="Search invoice #..."
-                  className="w-full pl-8 pr-3 py-1.5 text-sm bg-surface-low rounded border border-outline-variant focus:outline-none focus:ring-2 focus:ring-emerald"
+                  className="w-full pl-8 pr-3 py-1.5 text-sm bg-surface-container rounded border border-outline-variant focus:outline-none focus:ring-2 focus:ring-success"
                 />
               </div>
 
@@ -321,7 +343,7 @@ export default function InvoiceHistory() {
                   className={`px-4 py-2 rounded-full text-xs font-medium border transition-colors ${
                     statusFilter === s
                       ? "border-navy bg-navy text-white"
-                      : "border-outline-variant text-on-surface-variant hover:bg-surface-low"
+                      : "border-outline-variant text-on-surface-variant hover:bg-surface-container"
                   }`}
                 >
                   {STATUS_LABEL[s] ?? "All"}
@@ -330,7 +352,7 @@ export default function InvoiceHistory() {
             </div>
             {loading ? (
               <div className="flex items-center justify-center py-12">
-                <Loader2 size={24} className="animate-spin text-emerald" />
+                <Loader2 size={24} className="animate-spin text-secondary" />
                 <span className="ml-2 text-sm text-on-surface-variant">
                   Loading invoices...
                 </span>
@@ -338,7 +360,7 @@ export default function InvoiceHistory() {
             ) : (
               // <table className="w-full ">
               //   <thead>
-              //     <tr className="bg-surface-low border-y border-outline-variant">
+              //     <tr className="bg-surface-container border-y border-outline-variant">
               //       {[
               //         "Invoice #",
               //         "Submitted",
@@ -371,7 +393,7 @@ export default function InvoiceHistory() {
               //       invoices.map((inv) => (
               //         <tr
               //           key={inv.id}
-              //           className="hover:bg-surface-low/50 transition-colors cursor-pointer"
+              //           className="hover:bg-surface-container/50 transition-colors cursor-pointer"
               //           onClick={() => navigate(`/vendor/invoices/${inv.id}`)}
               //         >
               //           <td className="px-6 py-4 text-sm font-semibold text-on-surface">
@@ -506,7 +528,7 @@ export default function InvoiceHistory() {
               <div className="w-full ">
                 <table className="w-full min-w-[900px]">
                   <thead>
-                    <tr className="bg-surface-low border-y border-outline-variant">
+                    <tr className="bg-surface-container border-y border-outline-variant">
                       {[
                         "Invoice #",
                         "Submitted",
@@ -540,7 +562,7 @@ export default function InvoiceHistory() {
                       invoices.map((inv) => (
                         <tr
                           key={inv.id}
-                          className="hover:bg-surface-low/50 transition-colors cursor-pointer border-y border-outline-variant "
+                          className="hover:bg-surface-container/50 transition-colors cursor-pointer border-y border-outline-variant "
                           onClick={() => navigate(`/vendor/invoices/${inv.id}`)}
                         >
                           {/* Invoice Number */}
@@ -590,7 +612,7 @@ export default function InvoiceHistory() {
                                     openAction === inv.id ? null : inv.id,
                                   )
                                 }
-                                className="p-1.5 rounded-md hover:bg-surface-low transition-colors"
+                                className="p-1.5 rounded-md hover:bg-surface-container transition-colors"
                               >
                                 <BsThreeDotsVertical size={20} />
                               </button>
@@ -603,7 +625,7 @@ export default function InvoiceHistory() {
                                       // type="button"
                                       onClick={() => handleDownload(inv.id)}
                                       disabled={downloadingId === inv.id}
-                                      className="w-full flex items-center gap-2 px-2 py-2 rounded-md hover:bg-surface-low text-left"
+                                      className="w-full flex items-center gap-2 px-2 py-2 rounded-md hover:bg-surface-container text-left"
                                     >
                                       {downloadingId === inv.id ? (
                                         <Loader2
@@ -628,7 +650,7 @@ export default function InvoiceHistory() {
                                       onClick={() =>
                                         navigate(`/vendor/invoices/${inv.id}`)
                                       }
-                                      className="w-full flex items-center gap-2 px-2 py-2 rounded-md hover:bg-surface-low text-left"
+                                      className="w-full flex items-center gap-2 px-2 py-2 rounded-md hover:bg-surface-container text-left"
                                     >
                                       <IoEyeOutline
                                         size={15}
@@ -639,23 +661,27 @@ export default function InvoiceHistory() {
                                         View
                                       </span>
                                     </div>
-                                    <div
-                                      // type="button"
-                                      onClick={() =>
-                                        navigate(`/vendor/invoices/${inv.id}`)
-                                      }
-                                      className="w-full flex items-center gap-2 px-2 py-2 rounded-md hover:bg-surface-low text-left"
-                                    >
-                                      <IoTrash
-                                        size={15}
-                                        className="shrink-0"
-                                        color="red"
-                                      />
+                                    {/* Only invoices still awaiting review can be deleted. */}
+                                    {inv.status === "submitted" && (
+                                      <div
+                                        onClick={() => {
+                                          setInvoiceToDelete(inv);
+                                          setOpenAction(null);
+                                          setOpenDeleteModal(true);
+                                        }}
+                                        className="w-full flex items-center gap-2 px-2 py-2 rounded-md hover:bg-error/5  text-left"
+                                      >
+                                        <IoTrash
+                                          size={15}
+                                          className="shrink-0"
+                                          color="red"
+                                        />
 
-                                      <span className="text-sm text-error font-medium">
-                                        Delete
-                                      </span>
-                                    </div>
+                                        <span className="text-sm text-error font-medium">
+                                          Delete
+                                        </span>
+                                      </div>
+                                    )}
                                   </div>
                                 </div>
                               )}
@@ -668,6 +694,19 @@ export default function InvoiceHistory() {
                 </table>
               </div>
             )}
+
+            <ConfirmModal
+              open={openDeleteModal}
+              title="Delete invoice?"
+              message={`Are you sure you want to delete invoice ${invoiceToDelete?.invoice_number ?? ""}? This action cannot be undone.`}
+              confirmLabel={selectedInvoice ? "Deleting..." : "Delete"}
+              variant="danger"
+              onConfirm={() => handleDelete(invoiceToDelete)}
+              onCancel={() => {
+                setOpenDeleteModal(false);
+                setInvoiceToDelete(null);
+              }}
+            />
 
             <div className="w-full px-6 py-3 border-t border-outline-variant flex items-center justify-between">
               <p className="text-xs text-on-surface-variant">
@@ -719,12 +758,12 @@ export default function InvoiceHistory() {
               >
                 <XAxis
                   dataKey="month"
-                  tick={{ fontSize: 11, fill: "#74777c" }}
+                  tick={{ fontSize: 11, fill: "#667085" }}
                   axisLine={false}
                   tickLine={false}
                 />
                 <YAxis
-                  tick={{ fontSize: 11, fill: "#74777c" }}
+                  tick={{ fontSize: 11, fill: "#667085" }}
                   axisLine={false}
                   tickLine={false}
                   tickFormatter={(v) =>
@@ -739,7 +778,7 @@ export default function InvoiceHistory() {
                   contentStyle={{
                     fontSize: 12,
                     borderRadius: 8,
-                    border: "1px solid #c4c6cc",
+                    border: "1px solid #D0D5DD",
                   }}
                 />
                 <Legend
@@ -750,19 +789,19 @@ export default function InvoiceHistory() {
                 <Bar
                   dataKey="submitted"
                   name="Submitted"
-                  fill="#c4c6cc"
+                  fill="#D0D5DD"
                   radius={[3, 3, 0, 0]}
                 />
                 <Bar
                   dataKey="settled"
                   name="Settled"
-                  fill="#006c49"
+                  fill="#009BC0"
                   radius={[3, 3, 0, 0]}
                 />
                 <Bar
                   dataKey="rejected"
                   name="Rejected"
-                  fill="#ba1a1a"
+                  fill="#D6463C"
                   radius={[3, 3, 0, 0]}
                 />
               </BarChart>

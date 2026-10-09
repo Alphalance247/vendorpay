@@ -6,7 +6,7 @@ import {
   History,
   Receipt,
   Loader2,
-  Download,
+  // Download,
   Plus,
   UserPlus,
   Users,
@@ -81,7 +81,7 @@ function GettingStartedPanel({ onInviteVendors }) {
                 {step.actionLabel}
               </Button>
             ) : (
-              <span className="flex-shrink-0 text-xs font-medium text-on-surface-variant bg-surface-low px-2.5 py-1 rounded-full">
+              <span className="flex-shrink-0 text-xs font-medium text-on-surface-variant bg-surface-container px-2.5 py-1 rounded-full">
                 Coming soon
               </span>
             )}
@@ -102,7 +102,7 @@ export default function AdminDashboard() {
     vendorService
       .getAdminDashboard()
       .then(setDash)
-      .catch(() => {})
+      .catch(() => { })
       .finally(() => setLoading(false));
   }, []);
 
@@ -115,7 +115,7 @@ export default function AdminDashboard() {
       label: "Total Vendors",
       value: loading ? "—" : (dash?.total_vendors ?? "—"),
       sub: "",
-      subColor: "text-emerald",
+      subColor: "text-success",
       tip: "Vendors currently active in your workspace.",
     },
     {
@@ -145,27 +145,27 @@ export default function AdminDashboard() {
 
   const quickActions = isFirstRun
     ? [
-        {
-          label: "Invite Vendors",
-          icon: Users,
-          onClick: () => setInviteOpen(true),
-        },
-        { label: "Invite Team Members", path: "/admin/team", icon: UserPlus },
-        // { label: 'Set Up Billing', path: '/admin/billing', icon: CreditCard },
-      ]
+      {
+        label: "Invite Vendors",
+        icon: Users,
+        onClick: () => setInviteOpen(true),
+      },
+      { label: "Invite Team Members", path: "/admin/team", icon: UserPlus },
+      // { label: 'Set Up Billing', path: '/admin/billing', icon: CreditCard },
+    ]
     : [
-        {
-          label: "Review Pending Invoices",
-          path: "/admin/invoices",
-          icon: Receipt,
-        },
-        {
-          label: "View All Vendors",
-          path: "/admin/vendors",
-          icon: AlertCircle,
-        },
-        { label: "Payment History", path: "/admin/payments", icon: Clock },
-      ];
+      {
+        label: "Review Pending Invoices",
+        path: "/admin/invoices",
+        icon: Receipt,
+      },
+      {
+        label: "View All Vendors",
+        path: "/admin/vendors",
+        icon: AlertCircle,
+      },
+      { label: "Payment History", path: "/admin/payments", icon: Clock },
+    ];
 
   return (
     <AppLayout role="admin">
@@ -185,9 +185,9 @@ export default function AdminDashboard() {
             </p>
           </div>
           <div className="flex gap-2">
-            <Button variant="secondary" size="sm">
+            {/* <Button variant="secondary" size="sm">
               <Download size={14} /> Export Report
-            </Button>
+            </Button> */}
             <Tooltip text="Jump straight to the approval queue — you can also get there via the sidebar.">
               <Button size="sm" onClick={() => navigate("/admin/invoices")}>
                 <Plus size={14} /> Review Invoices
@@ -255,21 +255,21 @@ export default function AdminDashboard() {
                   );
                   const pct = total ? Math.round((count / total) * 100) : 0;
                   const colorMap = {
-                    submitted: "bg-amber-400",
-                    reviewed: "bg-sky-400",
-                    funding: "bg-violet-400",
-                    paid: "bg-emerald",
+                    submitted: "bg-outline",
+                    reviewed: "bg-navy",
+                    funding: "bg-brand-orange",
+                    paid: "bg-success",
                     rejected: "bg-error",
-                    flagged: "bg-orange-400",
+                    flagged: "bg-warning",
                   };
                   return (
                     <div key={key} className="flex items-center gap-3">
-                      <span className="text-xs text-on-surface-variant capitalize w-20 flex-shrink-0">
+                      <span className="text-xs text-on-surface-variant capitalize w-28 flex-shrink-0">
                         {key}
                       </span>
                       <div className="flex-1 h-2 bg-surface-container rounded-full overflow-hidden">
                         <div
-                          className={`h-full rounded-full ${colorMap[key] ?? "bg-emerald"}`}
+                          className={`h-full rounded-full ${colorMap[key] ?? "bg-success"}`}
                           style={{ width: `${pct}%` }}
                         />
                       </div>
@@ -305,7 +305,7 @@ export default function AdminDashboard() {
                 <button
                   key={label}
                   onClick={onClick ?? (() => navigate(path))}
-                  className="w-full flex items-center gap-3 px-5 py-4 hover:bg-surface-low/50 transition-colors text-left"
+                  className="w-full flex items-center gap-3 px-5 py-4 hover:bg-surface-container/50 transition-colors text-left"
                 >
                   <Icon size={16} className="text-on-surface-variant" />
                   <span className="text-sm text-on-surface">{label}</span>

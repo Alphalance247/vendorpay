@@ -18,6 +18,9 @@ import { vendorService } from "../../lib/services/vendorService";
 import { formatCurrency, formatDate } from "../../lib/utils";
 import { useCurrentUser } from "../../hooks/useQueries/vendorAdmin/useCurrentUser";
 import ConfirmModal from "../ui/ConfirmModal";
+// import { MdClose } from "react-icons/md";
+import { RiSettingsLine } from "react-icons/ri";
+import { resolveMediaUrl } from "../../lib/apiClient";
 
 const STATUS_LABEL = {
   submitted: "Submitted",
@@ -31,12 +34,12 @@ const STATUS_LABEL = {
 };
 
 const STATUS_COLOR = {
-  paid: "text-emerald",
-  payment_confirmed: "text-emerald",
+  paid: "text-success",
+  payment_confirmed: "text-success",
   rejected: "text-error",
   payment_disputed: "text-error",
-  flagged: "text-amber",
-  funding: "text-blue-600",
+  flagged: "text-warning",
+  funding: "text-primary",
   reviewed: "text-on-surface-variant",
   submitted: "text-on-surface-variant",
 };
@@ -90,12 +93,13 @@ export default function TopBar({ onMenuClick }) {
       vendorService
         .getProfile()
         .then(setProfile)
-        .catch(() => {});
+        .catch(() => { });
     }
   }, [role]);
 
   const { data: currentUser } = useCurrentUser(role === "admin");
-
+  // const adminAvatar = currentUser.avatar_url;
+  // console.log(adminAvatar);
   // Fetch recent invoices to drive notifications
   useEffect(() => {
     if (!role) return;
@@ -165,10 +169,10 @@ export default function TopBar({ onMenuClick }) {
 
   const displayName = profile
     ? [profile.contact_first_name, profile.contact_last_name]
-        .filter(Boolean)
-        .join(" ") ||
-      profile.company_name ||
-      "Vendor"
+      .filter(Boolean)
+      .join(" ") ||
+    profile.company_name ||
+    "Vendor"
     : role === "admin"
       ? currentUser?.full_name || "—"
       : "—";
@@ -180,7 +184,7 @@ export default function TopBar({ onMenuClick }) {
     "";
 
   return (
-    <header className="h-14 bg-white border-b border-outline-variant flex items-center px-4 sm:px-6 gap-3 sm:gap-4 z-20 relative">
+    <header className=" sticky top-0 h-14 shrink-0 bg-white border-b border-outline-variant flex items-center px-4 sm:px-6 gap-3 sm:gap-4 z-50">
       <button
         onClick={onMenuClick}
         className="lg:hidden p-2 -ml-2 rounded hover:bg-surface-container text-on-surface-variant transition-colors flex-shrink-0"
@@ -225,7 +229,7 @@ export default function TopBar({ onMenuClick }) {
                     <li key={inv.id}>
                       <button
                         onClick={() => handleNotificationClick(inv)}
-                        className="w-full text-left px-4 py-3 hover:bg-surface-low transition-colors flex items-start gap-3"
+                        className="w-full text-left px-4 py-3 hover:bg-surface-container transition-colors flex items-start gap-3"
                       >
                         <div className="w-7 h-7 rounded-full bg-surface-container flex items-center justify-center flex-shrink-0 mt-0.5">
                           <FileText
@@ -290,11 +294,21 @@ export default function TopBar({ onMenuClick }) {
             <div className="absolute right-0 top-full mt-2 w-64 max-w-[90vw] bg-white rounded-xl shadow-dropdown border border-outline-variant overflow-hidden">
               {/* User info */}
               <div className="px-4 py-3 border-b border-outline-variant flex items-center gap-3">
-                <div className="w-9 h-9 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
-                  <User size={15} className="text-white" />
-                </div>
+                {currentUser?.avatar_url ? (
+                  <div className="h-9 w-9 flex justify-center items-center ">
+                    <img
+                      src={resolveMediaUrl(currentUser.avatar_url)}
+                      alt="admin photo"
+                      className="w-9 h-9 rounded-full flex-shrink-0 object-cover"
+                    />
+                  </div>
+                ) : (
+                  <div className="w-9 h-9 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
+                    <User size={15} className="text-white" />
+                  </div>
+                )}
                 <div className="min-w-0">
-                  <p className="text-sm font-semibold text-on-surface truncate">
+                  <p className="text-sm font-semibold text-on-surface truncate capitalize">
                     {displayName}
                   </p>
                   {displayEmail && (
@@ -305,20 +319,33 @@ export default function TopBar({ onMenuClick }) {
                   <p className="text-xs text-outline capitalize">{role}</p>
                 </div>
               </div>
+              {/* } */}
 
               <div className="py-1">
-                {role === "vendor" && (
+                {role === "vendor" ? (
                   <button
                     onClick={() => {
                       setShowSettings(false);
                       navigate("/vendor/profile");
                     }}
-                    className="w-full text-left px-4 py-2.5 text-sm text-on-surface hover:bg-surface-low transition-colors flex items-center gap-2.5"
+                    className="w-full text-left px-4 py-2.5 text-sm text-on-surface hover:bg-surface-container transition-colors flex items-center gap-2.5"
                   >
                     <User size={15} className="text-on-surface-variant" />
                     Edit Profile
                   </button>
+                ) : (
+                  <button
+                    className="w-full text-left px-4 py-2.5 text-sm text-on-surface hover:bg-surface-container transition-colors flex items-center gap-2.5"
+                    onClick={() => {
+                      setShowSettings(false);
+                      navigate("/admin/general-settings/settings");
+                    }}
+                  >
+                    <RiSettingsLine className="text-on-surface" size={15} />
+                    General setting
+                  </button>
                 )}
+
                 <button
                   onClick={() => {
                     setShowSettings(false);
@@ -326,7 +353,7 @@ export default function TopBar({ onMenuClick }) {
                       role === "admin" ? "/admin/support" : "/vendor/support",
                     );
                   }}
-                  className="w-full text-left px-4 py-2.5 text-sm text-on-surface hover:bg-surface-low transition-colors flex items-center gap-2.5"
+                  className="w-full text-left px-4 py-2.5 text-sm text-on-surface hover:bg-surface-container transition-colors flex items-center gap-2.5"
                 >
                   <Bell size={15} className="text-on-surface-variant" />
                   Support
@@ -336,7 +363,7 @@ export default function TopBar({ onMenuClick }) {
                     setShowSettings(false);
                     setShowSignOutConfirm(true);
                   }}
-                  className="w-full text-left px-4 py-2.5 text-sm text-error hover:bg-red-50 transition-colors flex items-center gap-2.5"
+                  className="w-full text-left px-4 py-2.5 text-sm text-error hover:bg-error/5 transition-colors flex items-center gap-2.5"
                 >
                   <LogOut size={15} />
                   Sign out

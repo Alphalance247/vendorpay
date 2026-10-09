@@ -18,6 +18,7 @@ import Input from "../../components/ui/Input";
 import Select from "../../components/ui/Select";
 import Modal from "../../components/ui/Modal";
 import StatusChip from "../../components/ui/StatusChip";
+import ActionMenu from "../../components/ui/ActionMenu";
 import { useConfirm } from "../../hooks/useConfirm";
 import { useToast } from "../../components/ui/Toast";
 import { useCreateInvite } from "../../hooks/useQueries/vendorAdmin/useCreateInvite";
@@ -62,8 +63,8 @@ function RoleLegend() {
     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
       {ROLES.map(({ id, icon: Icon, description }) => (
         <Card key={id} className="flex items-start gap-3">
-          <div className="w-9 h-9 rounded-lg bg-emerald/10 flex items-center justify-center flex-shrink-0">
-            <Icon size={17} className="text-emerald" />
+          <div className="w-9 h-9 rounded-lg bg-success/10 flex items-center justify-center flex-shrink-0">
+            <Icon size={17} className="text-success" />
           </div>
           <div className="min-w-0">
             <p className="text-sm font-semibold text-on-surface">{id}</p>
@@ -196,6 +197,31 @@ export default function TeamRoles() {
     }
   }
 
+  // Row actions shared by the desktop table and the phone cards.
+  function memberActions(member, { isOwner, resending, removing }) {
+    const items = [];
+    if (member.status === "pending") {
+      items.push({
+        label: resending ? "Resending…" : "Resend invite",
+        icon: resending ? Loader2 : Mail,
+        loading: resending,
+        disabled: resending,
+        onClick: () => handleResend(member),
+      });
+    }
+    if (!isOwner) {
+      items.push({
+        label: removing ? "Removing…" : "Remove teammate",
+        icon: removing ? Loader2 : Trash2,
+        loading: removing,
+        disabled: removing,
+        danger: true,
+        onClick: () => handleRemove(member),
+      });
+    }
+    return items;
+  }
+
   const filtered = team.filter((m) => {
     if (!search) return true;
     const q = search.toLowerCase();
@@ -259,7 +285,7 @@ export default function TeamRoles() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search by name or email..."
-                className="w-full pl-8 pr-3 py-1.5 text-sm bg-surface-low rounded border border-outline-variant focus:outline-none focus:ring-2 focus:ring-secondary"
+                className="w-full pl-8 pr-3 py-1.5 text-sm bg-surface-container rounded border border-outline-variant focus:outline-none focus:ring-2 focus:ring-secondary"
               />
             </div>
           </div>
@@ -283,7 +309,7 @@ export default function TeamRoles() {
               <div className="hidden md:block overflow-x-auto">
                 <table className="w-full">
                   <thead>
-                    <tr className="bg-surface-low border-b border-outline-variant">
+                    <tr className="bg-surface-container border-b border-outline-variant">
                       {["Name", "Email", "Role", "Status", ""].map((h) => (
                         <th
                           key={h}
@@ -303,10 +329,11 @@ export default function TeamRoles() {
                       const resending =
                         resendInvite.isPending &&
                         resendInvite.variables === member.id;
+                      const actions = memberActions(member, { isOwner, resending, removing });
                       return (
                         <tr
                           key={member.id}
-                          className="hover:bg-surface-low/50 transition-colors"
+                          className="hover:bg-surface-container/50 transition-colors"
                         >
                           <td className="px-6 py-4 text-sm font-semibold text-on-surface">
                             {member.full_name}
@@ -317,7 +344,7 @@ export default function TeamRoles() {
                           <td className="px-6 py-4">
                             {isOwner ? (
                               <span className="text-sm text-on-surface-variant flex items-center gap-1.5">
-                                <Crown size={13} className="text-amber" /> Owner
+                                <Crown size={13} className="text-warning" /> Owner
                               </span>
                             ) : (
                               <span className="text-sm text-on-surface-variant capitalize">
@@ -328,43 +355,8 @@ export default function TeamRoles() {
                           <td className="px-6 py-4">
                             <StatusChip status={statusLabel(member.status)} />
                           </td>
-                          <td className="px-6 py-4">
-                            <div className="flex items-center justify-end gap-1.5">
-                              {member.status === "pending" && (
-                                <button
-                                  onClick={() => handleResend(member)}
-                                  disabled={resending}
-                                  title="Resend invite"
-                                  className="p-1.5 rounded hover:bg-surface-container transition-colors disabled:opacity-50"
-                                >
-                                  {resending ? (
-                                    <Loader2
-                                      size={14}
-                                      className="animate-spin text-on-surface-variant"
-                                    />
-                                  ) : (
-                                    <Mail
-                                      size={14}
-                                      className="text-on-surface-variant"
-                                    />
-                                  )}
-                                </button>
-                              )}
-                              {!isOwner && (
-                                <button
-                                  onClick={() => handleRemove(member)}
-                                  disabled={removing}
-                                  title="Remove teammate"
-                                  className="p-1.5 rounded hover:bg-red-50 transition-colors disabled:opacity-50"
-                                >
-                                  {removing ? (
-                                    <Loader2 size={14} className="animate-spin text-error" />
-                                  ) : (
-                                    <Trash2 size={14} className="text-error" />
-                                  )}
-                                </button>
-                              )}
-                            </div>
+                          <td className="px-6 py-4 text-right">
+                            {actions.length > 0 && <ActionMenu items={actions} />}
                           </td>
                         </tr>
                       );
@@ -383,6 +375,7 @@ export default function TeamRoles() {
                   const resending =
                     resendInvite.isPending &&
                     resendInvite.variables === member.id;
+                  const actions = memberActions(member, { isOwner, resending, removing });
                   return (
                     <div key={member.id} className="px-4 py-4">
                       <div className="flex items-start justify-between gap-3">
@@ -403,7 +396,7 @@ export default function TeamRoles() {
                       <div className="flex items-center justify-between mt-3 gap-3">
                         {isOwner ? (
                           <span className="text-sm text-on-surface-variant flex items-center gap-1.5">
-                            <Crown size={13} className="text-amber" /> Owner
+                            <Crown size={13} className="text-warning" /> Owner
                           </span>
                         ) : (
                           <span className="text-sm text-on-surface-variant capitalize">
@@ -411,42 +404,7 @@ export default function TeamRoles() {
                           </span>
                         )}
 
-                        <div className="flex items-center gap-1.5">
-                          {member.status === "pending" && (
-                            <button
-                              onClick={() => handleResend(member)}
-                              disabled={resending}
-                              title="Resend invite"
-                              className="p-1.5 rounded hover:bg-surface-container transition-colors disabled:opacity-50"
-                            >
-                              {resending ? (
-                                <Loader2
-                                  size={14}
-                                  className="animate-spin text-on-surface-variant"
-                                />
-                              ) : (
-                                <Mail
-                                  size={14}
-                                  className="text-on-surface-variant"
-                                />
-                              )}
-                            </button>
-                          )}
-                          {!isOwner && (
-                            <button
-                              onClick={() => handleRemove(member)}
-                              disabled={removing}
-                              title="Remove teammate"
-                              className="p-1.5 rounded hover:bg-red-50 transition-colors disabled:opacity-50"
-                            >
-                              {removing ? (
-                                <Loader2 size={14} className="animate-spin text-error" />
-                              ) : (
-                                <Trash2 size={14} className="text-error" />
-                              )}
-                            </button>
-                          )}
-                        </div>
+                        {actions.length > 0 && <ActionMenu items={actions} />}
                       </div>
                     </div>
                   );

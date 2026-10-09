@@ -87,7 +87,7 @@ function PasswordChecklist({ password }) {
             key={rule.key}
             className={cn(
               "flex items-center gap-1.5 text-xs transition-colors",
-              met ? "text-emerald" : "text-on-surface-variant",
+              met ? "text-success" : "text-on-surface-variant",
             )}
           >
             {met ? (
@@ -136,7 +136,7 @@ function StepIndicator({ current }) {
               <div
                 className={cn(
                   "w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold border-2 transition-all",
-                  done && "bg-emerald border-emerald text-white",
+                  done && "bg-success border-success text-white",
                   active && "bg-white border-primary text-primary",
                   !done &&
                     !active &&
@@ -151,7 +151,7 @@ function StepIndicator({ current }) {
                   active
                     ? "text-primary"
                     : done
-                      ? "text-emerald"
+                      ? "text-success"
                       : "text-on-surface-variant",
                 )}
               >
@@ -162,7 +162,7 @@ function StepIndicator({ current }) {
               <div
                 className={cn(
                   "h-0.5 flex-1 mb-4 sm:mb-4 mx-1 transition-colors",
-                  done ? "bg-emerald" : "bg-outline-variant",
+                  done ? "bg-success" : "bg-outline-variant",
                 )}
               />
             )}
@@ -190,7 +190,7 @@ function AccountStep({
   return (
     <div className="space-y-4">
       <div>
-        <h2 className="text-2xl font-semibold text-on-surface tracking-tight">
+        <h2 className="font-headline-lg text-2xl font-semibold text-on-surface tracking-tight">
           Create your admin account
         </h2>
         <p className="text-on-surface-variant text-sm mt-1">
@@ -265,7 +265,7 @@ function VerifyEmailStep({ email, code, onCodeChange, verified, verifyError }) {
   return (
     <div className="space-y-5">
       <div>
-        <h2 className="text-2xl font-semibold text-on-surface tracking-tight">
+        <h2 className="font-headline-lg text-2xl font-semibold text-on-surface tracking-tight">
           Verify your email
         </h2>
         <p className="text-on-surface-variant text-sm mt-1">
@@ -275,9 +275,9 @@ function VerifyEmailStep({ email, code, onCodeChange, verified, verifyError }) {
       </div>
 
       {verified ? (
-        <div className="rounded-lg border border-emerald/30 bg-emerald/5 p-4 flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-emerald/15 flex items-center justify-center flex-shrink-0">
-            <Check size={20} className="text-emerald" />
+        <div className="rounded-lg border border-success/30 bg-success/5 p-4 flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-success/15 flex items-center justify-center flex-shrink-0">
+            <Check size={20} className="text-success" />
           </div>
           <div>
             <p className="text-sm font-semibold text-on-surface">
@@ -309,7 +309,7 @@ function CompanyStep({ data, onChange, checkStatus }) {
   return (
     <div className="space-y-5">
       <div>
-        <h2 className="text-2xl font-semibold text-on-surface tracking-tight">
+        <h2 className="font-headline-lg text-2xl font-semibold text-on-surface tracking-tight">
           Tell us about your company
         </h2>
         <p className="text-on-surface-variant text-sm mt-1">
@@ -370,14 +370,14 @@ function CompanyStep({ data, onChange, checkStatus }) {
             checkStatus === "checking" ? (
               <Loader2 size={16} className="animate-spin text-outline" />
             ) : checkStatus === "available" ? (
-              <Check size={16} className="text-emerald" />
+              <Check size={16} className="text-success" />
             ) : checkStatus === "taken" ? (
               <X size={16} className="text-error" />
             ) : null
           }
         />
 
-        <div className="bg-surface-low border border-outline rounded-lg px-4 py-3 flex items-center gap-2">
+        <div className="bg-surface-container border border-outline rounded-lg px-4 py-3 flex items-center gap-2">
           <span className="text-on-surface-variant text-sm">
             Your workspace URL:
           </span>
@@ -392,7 +392,7 @@ function CompanyStep({ data, onChange, checkStatus }) {
           </p>
         )}
         {checkStatus === "available" && (
-          <p className="text-sm text-emerald flex items-center gap-1.5">
+          <p className="text-sm text-success flex items-center gap-1.5">
             <Check size={14} /> That subdomain is available.
           </p>
         )}
@@ -416,14 +416,14 @@ function ReviewStep({ data }) {
   return (
     <div className="space-y-4">
       <div>
-        <h2 className="text-2xl font-semibold text-on-surface tracking-tight">
+        <h2 className="font-headline-lg text-2xl font-semibold text-on-surface tracking-tight">
           Review & confirm
         </h2>
         <p className="text-on-surface-variant text-sm mt-1">
           Everything look right? Let's create your workspace.
         </p>
       </div>
-      <div className="bg-surface-low rounded-lg border border-outline overflow-hidden">
+      <div className="bg-surface-container rounded-lg border border-outline overflow-hidden">
         <table className="w-full text-sm">
           <tbody>
             {rows.map((row) =>
@@ -442,7 +442,7 @@ function ReviewStep({ data }) {
           </tbody>
         </table>
       </div>
-      <div className="bg-emerald/5 border border-emerald/20 rounded-lg p-3 flex items-start gap-2 text-sm text-emerald">
+      <div className="bg-success/5 border border-success/20 rounded-lg p-3 flex items-start gap-2 text-sm text-success">
         <ShieldCheck size={16} className="mt-0.5 flex-shrink-0" />
         Double-check these details — your workspace is created as soon as you
         confirm.
@@ -464,10 +464,10 @@ function SuccessScreen({ data, onDone }) {
         </div>
 
         <div className="text-center mb-8">
-          <div className="w-14 h-14 rounded-full bg-emerald/10 flex items-center justify-center mx-auto mb-4">
-            <PartyPopper size={26} className="text-emerald" />
+          <div className="w-14 h-14 rounded-full bg-success/10 flex items-center justify-center mx-auto mb-4">
+            <PartyPopper size={26} className="text-success" />
           </div>
-          <h1 className="text-2xl font-semibold text-on-surface tracking-tight">
+          <h1 className="font-headline-lg text-2xl font-semibold text-on-surface tracking-tight">
             Your workspace is ready!
           </h1>
           <p className="text-on-surface-variant text-sm mt-1.5">
@@ -481,7 +481,7 @@ function SuccessScreen({ data, onDone }) {
 
         {/* Branded preview */}
         <Card className="overflow-hidden p-0">
-          <div className="px-5 py-4 flex items-center gap-3 bg-emerald">
+          <div className="px-5 py-4 flex items-center gap-3 bg-success">
             <div className="w-9 h-9 rounded-lg bg-white/15 flex items-center justify-center overflow-hidden flex-shrink-0">
               <span className="text-white font-bold text-sm">{initials}</span>
             </div>
@@ -664,7 +664,7 @@ export default function CompanySignup() {
         <StepIndicator current={step} />
 
         {error && (
-          <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-600">
+          <div className="mb-4 bg-error/5 border border-error/30 rounded-lg p-3 text-sm text-error">
             {error}
           </div>
         )}

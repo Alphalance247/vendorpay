@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Check, ArrowRight, ArrowLeft, Save, ShieldCheck } from "lucide-react";
 import { vendorService } from "../../lib/services/vendorService";
@@ -23,11 +23,11 @@ function StepIndicator({ current }) {
               <div
                 className={cn(
                   "w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold border-2 transition-all",
-                  done && "bg-emerald border-emerald text-white",
-                  active && "bg-white border-emerald text-emerald",
+                  done && "bg-secondary border-secondary text-white",
+                  active && "bg-white border-secondary text-secondary",
                   !done &&
-                    !active &&
-                    "bg-white border-outline-variant text-on-surface-variant",
+                  !active &&
+                  "bg-white border-outline-variant text-on-surface-variant",
                 )}
               >
                 {done ? <Check size={14} /> : i + 1}
@@ -36,9 +36,9 @@ function StepIndicator({ current }) {
                 className={cn(
                   "text-xs font-medium uppercase tracking-wider",
                   active
-                    ? "text-emerald"
+                    ? "text-secondary"
                     : done
-                      ? "text-emerald"
+                      ? "text-secondary"
                       : "text-outline",
                 )}
               >
@@ -49,7 +49,7 @@ function StepIndicator({ current }) {
               <div
                 className={cn(
                   "h-0.5 w-24 mb-5 mx-1 transition-colors",
-                  done ? "bg-emerald" : "bg-outline-variant",
+                  done ? "bg-secondary" : "bg-outline-variant",
                 )}
               />
             )}
@@ -64,7 +64,7 @@ function CompanyStep({ data, onChange, errors }) {
   return (
     <div className="space-y-4">
       <div>
-        <h2 className="text-2xl font-semibold text-on-surface tracking-tight">
+        <h2 className="font-headline-lg text-2xl font-semibold text-on-surface tracking-tight">
           Company Information
         </h2>
         <p className="text-on-surface-variant text-sm mt-1">
@@ -92,7 +92,7 @@ function CompanyStep({ data, onChange, errors }) {
           required
           error={errors?.taxId}
         />
-        <Input
+        {/* <Input
           label="Business Type"
           name="businessType"
           value={data.businessType}
@@ -100,7 +100,20 @@ function CompanyStep({ data, onChange, errors }) {
           placeholder="e.g. LLC, Corporation"
           required
           error={errors?.businessType}
-        />
+        /> */}
+        <Select label="Business Type"
+          name="businessType"
+          value={data.businessType}
+          onChange={onChange}
+          placeholder="e.g. LLC, Corporation"
+          required
+          error={errors?.businessType}>
+          <option value="">Select business type</option>
+          <option>LLC</option>
+          <option>Corporation</option>
+          <option>Partnership</option>
+          <option>Sole Proprietorship</option>
+        </Select>
         <div className="col-span-2">
           <Input
             label="Business Address"
@@ -367,6 +380,29 @@ const COUNTRY_PROFILES = {
     accountTypes: ["Current", "Savings"],
   },
 };
+// Country-specific banking inputs. When the country changes these must be
+// cleared, otherwise a value typed for the old country (e.g. a US routing
+// number) gets sent with the new one and the banking setup is rejected.
+const COUNTRY_SPECIFIC_FIELDS = [
+  "routingNumber",
+  "sortCode",
+  "swiftCode",
+  "branchCode",
+  "iban",
+  "transitNumber",
+  "institutionNumber",
+];
+
+function resetForCountry(prev, countryCode) {
+  const profile = COUNTRY_PROFILES[countryCode];
+  const next = { ...prev, country: countryCode };
+  next.currency = profile?.currency || "";
+  next.paymentRail = profile?.rail || "";
+  for (const key of COUNTRY_SPECIFIC_FIELDS) next[key] = "";
+  if (!profile?.accountTypes?.includes(prev.accountType)) next.accountType = "";
+  return next;
+}
+
 function BankingStep({ data, onChange, errors }) {
   const country = data.country;
   const profile = COUNTRY_PROFILES[country] || {
@@ -383,35 +419,17 @@ function BankingStep({ data, onChange, errors }) {
     data.accountNumber !== data.confirmAccount;
   const handleCountryChange = (e) => {
     const countryCode = e.target.value;
+    const next = resetForCountry(data, countryCode);
 
-    const profile = COUNTRY_PROFILES[countryCode];
-
-    onChange({
-      target: {
-        name: "country",
-        value: countryCode,
-      },
-    });
-
-    onChange({
-      target: {
-        name: "currency",
-        value: profile?.currency || "",
-      },
-    });
-
-    onChange({
-      target: {
-        name: "paymentRail",
-        value: profile?.rail || "",
-      },
-    });
+    for (const key of ["country", "currency", "paymentRail", "accountType", ...COUNTRY_SPECIFIC_FIELDS]) {
+      onChange({ target: { name: key, value: next[key] } });
+    }
   };
 
   return (
     <div className="space-y-5">
       <div>
-        <h2 className="text-2xl font-semibold text-on-surface tracking-tight">
+        <h2 className="font-headline-lg text-2xl font-semibold text-on-surface tracking-tight">
           Banking Information
         </h2>
         <p className="text-on-surface-variant text-sm mt-1">
@@ -420,7 +438,7 @@ function BankingStep({ data, onChange, errors }) {
         </p>
       </div>
 
-      <div className="bg-emerald/5 border border-emerald/20 rounded-lg p-3 flex items-start gap-2 text-sm text-emerald">
+      <div className="bg-success/5 border border-success/20 rounded-lg p-3 flex items-start gap-2 text-sm text-success">
         <ShieldCheck size={16} className="mt-0.5 flex-shrink-0" />
         All bank accounts must be verified through our secure automated system
         before first disbursement can be processed.
@@ -445,7 +463,7 @@ function BankingStep({ data, onChange, errors }) {
           <label className="text-xs font-semibold tracking-wide text-on-surface-variant uppercase">
             Payment Rail
           </label>
-          <div className="w-full rounded border border-outline-variant bg-surface-low px-3 py-2 text-sm text-on-surface-variant">
+          <div className="w-full rounded border border-outline-variant bg-surface-container px-3 py-2 text-sm text-on-surface-variant">
             {countrySelected ? profile.rail : "Select a country first"}
           </div>
         </div>
@@ -488,7 +506,7 @@ function BankingStep({ data, onChange, errors }) {
               key={field.name}
               className={
                 profile.fields.length % 2 === 1 &&
-                field === profile.fields[profile.fields.length - 1]
+                  field === profile.fields[profile.fields.length - 1]
                   ? "col-span-2"
                   : ""
               }
@@ -552,10 +570,13 @@ function BankingStep({ data, onChange, errors }) {
               value={data.confirmAccount}
               onChange={onChange}
               placeholder="Re-enter account number"
-              error={mismatch ? "Account numbers do not match" : undefined}
+              error={
+                mismatch
+                  ? "Account numbers do not match"
+                  : errors?.confirmAccount
+              }
               disabled={!countrySelected}
               required
-              error={errors.confirmAccount}
             />
           </div>
         </div>
@@ -571,7 +592,7 @@ function BankingStep({ data, onChange, errors }) {
       >
         <input
           type="checkbox"
-          className="mt-0.5 accent-emerald"
+          className="mt-0.5 accent-secondary"
           disabled={!countrySelected}
         />
         I authorize VendorPay to perform a small test deposit to verify this
@@ -584,7 +605,7 @@ function ContactStep({ data, onChange, errors }) {
   return (
     <div className="space-y-4">
       <div>
-        <h2 className="text-2xl font-semibold text-on-surface tracking-tight">
+        <h2 className="font-headline-lg text-2xl font-semibold text-on-surface tracking-tight">
           Contact Information
         </h2>
         <p className="text-on-surface-variant text-sm mt-1">
@@ -682,14 +703,14 @@ function ContactStep({ data, onChange, errors }) {
 //   return (
 //     <div className="space-y-4">
 //       <div>
-//         <h2 className="text-2xl font-semibold text-on-surface tracking-tight">
+//         <h2 className="font-headline-lg text-2xl font-semibold text-on-surface tracking-tight">
 //           Review & Submit
 //         </h2>
 //         <p className="text-on-surface-variant text-sm mt-1">
 //           Please review your information before submitting.
 //         </p>
 //       </div>
-//       <div className="bg-surface-low rounded-lg border border-outline-variant overflow-hidden">
+//       <div className="bg-surface-container rounded-lg border border-outline-variant overflow-hidden">
 //         <table className="w-full text-sm">
 //           <tbody>
 //             {rows.map((row, i) =>
@@ -708,7 +729,7 @@ function ContactStep({ data, onChange, errors }) {
 //           </tbody>
 //         </table>
 //       </div>
-//       <div className="bg-emerald/5 border border-emerald/20 rounded-lg p-3 flex items-start gap-2 text-sm text-emerald">
+//       <div className="bg-success/5 border border-success/20 rounded-lg p-3 flex items-start gap-2 text-sm text-success">
 //         <ShieldCheck size={16} className="mt-0.5 flex-shrink-0" />
 //         By submitting, you confirm all information is accurate and agree to our
 //         verification process.
@@ -912,12 +933,12 @@ const SECTIONS = [
     ],
   },
 ];
-function Toast({ message, show }) {
+export function Toast({ message, show }) {
   if (!show) return null;
 
   return (
     <div className="pointer-events-none fixed right-5 top-5 z-50">
-      <div className="flex items-center gap-2 rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800 shadow-lg">
+      <div className="flex items-center gap-2 rounded-md border border-success/30 bg-success-container px-4 py-3 text-sm font-medium text-on-surface shadow-lg">
         <svg
           width="14"
           height="14"
@@ -944,7 +965,7 @@ function MismatchFlag({ countryCode, address }) {
   )
     return null;
   return (
-    <div className="mx-6 mb-4 flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2.5 text-sm text-amber-900">
+    <div className="mx-6 mb-4 flex items-start gap-2 rounded-md border border-warning/30 bg-warning-container px-3 py-2.5 text-sm text-on-surface">
       <svg
         className="mt-0.5 shrink-0"
         width="15"
@@ -979,12 +1000,12 @@ function MismatchFlag({ countryCode, address }) {
 //   }
 
 //   return (
-//     <div className="flex items-baseline justify-between gap-5 border-b border-stone-100 py-2.5 last:border-b-0">
-//       <span className="w-40 shrink-0 text-sm text-stone-500">
+//     <div className="flex items-baseline justify-between gap-5 border-b border-outline-variant py-2.5 last:border-b-0">
+//       <span className="w-40 shrink-0 text-sm text-on-surface-variant">
 //         {field.label}
 //       </span>
 
-//       <span className="text-right text-sm font-medium text-stone-900">
+//       <span className="text-right text-sm font-medium text-on-surface">
 //         {display || "—"}
 //       </span>
 //     </div>
@@ -1002,12 +1023,12 @@ function ViewField({ field, value }) {
   }
 
   return (
-    <div className="flex items-baseline justify-between gap-5 border-b border-stone-100 py-2.5 last:border-b-0">
-      <span className="w-40 shrink-0 text-sm text-stone-500">
+    <div className="flex items-baseline justify-between gap-5 border-b border-outline-variant py-2.5 last:border-b-0">
+      <span className="w-40 shrink-0 text-sm text-on-surface-variant">
         {field.label}
       </span>
 
-      <span className="text-right text-sm font-medium text-stone-900">
+      <span className="text-right text-sm font-medium text-on-surface">
         {display || "—"}
       </span>
     </div>
@@ -1021,7 +1042,7 @@ function EditField({ field, value, onChange, draft }) {
 
   return (
     <div className="mb-4">
-      <label className="mb-1.5 block text-sm font-medium text-stone-700">
+      <label className="mb-1.5 block text-sm font-medium text-on-surface">
         {field.label}
       </label>
 
@@ -1029,7 +1050,7 @@ function EditField({ field, value, onChange, draft }) {
         <select
           value={value || ""}
           onChange={(e) => onChange(field.key, e.target.value)}
-          className="w-full rounded-md border border-stone-300 bg-white px-3 py-2.5 text-sm text-stone-900 outline-none focus:border-emerald-500"
+          className="w-full rounded-md border border-outline bg-white px-3 py-2.5 text-sm text-on-surface outline-none focus:border-secondary"
         >
           <option value="">Select {field.label}</option>
 
@@ -1043,14 +1064,14 @@ function EditField({ field, value, onChange, draft }) {
           ))}
         </select>
       ) : field.type === "readonly" ? (
-        <div className="w-full rounded-md border border-stone-200 bg-stone-50 px-3 py-2.5 text-sm text-stone-600">
+        <div className="w-full rounded-md border border-outline-variant bg-surface-container-low px-3 py-2.5 text-sm text-on-surface-variant">
           {value || "—"}
         </div>
       ) : field.type === "country" ? (
         <select
           value={value || ""}
           onChange={(e) => onChange(field.key, e.target.value)}
-          className="w-full rounded-md border border-stone-300 bg-white px-3 py-2.5 text-sm text-stone-900 outline-none focus:border-emerald-500"
+          className="w-full rounded-md border border-outline bg-white px-3 py-2.5 text-sm text-on-surface outline-none focus:border-secondary"
         >
           <option value="">Select country</option>
 
@@ -1066,12 +1087,12 @@ function EditField({ field, value, onChange, draft }) {
           value={value || ""}
           onChange={(e) => onChange(field.key, e.target.value)}
           placeholder={field.placeholder || ""}
-          className="w-full rounded-md border border-stone-300 bg-white px-3 py-2.5 text-sm text-stone-900 outline-none focus:border-emerald-500"
+          className="w-full rounded-md border border-outline bg-white px-3 py-2.5 text-sm text-on-surface outline-none focus:border-secondary"
         />
       )}
 
       {field.hint && (
-        <p className="mt-1 text-xs text-stone-400">{field.hint}</p>
+        <p className="mt-1 text-xs text-outline">{field.hint}</p>
       )}
     </div>
   );
@@ -1089,15 +1110,15 @@ function EditField({ field, value, onChange, draft }) {
 //   justSaved,
 // }) {
 //   return (
-//     <div className="mb-4 overflow-hidden rounded-xl border border-stone-200 bg-white">
+//     <div className="mb-4 overflow-hidden rounded-xl border border-outline-variant bg-white">
 //       <div
 //         className={
-//           "flex items-center justify-between border-b border-stone-200 px-6 py-4 " +
-//           (isEditing ? "bg-emerald-50/40" : "bg-stone-50")
+//           "flex items-center justify-between border-b border-outline-variant px-6 py-4 " +
+//           (isEditing ? "bg-secondary-container" : "bg-surface-container-low")
 //         }
 //       >
-//         <h2 className="flex items-center gap-2.5 text-lg font-semibold text-stone-900">
-//           <span className="flex h-5.5 w-5.5 items-center justify-center rounded-full bg-emerald-100 text-xs font-bold text-amber-700">
+//         <h2 className="flex items-center gap-2.5 text-lg font-semibold text-on-surface">
+//           <span className="flex h-5.5 w-5.5 items-center justify-center rounded-full bg-success-container text-xs font-bold text-warning">
 //             {index + 1}
 //           </span>
 //           {section.title}
@@ -1105,14 +1126,14 @@ function EditField({ field, value, onChange, draft }) {
 //         {isEditing ? (
 //           <button
 //             onClick={() => onCancel(section.key)}
-//             className="rounded-md px-2 py-1 text-sm font-semibold text-stone-500 hover:bg-stone-100"
+//             className="rounded-md px-2 py-1 text-sm font-semibold text-on-surface-variant hover:bg-surface-container"
 //           >
 //             Cancel
 //           </button>
 //         ) : (
 //           <button
 //             onClick={() => onEdit(section.key)}
-//             className="rounded-md px-2 py-1 text-sm font-semibold text-amber-700 hover:bg-emerald-50"
+//             className="rounded-md px-2 py-1 text-sm font-semibold text-warning hover:bg-success-container"
 //           >
 //             Edit
 //           </button>
@@ -1176,13 +1197,13 @@ function EditField({ field, value, onChange, draft }) {
 //           <div className="flex justify-end gap-2.5 px-6 pb-5">
 //             <button
 //               onClick={() => onCancel(section.key)}
-//               className="rounded-md border border-stone-200 px-4 py-2 text-sm font-semibold text-stone-500"
+//               className="rounded-md border border-outline-variant px-4 py-2 text-sm font-semibold text-on-surface-variant"
 //             >
 //               Cancel
 //             </button>
 //             <button
 //               onClick={() => onSave(section.key)}
-//               className="rounded-md bg-amber-600 px-4 py-2 text-sm font-semibold text-white"
+//               className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white"
 //             >
 //               Save changes
 //             </button>
@@ -1210,16 +1231,16 @@ function SectionCard({
     section.key === "banking" ? COUNTRY_PROFILES[draft.country] : null;
 
   return (
-    <div className="mb-4 overflow-hidden rounded-xl border border-stone-200 bg-white">
+    <div className="mb-4 overflow-hidden rounded-xl border border-outline-variant bg-white">
       {/* Header */}
       <div
         className={
-          "flex items-center justify-between border-b border-stone-200 px-6 py-4 " +
-          (isEditing ? "bg-emerald-50/40" : "bg-stone-50")
+          "flex items-center justify-between border-b border-outline-variant px-6 py-4 " +
+          (isEditing ? "bg-secondary-container" : "bg-surface-container-low")
         }
       >
-        <h2 className="flex items-center gap-2.5 text-lg font-semibold text-stone-900">
-          <span className="flex h-5.5 w-5.5 items-center justify-center rounded-full bg-emerald-100 text-xs font-bold text-amber-700">
+        <h2 className="flex items-center gap-2.5 text-lg font-semibold text-on-surface">
+          <span className="flex h-5.5 w-5.5 items-center justify-center rounded-full bg-success-container text-xs font-bold text-warning">
             {index + 1}
           </span>
 
@@ -1229,14 +1250,14 @@ function SectionCard({
         {isEditing ? (
           <button
             onClick={() => onCancel(section.key)}
-            className="rounded-md px-2 py-1 text-sm font-semibold text-stone-500 hover:bg-stone-100"
+            className="rounded-md px-2 py-1 text-sm font-semibold text-on-surface-variant hover:bg-surface-container"
           >
             Cancel
           </button>
         ) : (
           <button
             onClick={() => onEdit(section.key)}
-            className="rounded-md px-2 py-1 text-sm font-semibold text-amber-700 hover:bg-emerald-50"
+            className="rounded-md px-2 py-1 text-sm font-semibold text-warning hover:bg-success-container"
           >
             Edit
           </button>
@@ -1337,28 +1358,28 @@ function SectionCard({
                 {editBankingProfile?.fields?.some(
                   (field) => field.name === "accountNumber",
                 ) && (
-                  <div className="col-span-2">
-                    <EditField
-                      field={{
-                        key: "confirmAccount",
-                        label: "Confirm Account Number",
-                        type: "text",
-                        placeholder: "Re-enter account number",
-                      }}
-                      value={draft.confirmAccount || ""}
-                      draft={draft}
-                      onChange={onDraftChange}
-                    />
+                    <div className="col-span-2">
+                      <EditField
+                        field={{
+                          key: "confirmAccount",
+                          label: "Confirm Account Number",
+                          type: "text",
+                          placeholder: "Re-enter account number",
+                        }}
+                        value={draft.confirmAccount || ""}
+                        draft={draft}
+                        onChange={onDraftChange}
+                      />
 
-                    {draft.accountNumber &&
-                      draft.confirmAccount &&
-                      draft.accountNumber !== draft.confirmAccount && (
-                        <p className="mt-1 -translate-y-3 text-xs text-red-600">
-                          Account numbers do not match
-                        </p>
-                      )}
-                  </div>
-                )}
+                      {draft.accountNumber &&
+                        draft.confirmAccount &&
+                        draft.accountNumber !== draft.confirmAccount && (
+                          <p className="mt-1 -translate-y-3 text-xs text-error">
+                            Account numbers do not match
+                          </p>
+                        )}
+                    </div>
+                  )}
               </>
             ) : (
               section.fields.map((field) => (
@@ -1377,14 +1398,14 @@ function SectionCard({
           <div className="flex justify-end gap-2.5 px-6 pb-5">
             <button
               onClick={() => onCancel(section.key)}
-              className="rounded-md border border-stone-200 px-4 py-2 text-sm font-semibold text-stone-500"
+              className="rounded-md border border-outline-variant px-4 py-2 text-sm font-semibold text-on-surface-variant"
             >
               Cancel
             </button>
 
             <button
               onClick={() => onSave(section.key)}
-              className="rounded-md bg-amber-600 px-4 py-2 text-sm font-semibold text-white"
+              className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white"
             >
               Save changes
             </button>
@@ -1474,24 +1495,14 @@ function ReviewStep({ data, onBack, onSubmit, loading, onDataChange }) {
 
   function handleDraftChange(fieldKey, value) {
     setDraft((prev) => {
-      const next = {
+      if (fieldKey === "country") {
+        return resetForCountry(prev, value);
+      }
+
+      return {
         ...prev,
         [fieldKey]: value,
       };
-
-      if (fieldKey === "country") {
-        const profile = COUNTRY_PROFILES[value];
-
-        if (profile) {
-          next.currency = profile.currency;
-          next.paymentRail = profile.rail;
-        } else {
-          next.currency = "";
-          next.paymentRail = "";
-        }
-      }
-
-      return next;
     });
   }
   // function handleSave(sectionKey) {
@@ -1546,16 +1557,16 @@ function ReviewStep({ data, onBack, onSubmit, loading, onDataChange }) {
     setTimeout(() => setJustSaved(null), 3000);
   }
   return (
-    <div className="min-h-screen bg-stone-50 px-5 pb-5 pt-5 text-stone-900">
+    <div className="min-h-screen bg-surface-container-low px-5 pb-5 pt-5 text-on-surface">
       <Toast show={!!justSaved} message={justSaved} />
       <div className="mx-auto max-w-2xl">
         {/* <Stepper /> */}
 
         <div className="mb-7">
-          <h1 className="mb-1.5 text-3xl font-semibold tracking-tight">
+          <h1 className="font-headline-lg mb-1.5 text-3xl font-semibold tracking-tight">
             Review your details
           </h1>
-          <p className="text-sm text-stone-500">
+          <p className="text-sm text-on-surface-variant">
             Check everything below before you submit. You can edit any section
             without losing your progress.
           </p>
@@ -1579,10 +1590,10 @@ function ReviewStep({ data, onBack, onSubmit, loading, onDataChange }) {
       </div>
 
       <div className="mx-auto flex max-w-2xl items-center justify-between gap-5">
-        <label className="flex items-center gap-2.5 text-sm text-stone-500">
+        <label className="flex items-center gap-2.5 text-sm text-on-surface-variant">
           <input
             type="checkbox"
-            className="h-4 w-4 accent-amber-600"
+            className="h-4 w-4 accent-primary"
             checked={confirmed}
             onChange={(e) => setConfirmed(e.target.checked)}
           />
@@ -1594,7 +1605,7 @@ function ReviewStep({ data, onBack, onSubmit, loading, onDataChange }) {
             variant="outline"
             onClick={onBack}
             disabled={loading}
-            className="rounded-md border border-stone-200 px-5 py-2.5 text-sm font-semibold text-stone-500"
+            className="rounded-md border border-outline-variant px-5 py-2.5 text-sm font-semibold text-on-surface-variant"
           >
             Back
           </Button>
@@ -1605,8 +1616,8 @@ function ReviewStep({ data, onBack, onSubmit, loading, onDataChange }) {
               "inline-flex items-center gap-2 rounded-lg px-5 py-2.5",
               "text-sm font-semibold text-white transition-all",
               confirmed && !loading
-                ? "bg-amber-600 hover:bg-amber-500"
-                : "cursor-not-allowed bg-stone-300",
+                ? "bg-primary hover:bg-primary/90"
+                : "cursor-not-allowed bg-outline",
             ].join(" ")}
           >
             {loading ? (
@@ -1635,6 +1646,9 @@ export default function Onboarding() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [errors, setErrors] = useState({});
+  // The vendor record is created by the first call; if banking then fails,
+  // a resubmit must not try to onboard the same vendor again.
+  const onboardedRef = useRef(false);
   const [data, setData] = useState({
     companyName: "",
     taxId: "",
@@ -1790,32 +1804,52 @@ export default function Onboarding() {
 
     try {
       // 1. Create/onboard vendor using the FINAL data
-      await vendorService.onboard({
-        company_name: data.companyName,
-        tax_id: data.taxId,
-        business_type: data.businessType,
-        business_address: data.address,
-        industry: data.industry,
-        currency: data.currency,
-
-        contact_first_name: data.firstName,
-        contact_last_name: data.lastName,
-        contact_email: data.email,
-        phone: data.phone,
-        job_title: data.title,
-        department: data.department,
-
-        ...(data.website && {
-          website: data.website,
-        }),
-      });
+      if (!onboardedRef.current) {
+        await vendorService.onboard({
+          company_name: data.companyName,
+          tax_id: data.taxId,
+          business_type: data.businessType,
+          business_address: data.address,
+          industry: data.industry,
+          currency: data.currency,
+          contact_first_name: data.firstName,
+          contact_last_name: data.lastName,
+          contact_email: data.email,
+          phone: data.phone,
+          job_title: data.title,
+          department: data.department,
+          // bankName: data.bankName,
+          // accountName: data.accountName,
+          // accountType: data.accountType,
+          // accountNumber: data.accountNumber,
+          // confirmAccount: data.confirmAccount,
+          // routingNumber: data.routingNumber,
+          // sortCode: data.sortCode,
+          // swiftCode: data.swiftCode,
+          // branchCode: data.branchCode,
+          // iban: data.iban,
+          // transitNumber: data.transitNumber,
+          // institutionNumber: data.institutionNumber,
+          ...(data.website && {
+            website: data.website,
+          }),
+        });
+        onboardedRef.current = true;
+      }
 
       // 2. Setup banking using the FINAL edited data
+      // Only read the fields the selected country actually asks for, so
+      // leftovers from a previously selected country are never sent.
+      const countryFields = new Set(
+        COUNTRY_PROFILES[data.country]?.fields?.map((f) => f.name) ?? [],
+      );
+      const pick = (key) => (countryFields.has(key) ? data[key] : "");
+
       const routingNumber =
-        data.routingNumber ||
-        data.sortCode ||
-        data.branchCode ||
-        data.transitNumber ||
+        pick("routingNumber") ||
+        pick("sortCode") ||
+        pick("branchCode") ||
+        pick("transitNumber") ||
         "";
 
       const COUNTRY_TYPE_MAP = {
@@ -1835,12 +1869,12 @@ export default function Onboarding() {
         routing_number: routingNumber,
         country_type: countryType,
 
-        ...(data.swiftCode && {
-          swift_code: data.swiftCode,
+        ...(pick("swiftCode") && {
+          swift_code: pick("swiftCode"),
         }),
 
-        ...(data.iban && {
-          iban: data.iban,
+        ...(pick("iban") && {
+          iban: pick("iban"),
         }),
 
         authorized_test_deposit: true,
@@ -1867,7 +1901,7 @@ export default function Onboarding() {
         <StepIndicator current={step} />
 
         {error && (
-          <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-600">
+          <div className="mb-4 bg-error/5 border border-error/30 rounded-lg p-3 text-sm text-error">
             {error}
           </div>
         )}

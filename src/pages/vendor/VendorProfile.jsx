@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
@@ -8,7 +9,9 @@ import {
   User,
   Landmark,
   Pencil,
-  X,
+  // X,
+  Camera,
+  Trash2,
 } from "lucide-react";
 import AppLayout from "../../components/layout/AppLayout";
 import Card from "../../components/ui/Card";
@@ -19,7 +22,14 @@ import { useToast } from "../../components/ui/Toast";
 import { useBanking } from "../../hooks/useQueries/vendorAdmin/useBanking";
 import { useUpdateBanking } from "../../hooks/useQueries/vendorAdmin/useUpdateBanking";
 import { vendorService } from "../../lib/services/vendorService";
+import { authService } from "../../lib/services/authService";
+import { resolveMediaUrl } from "../../lib/apiClient";
+import { useCurrentUser } from "../../hooks/useQueries/vendorAdmin/useCurrentUser";
+import { useConfirm } from "../../hooks/useConfirm";
 import { extractErrorMessage, CURRENCY_SYMBOLS, cn } from "../../lib/utils";
+
+const MAX_PHOTO_SIZE = 2 * 1024 * 1024; // 2MB
+const ALLOWED_PHOTO_TYPES = ["image/jpeg", "image/png", "image/webp"];
 
 const BUSINESS_TYPES = [
   "LLC",
@@ -97,6 +107,78 @@ export default function VendorProfile() {
   });
 
   const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const { confirm, confirmEl } = useConfirm();
+
+  // Profile photo — stored on the user account (/auth/me), same as admins.
+  const { data: currentUser } = useCurrentUser();
+  const avatarUrl = currentUser?.avatar_url;
+  const photoInputRef = useRef(null);
+  const [photoPreview, setPhotoPreview] = useState(null);
+  const [photoError, setPhotoError] = useState("");
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [photoFailed, setPhotoFailed] = useState(false);
+  const [prevAvatarUrl, setPrevAvatarUrl] = useState(avatarUrl);
+  if (avatarUrl !== prevAvatarUrl) {
+    setPrevAvatarUrl(avatarUrl);
+    setPhotoFailed(false);
+  }
+  const photoSrc =
+    photoPreview || (avatarUrl && !photoFailed ? resolveMediaUrl(avatarUrl) : null);
+
+  // Revoke the local preview URL whenever it's replaced or on unmount.
+  useEffect(() => {
+    return () => {
+      if (photoPreview) URL.revokeObjectURL(photoPreview);
+    };
+  }, [photoPreview]);
+
+  async function handlePhotoChange(e) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+
+    if (!ALLOWED_PHOTO_TYPES.includes(file.type)) {
+      setPhotoError("Please upload a JPG, PNG, or WebP image.");
+      return;
+    }
+    if (file.size > MAX_PHOTO_SIZE) {
+      setPhotoError("Image must be smaller than 2MB.");
+      return;
+    }
+
+    setPhotoError("");
+    setPhotoPreview(URL.createObjectURL(file));
+    setUploadingPhoto(true);
+    try {
+      await authService.uploadAvatar(file);
+      // Refresh the photo here, in the sidebar and in the top bar.
+      await queryClient.invalidateQueries({ queryKey: ["current-user"] });
+      setPhotoPreview(null);
+      toast("Profile photo updated.");
+    } catch (err) {
+      setPhotoPreview(null);
+      setPhotoError(extractErrorMessage(err));
+    } finally {
+      setUploadingPhoto(false);
+    }
+  }
+
+  function handlePhotoRemove() {
+    setPhotoError("");
+    confirm({
+      title: "Remove profile photo",
+      message: "Remove your profile photo? Your initials will be shown instead.",
+      confirmLabel: "Remove",
+      variant: "danger",
+      onConfirm: async () => {
+        await authService.removeAvatar();
+        await queryClient.invalidateQueries({ queryKey: ["current-user"] });
+      },
+    }).then((removed) => {
+      if (removed) toast("Profile photo removed.");
+    });
+  }
   const bankingQuery = useBanking();
   const banking = bankingQuery.data ?? null;
   const [bankingEditing, setBankingEditing] = useState(false);
@@ -226,7 +308,7 @@ export default function VendorProfile() {
     return (
       <AppLayout role="vendor">
         <div className="flex items-center justify-center min-h-[60vh]">
-          <Loader2 size={28} className="animate-spin text-emerald" />
+          <Loader2 size={28} className="animate-spin text-secondary" />
         </div>
       </AppLayout>
     );
@@ -234,6 +316,7 @@ export default function VendorProfile() {
 
   return (
     <AppLayout role="vendor">
+      {confirmEl}
       <div className="space-y-6 max-w-2xl">
         <button
           onClick={() => navigate(-1)}
@@ -243,26 +326,84 @@ export default function VendorProfile() {
         </button>
 
         <div>
-          <h1 className="text-2xl font-semibold text-on-surface">My Profile</h1>
+          <h1 className="font-headline-lg text-2xl font-semibold text-on-surface">My Profile</h1>
           <p className="text-sm text-on-surface-variant mt-0.5">
             {TAB_SUBTITLES[activeTab]}
           </p>
         </div>
 
         {/* Identity header — persistent across tabs */}
-        <div className="flex items-center gap-4">
-          <div className="w-16 h-16 rounded-full bg-amber flex items-center justify-center flex-shrink-0">
-            <span className="text-white text-xl font-bold">{initials}</span>
-          </div>
-          <div>
-            <p className="text-sm font-semibold text-on-surface">
-              {[form.contact_first_name, form.contact_last_name]
-                .filter(Boolean)
-                .join(" ") || "Your Name"}
-            </p>
-            <p className="text-xs text-on-surface-variant">
-              {form.contact_email || "contact email"}
-            </p>
+        <div>
+          <div className="flex items-center gap-4 min-w-0">
+            <div className="relative flex-shrink-0">
+              <div className="relative w-16 h-16 rounded-full bg-primary flex items-center justify-center overflow-hidden border border-outline-variant">
+                {photoSrc ? (
+                  <img
+                    src={photoSrc}
+                    alt="Profile"
+                    className="w-full h-full object-cover"
+                    onError={() => setPhotoFailed(true)}
+                  />
+                ) : (
+                  <span className="text-on-primary text-xl font-bold ">
+                    {initials}
+                  </span>
+                )}
+                {uploadingPhoto && (
+                  <div className="absolute inset-0 bg-navy/50 flex items-center justify-center">
+                    <Loader2 size={18} className="animate-spin text-white" />
+                  </div>
+                )}
+              </div>
+
+              {/* Camera button — opens the file picker */}
+              <button
+                type="button"
+                onClick={() => photoInputRef.current?.click()}
+                disabled={uploadingPhoto}
+                aria-label={avatarUrl ? "Change photo" : "Upload photo"}
+                title={avatarUrl ? "Change photo" : "Upload photo"}
+                className="absolute -bottom-0.5 -right-0.5 w-7 h-7 rounded-full bg-white border border-outline-variant shadow-card flex items-center justify-center text-on-surface hover:bg-surface-container transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                <Camera size={14} />
+              </button>
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-on-surface truncate capitalize">
+                {[form.contact_first_name, form.contact_last_name]
+                  .filter(Boolean)
+                  .join(" ") || "Your Name"}
+              </p>
+              <p className="text-xs text-on-surface-variant truncate">
+                {form.contact_email || "contact email"}
+              </p>
+
+              {/* Photo actions — beside the avatar */}
+              <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
+                {avatarUrl && !uploadingPhoto && (
+                  <button
+                    type="button"
+                    onClick={handlePhotoRemove}
+                    className="inline-flex items-center gap-1 text-xs font-semibold text-error hover:underline"
+                  >
+                    <Trash2 size={12} /> Remove photo
+                  </button>
+                )}
+                <span className="text-[11px] text-on-surface-variant">
+                  JPG, PNG or WebP, up to 2MB.
+                </span>
+              </div>
+              {photoError && (
+                <p className="mt-1 text-xs text-error">{photoError}</p>
+              )}
+              <input
+                ref={photoInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                onChange={handlePhotoChange}
+                className="hidden"
+              />
+            </div>
           </div>
         </div>
 
@@ -278,7 +419,7 @@ export default function VendorProfile() {
                 className={cn(
                   "relative py-3 text-sm font-medium transition-colors flex items-center gap-2",
                   active
-                    ? "text-amber"
+                    ? "text-warning"
                     : "text-on-surface-variant hover:text-on-surface",
                 )}
               >
@@ -290,7 +431,7 @@ export default function VendorProfile() {
                   />
                 )}
                 {active && (
-                  <span className="absolute left-0 right-0 -bottom-px h-0.5 bg-amber rounded-full" />
+                  <span className="absolute left-0 right-0 -bottom-px h-0.5 bg-warning rounded-full" />
                 )}
               </button>
             );
@@ -300,13 +441,13 @@ export default function VendorProfile() {
         {activeTab === "contact" && (
           <form onSubmit={handleSubmit} className="space-y-5">
             {error && (
-              <div className="p-3 bg-red-50 border border-red-200 rounded text-red-600 text-sm">
+              <div className="p-3 bg-error/5 border border-error/30 rounded text-error text-sm">
                 {error}
               </div>
             )}
 
             {saved && (
-              <div className="p-3 bg-emerald/10 border border-emerald/30 rounded text-emerald text-sm flex items-center gap-2">
+              <div className="p-3 bg-success/10 border border-success/30 rounded text-success text-sm flex items-center gap-2">
                 <CheckCircle size={15} /> Profile updated successfully.
               </div>
             )}
@@ -315,7 +456,7 @@ export default function VendorProfile() {
               <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant mb-4 flex items-center gap-1.5">
                 <User size={12} /> Contact Information
               </p>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 <Input
                   label="First Name"
                   name="contact_first_name"
@@ -348,7 +489,7 @@ export default function VendorProfile() {
                     <button
                       type="button"
                       onClick={() => navigate("/vendor/support")}
-                      className="text-amber underline hover:no-underline"
+                      className="text-warning underline hover:no-underline"
                     >
                       contact support
                     </button>
@@ -371,7 +512,7 @@ export default function VendorProfile() {
                     <button
                       type="button"
                       onClick={() => navigate("/vendor/support")}
-                      className="text-amber underline hover:no-underline"
+                      className="text-warning underline hover:no-underline"
                     >
                       contact support
                     </button>
@@ -396,7 +537,7 @@ export default function VendorProfile() {
               </div>
             </Card>
 
-            <div className="flex gap-3">
+            <div className="flex md:flex-row flex-col gap-3">
               <Button type="submit" disabled={saving} size="lg">
                 {saving ? (
                   <>
@@ -423,13 +564,13 @@ export default function VendorProfile() {
         {activeTab === "company" && (
           <form onSubmit={handleSubmit} className="space-y-5">
             {error && (
-              <div className="p-3 bg-red-50 border border-red-200 rounded text-red-600 text-sm">
+              <div className="p-3 bg-error/5 border border-error/30 rounded text-error text-sm">
                 {error}
               </div>
             )}
 
             {saved && (
-              <div className="p-3 bg-emerald/10 border border-emerald/30 rounded text-emerald text-sm flex items-center gap-2">
+              <div className="p-3 bg-success/10 border border-success/30 rounded text-success text-sm flex items-center gap-2">
                 <CheckCircle size={15} /> Profile updated successfully.
               </div>
             )}
@@ -438,7 +579,7 @@ export default function VendorProfile() {
               <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant mb-4">
                 Company Details
               </p>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 <Input
                   label="Legal Company Name"
                   name="company_name"
@@ -455,7 +596,7 @@ export default function VendorProfile() {
                     name="business_type"
                     value={form.business_type}
                     onChange={handleChange}
-                    className="w-full rounded border border-outline-variant bg-white px-3 py-2 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-amber focus:border-amber transition-colors"
+                    className="w-full rounded border border-outline-variant bg-white px-3 py-2 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-warning focus:border-warning transition-colors"
                   >
                     <option value="">Select type</option>
                     {BUSINESS_TYPES.map((t) => (
@@ -473,7 +614,7 @@ export default function VendorProfile() {
                     name="industry"
                     value={form.industry}
                     onChange={handleChange}
-                    className="w-full rounded border border-outline-variant bg-white px-3 py-2 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-amber focus:border-amber transition-colors"
+                    className="w-full rounded border border-outline-variant bg-white px-3 py-2 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-warning focus:border-warning transition-colors"
                   >
                     <option value="">Select industry</option>
                     {INDUSTRIES.map((i) => (
@@ -506,7 +647,7 @@ export default function VendorProfile() {
                     name="currency"
                     value={form.currency}
                     onChange={handleChange}
-                    className="w-full rounded border border-outline-variant bg-white px-3 py-2 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-amber focus:border-amber transition-colors"
+                    className="w-full rounded border border-outline-variant bg-white px-3 py-2 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-warning focus:border-warning transition-colors"
                   >
                     <option value="">Select currency</option>
                     {Object.keys(CURRENCY_SYMBOLS).map((code) => (
@@ -527,7 +668,7 @@ export default function VendorProfile() {
               </div>
             </Card>
 
-            <div className="flex gap-3">
+            <div className="flex md:flex-row flex-col gap-3">
               <Button type="submit" disabled={saving} size="lg">
                 {saving ? (
                   <>
@@ -552,16 +693,16 @@ export default function VendorProfile() {
         )}
 
         {activeTab === "banking" && (
-          <Card className="border-amber/30">
+          <Card className="border-warning/30">
             <div className="flex items-center justify-between mb-4">
               <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant flex items-center gap-1.5">
-                <Landmark size={12} className="text-amber" /> Banking Details
+                <Landmark size={12} className="text-warning" /> Banking Details
               </p>
               {!bankingEditing && !bankingQuery.isLoading && (
                 <button
                   type="button"
                   onClick={startBankingEdit}
-                  className="text-xs font-medium text-amber hover:underline flex items-center gap-1"
+                  className="text-xs font-medium text-secondary hover:underline flex items-center gap-1"
                 >
                   <Pencil size={12} /> {banking ? "Edit" : "Add"}
                 </button>
@@ -570,7 +711,7 @@ export default function VendorProfile() {
 
             {bankingQuery.isLoading ? (
               <div className="flex items-center justify-center py-8">
-                <Loader2 size={20} className="animate-spin text-emerald" />
+                <Loader2 size={20} className="animate-spin text-secondary" />
               </div>
             ) : !bankingEditing ? (
               !banking ? (
@@ -580,7 +721,7 @@ export default function VendorProfile() {
               ) : (
                 <div className="space-y-4">
                   {bankingStatus === "rejected" && banking.rejection_reason && (
-                    <div className="p-3 bg-red-50 border border-red-200 rounded text-sm text-red-700">
+                    <div className="p-3 bg-error/5 border border-error/30 rounded text-sm text-error">
                       <span className="font-medium">Rejected:</span>{" "}
                       {banking.rejection_reason}
                     </div>
@@ -645,13 +786,13 @@ export default function VendorProfile() {
               )
             ) : (
               <form onSubmit={submitBanking} className="space-y-4">
-                <div className="bg-amber/5 border border-amber/20 rounded-lg p-3 text-sm text-amber-900">
+                <div className="bg-warning/5 border border-warning/20 rounded-lg p-3 text-sm text-on-surface">
                   Updated banking details must be re-verified before use —
                   payouts will wait on admin review before going to the new
                   account.
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                   <Input
                     label="Bank Name"
                     name="bank_name"
@@ -676,7 +817,7 @@ export default function VendorProfile() {
                       name="account_type"
                       value={bankingDraft.account_type}
                       onChange={handleBankingDraftChange}
-                      className="w-full rounded border border-outline-variant bg-white px-3 py-2 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-amber focus:border-amber transition-colors"
+                      className="w-full rounded border border-outline-variant bg-white px-3 py-2 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-warning focus:border-warning transition-colors"
                     >
                       <option value="">Select account type</option>
                       {ACCOUNT_TYPES.map((t) => (
@@ -694,7 +835,7 @@ export default function VendorProfile() {
                       name="country_type"
                       value={bankingDraft.country_type}
                       onChange={handleBankingDraftChange}
-                      className="w-full rounded border border-outline-variant bg-white px-3 py-2 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-amber focus:border-amber transition-colors"
+                      className="w-full rounded border border-outline-variant bg-white px-3 py-2 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-warning focus:border-warning transition-colors"
                     >
                       <option value="">Select country type</option>
                       {COUNTRY_TYPES.map((t) => (
@@ -710,7 +851,7 @@ export default function VendorProfile() {
                     value={bankingDraft.bank_code}
                     onChange={handleBankingDraftChange}
                     placeholder="Routing, sort, or branch code"
-                    // required
+                  // required
                   />
                   <Input
                     label="New Account Number"
@@ -718,7 +859,7 @@ export default function VendorProfile() {
                     value={bankingDraft.account_number}
                     onChange={handleBankingDraftChange}
                     placeholder="Enter new account number"
-                    // required
+                  // required
                   />
                   <Input
                     label="Confirm Account Number"
@@ -728,13 +869,13 @@ export default function VendorProfile() {
                     placeholder="Re-enter new account number"
                     error={
                       bankingDraft.account_number &&
-                      bankingDraft.confirm_account_number &&
-                      bankingDraft.account_number !==
+                        bankingDraft.confirm_account_number &&
+                        bankingDraft.account_number !==
                         bankingDraft.confirm_account_number
                         ? "Account numbers do not match"
                         : undefined
                     }
-                    // required
+                  // required
                   />
                   <Input
                     label="SWIFT / BIC"
@@ -745,7 +886,7 @@ export default function VendorProfile() {
                   />
                 </div>
 
-                <div className="flex gap-3">
+                <div className="flex md:flex-row flex-col gap-3">
                   <Button
                     type="submit"
                     disabled={updateBanking.isPending}
@@ -769,7 +910,8 @@ export default function VendorProfile() {
                     onClick={cancelBankingEdit}
                     disabled={updateBanking.isPending}
                   >
-                    <X size={15} /> Cancel
+                    {/* <X size={15} /> */}
+                    Cancel
                   </Button>
                 </div>
               </form>

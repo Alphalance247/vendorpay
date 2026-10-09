@@ -2,17 +2,16 @@ import { forwardRef } from 'react';
 import { cn } from '../../lib/utils';
 
 const variants = {
-  primary: 'bg-primary text-on-primary hover:bg-primary-container active:bg-primary-container',
-  secondary: 'bg-white text-on-surface border border-outline-variant hover:bg-surface-low active:bg-surface-container',
-  ghost: 'text-secondary hover:bg-surface-container active:bg-surface-high',
+  primary: 'bg-primary text-on-primary hover:bg-primary/90 active:bg-primary/90',
+  secondary: 'bg-white text-on-surface border border-outline-variant hover:bg-surface-container active:bg-surface-container',
+  ghost: 'text-secondary hover:bg-surface-container active:bg-surface-container-high',
   danger: 'bg-error text-white hover:bg-error/90',
-  emerald: 'bg-emerald text-white hover:bg-emerald/90',
 };
 
 const sizes = {
-  sm: 'px-3 py-1.5 text-sm font-medium',
-  md: 'px-4 py-2 text-sm font-medium',
-  lg: 'px-5 py-2.5 text-base font-medium',
+  sm: 'w-full lg:w-auto px-3 py-1.5 text-sm font-bold',
+  md: 'w-full lg:w-auto px-4 py-2.5 text-sm font-bold',
+  lg: 'w-full lg:w-auto px-5 py-3 text-base font-bold',
 };
 
 const Button = forwardRef(function Button(

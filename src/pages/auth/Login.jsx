@@ -6,8 +6,9 @@ import {
   ArrowRight,
   ShieldCheck,
   Zap,
-  Mail,
+  // Mail,
   Building2,
+  Mail,
 } from "lucide-react";
 import { useAuth } from "../../lib/authContext";
 import { extractErrorMessage, dashboardPathForRole } from "../../lib/utils";
@@ -82,7 +83,7 @@ export default function Login() {
           className="absolute inset-0 bg-cover bg-center"
           style={{
             backgroundImage:
-              "linear-gradient(135deg, #0f1d29 0%, #1a3a52 50%, #0f1d29 100%)",
+              "linear-gradient(135deg, #0C111D 0%, #1D2939 50%, #0C111D 100%)",
           }}
         />
 
@@ -98,29 +99,29 @@ export default function Login() {
           <Logo variant="dark" onClick={() => navigate("/")} />
 
           <div className="space-y-6">
-            <h1 className="text-white text-4xl font-bold leading-tight tracking-tight">
+            <h1 className="font-headline-lg text-white text-4xl font-bold leading-tight tracking-tight">
               Vendor Management, without the chaos.
             </h1>
 
-            <p className="text-slate-300 text-base leading-relaxed">
+            <p className="text-outline-variant text-base leading-relaxed">
               Streamline your vendor invoicing and treasury management with
               institutional-grade infrastructure.
             </p>
 
             <div className="flex items-center gap-6 pt-2">
-              <div className="flex items-center gap-2 text-slate-400 text-xs font-medium uppercase tracking-wider">
-                <ShieldCheck size={14} className="text-emerald" />
+              <div className="flex items-center gap-2 text-outline text-xs font-medium uppercase tracking-wider">
+                <ShieldCheck size={14} className="text-brand-cyan" />
                 SOC 2 Compliant
               </div>
 
-              <div className="flex items-center gap-2 text-slate-400 text-xs font-medium uppercase tracking-wider">
-                <Zap size={14} className="text-emerald" />
+              <div className="flex items-center gap-2 text-outline text-xs font-medium uppercase tracking-wider">
+                <Zap size={14} className="text-brand-cyan" />
                 256-bit Encryption
               </div>
             </div>
           </div>
 
-          <p className="text-slate-500 text-xs">
+          <p className="text-outline text-xs">
             &copy; {new Date().getFullYear()} Alluvium Inc. All rights reserved.
           </p>
         </div>
@@ -136,17 +137,17 @@ export default function Login() {
           />
 
           <div className="mb-8">
-            <h2 className="text-2xl font-semibold text-on-surface tracking-tight">
+            <h2 className="font-headline-lg text-2xl font-semibold text-on-surface tracking-tight">
               Welcome back
             </h2>
 
             <p className="text-on-surface-variant text-sm mt-1">
-              Enter your details to access your corporate dashboard.
+              Enter your details to access your dashboard.
             </p>
           </div>
 
           {error && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded text-red-600 text-sm">
+            <div className="mb-4 p-3 bg-error/5 border border-error/30 rounded text-error text-sm">
               {error}
             </div>
           )}
@@ -172,7 +173,7 @@ export default function Login() {
                 <button
                   type="button"
                   onClick={() => navigate("/forgot-password")}
-                  className="text-xs text-emerald hover:underline"
+                  className="text-xs text-secondary hover:underline"
                 >
                   Forgot password?
                 </button>
@@ -186,7 +187,7 @@ export default function Login() {
                   onChange={handleChange}
                   placeholder="••••••••"
                   required
-                  className="w-full rounded border border-outline-variant bg-white px-3 py-2 pr-10 text-sm text-on-surface placeholder:text-outline focus:outline-none focus:ring-2 focus:ring-emerald focus:border-emerald transition-colors"
+                  className="w-full rounded border border-outline-variant bg-white px-3 py-2 pr-10 text-sm text-on-surface placeholder:text-outline focus:outline-none focus:ring-2 focus:ring-success focus:border-success transition-colors"
                 />
 
                 <button
@@ -205,7 +206,7 @@ export default function Login() {
                 name="remember"
                 checked={form.remember}
                 onChange={handleChange}
-                className="w-4 h-4 rounded border-outline-variant accent-emerald"
+                className="w-4 h-4 rounded border-outline-variant accent-secondary"
               />
 
               <span className="text-sm text-on-surface-variant">
@@ -225,7 +226,7 @@ export default function Login() {
           </form>
 
           <div className="mt-8 pt-6 border-t border-outline-variant space-y-5">
-            <div className="flex items-start gap-2.5 bg-surface-low border border-outline-variant rounded-lg px-3.5 py-3">
+            <div className="flex items-start gap-2.5 bg-surface-container border border-outline-variant rounded-lg px-3.5 py-3">
               <Mail
                 size={15}
                 className="mt-0.5 flex-shrink-0 text-on-surface-variant"
@@ -233,7 +234,7 @@ export default function Login() {
               <p className="text-sm text-on-surface-variant">
                 <span className="font-medium text-on-surface">
                   Invited to a workspace?
-                </span>{" "}
+                </span>
                 Check your email for the invite link from your company admin —
                 that's how you'll set your password and get in.
               </p>

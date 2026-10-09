@@ -23,8 +23,8 @@ export default function ForgotPassword() {
   if (done) {
     return (
       <div className="p-6 text-center">
-        <h2 className="text-xl font-semibold">Check your email</h2>
-        <p className="text-sm text-gray-500">
+        <h2 className="font-headline-lg text-xl font-semibold">Check your email</h2>
+        <p className="text-sm text-on-surface-variant">
           Password reset link sent successfully.
         </p>
       </div>
@@ -33,7 +33,7 @@ export default function ForgotPassword() {
 
   return (
     <form onSubmit={handleSubmit} className="max-w-sm mx-auto p-6 space-y-4">
-      <h2 className="text-xl font-semibold">Reset Password</h2>
+      <h2 className="font-headline-lg text-xl font-semibold">Reset Password</h2>
 
       <Input
         label="Email"
@@ -43,7 +43,7 @@ export default function ForgotPassword() {
         required
       />
 
-      {error && <p className="text-red-500 text-sm">{error}</p>}
+      {error && <p className="text-error text-sm">{error}</p>}
 
       <Button type="submit" className="w-full">
         Send Reset Link

@@ -89,4 +89,27 @@ export const authService = {
     });
     return res.data;
   },
+
+  // =========================
+  // PROFILE PHOTO (any signed-in user — admins and vendors alike)
+  // =========================
+  uploadAvatar: async (file) => {
+    const formData = new FormData();
+    formData.append('avatar', file);
+
+    const res = await apiClient.post(
+      '/auth/me/avatar',
+      formData,
+      // Let the browser set the multipart boundary itself — the instance's
+      // default "application/json" header would otherwise strip it and the
+      // file wouldn't upload correctly.
+      { headers: { 'Content-Type': undefined } },
+    );
+    return res.data;
+  },
+
+  removeAvatar: async () => {
+    const res = await apiClient.delete('/auth/me/avatar');
+    return res.data;
+  },
 };

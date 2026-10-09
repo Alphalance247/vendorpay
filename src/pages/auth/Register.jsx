@@ -68,7 +68,7 @@ export default function Register() {
           className="absolute inset-0 bg-cover bg-center"
           style={{
             backgroundImage:
-              'linear-gradient(135deg, #0f1d29 0%, #1a3a52 50%, #0f1d29 100%)',
+              'linear-gradient(135deg, #0C111D 0%, #1D2939 50%, #0C111D 100%)',
           }}
         />
 
@@ -84,29 +84,29 @@ export default function Register() {
           <Logo variant="dark" onClick={() => navigate('/')} />
 
           <div className="space-y-6">
-            <h1 className="text-white text-4xl font-bold leading-tight tracking-tight">
+            <h1 className="font-headline-lg text-white text-4xl font-bold leading-tight tracking-tight">
               Secure enterprise finance at the speed of business.
             </h1>
 
-            <p className="text-slate-300 text-base leading-relaxed">
+            <p className="text-outline-variant text-base leading-relaxed">
               Streamline your vendor invoicing and treasury management with
               institutional-grade infrastructure.
             </p>
 
             <div className="flex items-center gap-6 pt-2">
-              <div className="flex items-center gap-2 text-slate-400 text-xs font-medium uppercase tracking-wider">
-                <ShieldCheck size={14} className="text-emerald" />
+              <div className="flex items-center gap-2 text-outline text-xs font-medium uppercase tracking-wider">
+                <ShieldCheck size={14} className="text-brand-cyan" />
                 SOC 2 Compliant
               </div>
 
-              <div className="flex items-center gap-2 text-slate-400 text-xs font-medium uppercase tracking-wider">
-                <Zap size={14} className="text-emerald" />
+              <div className="flex items-center gap-2 text-outline text-xs font-medium uppercase tracking-wider">
+                <Zap size={14} className="text-brand-cyan" />
                 256-bit Encryption
               </div>
             </div>
           </div>
 
-          <p className="text-slate-500 text-xs">
+          <p className="text-outline text-xs">
             &copy; {new Date().getFullYear()} Alluvium Inc. All rights reserved.
           </p>
         </div>
@@ -122,7 +122,7 @@ export default function Register() {
           />
 
           <div className="mb-8">
-            <h2 className="text-2xl font-semibold text-on-surface tracking-tight">
+            <h2 className="font-headline-lg text-2xl font-semibold text-on-surface tracking-tight">
               Create Vendor Account
             </h2>
 
@@ -132,7 +132,7 @@ export default function Register() {
           </div>
 
           {error && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded text-red-600 text-sm">
+            <div className="mb-4 p-3 bg-error/5 border border-error/30 rounded text-error text-sm">
               {error}
             </div>
           )}
@@ -204,7 +204,7 @@ export default function Register() {
             <button
               type="button"
               onClick={() => navigate('/login')}
-              className="text-emerald font-medium hover:underline"
+              className="text-secondary font-medium hover:underline"
             >
               Sign In
             </button>

@@ -1,6 +1,6 @@
 import axios from "axios";
 import { environment } from "../env/env.local";
-import { withSubdomain } from "./tenantResolver";
+import { withSubdomain, currentTenantBaseUrl } from "./tenantResolver";
 
 // Trailing slash stripped so every `${BASE_URL}/api/...` below produces a
 // single slash regardless of how environment.baseUrl is formatted.
@@ -8,6 +8,24 @@ const BASE_URL = environment.baseUrl.replace(/\/+$/, "");
 
 console.log(BASE_URL);
 
+
+/**
+ * Get the current company's base URL.
+ *
+ * Priority:
+ * 1. company_slug from localStorage
+ * 2. current browser subdomain
+ * 3. plain BASE_URL
+ */
+function companyBaseUrl() {
+  const storedSlug = localStorage.getItem("company_slug");
+
+  if (storedSlug) {
+    return withSubdomain(BASE_URL, storedSlug);
+  }
+
+  return currentTenantBaseUrl(BASE_URL);
+}
 // Once an admin/employee is on a company's own workspace, API calls should
 // hit that company's own subdomain (e.g. bestbraininc.vpay.goalluvium.net)
 // rather than the shared root host. company_slug is stored in localStorage
@@ -17,6 +35,35 @@ function companyApiBaseUrl() {
   const slug = localStorage.getItem("company_slug");
   return `${withSubdomain(BASE_URL, slug)}/api`;
 }
+
+// Uploaded files (avatars, company logos, ...) come back as root-relative
+// paths like "/vendorpay/static/avatars/xyz.png" — resolved as-is in an
+// <img src>, that's relative to the *frontend's* origin, not the API's, so
+// it 404s. Resolve it against the API host instead. BASE_URL may itself
+// carry a path (e.g. the local ".../vendorpay" override), so only its
+// origin is reused — the returned path already includes whatever prefix
+// the backend needs.
+export const resolveMediaUrl = (url) => {
+  if (!url) return "";
+
+  // Already an absolute URL
+  if (/^https?:\/\//i.test(url)) {
+    return url;
+  }
+
+  // Local image preview
+  if (url.startsWith("blob:")) {
+    return url;
+  }
+
+  const baseUrl = companyBaseUrl();
+
+  return new URL(
+    url.startsWith("/") ? url : `/${url}`,
+    baseUrl
+  ).toString();
+};
+
 
 const apiClient = axios.create({
   baseURL: companyApiBaseUrl(),

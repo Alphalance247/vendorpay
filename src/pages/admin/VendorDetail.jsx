@@ -118,7 +118,7 @@ export default function VendorDetail() {
     return (
       <AppLayout role="admin">
         <div className="flex items-center justify-center min-h-[60vh]">
-          <Loader2 size={28} className="animate-spin text-emerald" />
+          <Loader2 size={28} className="animate-spin text-secondary" />
         </div>
       </AppLayout>
     );
@@ -161,9 +161,16 @@ export default function VendorDetail() {
           <ArrowLeft size={15} /> Back to Vendors
         </button>
 
+        <div>
+          <h1 className="font-headline-lg text-headline-lg text-on-surface">Vendor Details</h1>
+          <p className="text-sm text-on-surface-variant mt-0.5">
+            Review vendor information, banking details, and invoice history.
+          </p>
+        </div>
+
         <div className="flex items-start justify-between">
           <div>
-            <h1 className="text-2xl font-semibold text-on-surface">{vendor.company_name ?? '—'}</h1>
+            <h2 className="font-headline-lg text-2xl font-semibold text-on-surface">{vendor.company_name ?? '—'}</h2>
             <p className="text-sm text-on-surface-variant mt-0.5">
               {vendor.industry ?? ''}{vendor.business_type ? ` · ${vendor.business_type}` : ''}
             </p>
@@ -186,7 +193,7 @@ export default function VendorDetail() {
               variant="ghost"
               size="sm"
               onClick={handleDelete}
-              className="flex items-center gap-1.5 text-error hover:bg-red-50"
+              className="flex items-center gap-1.5 text-error hover:bg-error/5"
             >
               <Trash2 size={13} /> Delete
             </Button>
@@ -235,7 +242,7 @@ export default function VendorDetail() {
           </Card>
         </div>
 
-        <Card className={bankingStatus === 'rejected' ? 'border-error/30' : bankingStatus === 'pending' ? 'border-amber/30' : ''}>
+        <Card className={bankingStatus === 'rejected' ? 'border-error/30' : bankingStatus === 'pending' ? 'border-warning/30' : ''}>
           <div className="flex items-center justify-between mb-3">
             <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant flex items-center gap-1.5">
               <Landmark size={12} /> Banking Details
@@ -245,7 +252,7 @@ export default function VendorDetail() {
 
           {bankingQuery.isLoading ? (
             <div className="flex items-center justify-center py-8">
-              <Loader2 size={20} className="animate-spin text-emerald" />
+              <Loader2 size={20} className="animate-spin text-secondary" />
             </div>
           ) : !banking ? (
             <p className="text-sm text-on-surface-variant py-2">No banking details submitted yet.</p>
@@ -272,6 +279,10 @@ export default function VendorDetail() {
                   <span className="text-on-surface-variant w-36 flex-shrink-0">Bank Code</span>
                   <span className="text-on-surface">{banking.bank_code ?? '—'}</span>
                 </div>
+                <div className="flex gap-2">
+                  <span className="text-on-surface-variant w-36 flex-shrink-0">Account Number</span>
+                  <span className="text-on-surface">{banking.account_number ?? '—'}</span>
+                </div>
                 {banking.swift_code && (
                   <div className="flex gap-2">
                     <span className="text-on-surface-variant w-36 flex-shrink-0">SWIFT / BIC</span>
@@ -281,7 +292,7 @@ export default function VendorDetail() {
               </div>
 
               {bankingStatus === 'rejected' && banking.rejection_reason && (
-                <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded text-sm text-red-700">
+                <div className="mt-4 p-3 bg-error/5 border border-error/30 rounded text-sm text-error">
                   <span className="font-medium">Rejection reason:</span> {banking.rejection_reason}
                 </div>
               )}
@@ -300,7 +311,7 @@ export default function VendorDetail() {
                     variant="ghost"
                     size="sm"
                     onClick={openBankingReject}
-                    className="flex items-center gap-1.5 text-error hover:bg-red-50"
+                    className="flex items-center gap-1.5 text-error hover:bg-error/5"
                   >
                     <XCircle size={14} />
                     Reject
@@ -335,7 +346,7 @@ export default function VendorDetail() {
           ) : (
             <table className="w-full">
               <thead>
-                <tr className="bg-surface-low border-b border-outline-variant">
+                <tr className="bg-surface-container border-b border-outline-variant">
                   {['Invoice #', 'Submitted', 'Due Date', 'Amount', 'Status', ''].map((h) => (
                     <th key={h} className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-on-surface-variant">{h}</th>
                   ))}
@@ -343,7 +354,7 @@ export default function VendorDetail() {
               </thead>
               <tbody className="divide-y divide-outline-variant">
                 {invoices.map((inv) => (
-                  <tr key={inv.id} className="hover:bg-surface-low/50 transition-colors">
+                  <tr key={inv.id} className="hover:bg-surface-container/50 transition-colors">
                     <td className="px-5 py-4 text-sm font-semibold text-on-surface">{inv.invoice_number}</td>
                     <td className="px-5 py-4 text-sm text-on-surface-variant">{formatDate(inv.submitted_at)}</td>
                     <td className="px-5 py-4 text-sm text-on-surface-variant">{inv.due_date ? formatDate(inv.due_date) : '—'}</td>

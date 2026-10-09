@@ -9,7 +9,6 @@ import StatusChip from '../../components/ui/StatusChip';
 import { formatCurrency, formatDate } from '../../lib/utils';
 import { invoiceService } from '../../lib/services/invoiceService';
 
-const STATUS_MAP = { paid: 'Paid', funding: 'Awaiting Payment', rejected: 'Denied' };
 
 function totalsByCurrency(items) {
   const totals = {};
@@ -25,13 +24,46 @@ function formatTotals(items) {
   if (Object.keys(totals).length === 0) return formatCurrency(0, 'USD');
   return Object.entries(totals).map(([currency, amount]) => formatCurrency(amount, currency)).join(' + ');
 }
+// const STATUS_MAP = { paid: 'Paid', funding: 'Awaiting Payment', rejected: 'Denied' };
 
+// const TABS = [
+//   { key: 'Paid', dbStatus: 'paid', icon: CheckCircle, accent: 'text-success' },
+//   { key: 'Awaiting Payment', dbStatus: 'funding', icon: Clock, accent: 'text-warning' },
+//   { key: 'Denied', dbStatus: 'rejected', icon: XCircle, accent: 'text-error' },
+// ];
+
+// The tabs (and summary cards) shown on the page. Which backend statuses
+// fall under each tab is decided by TAB_BY_STATUS below.
 const TABS = [
-  { key: 'Paid', dbStatus: 'paid', icon: CheckCircle, accent: 'text-emerald' },
-  { key: 'Awaiting Payment', dbStatus: 'funding', icon: Clock, accent: 'text-amber-600' },
-  { key: 'Denied', dbStatus: 'rejected', icon: XCircle, accent: 'text-error' },
+  { key: 'Paid', icon: CheckCircle, accent: 'text-success' },
+  { key: 'Awaiting Payment', icon: Clock, accent: 'text-warning' },
+  { key: 'Denied', icon: XCircle, accent: 'text-error' },
 ];
 
+// Which tab each backend status belongs to. Money has gone out for every
+// status in the Paid tab — the vendor may since have confirmed or disputed it.
+const TAB_BY_STATUS = {
+  paid: 'Paid',
+  payment_confirmed: 'Paid',
+  payment_disputed: 'Paid',
+  funding: 'Awaiting Payment',
+  rejected: 'Denied',
+  submitted: 'Awaiting Payment',
+  reviewed: 'Awaiting Payment',
+  flagged: 'Awaiting Payment',
+};
+const PAID_STATUSES = ['paid', 'payment_confirmed', 'payment_disputed'];
+
+const STATUS_LABEL = {
+  paid: 'Paid',
+  payment_confirmed: 'Payment Confirmed',
+  payment_disputed: 'Payment Disputed',
+  funding: 'Awaiting Payment',
+  rejected: 'Denied',
+  submitted: 'Submitted',
+  reviewed: 'Under Review',
+  flagged: 'Flagged',
+};
 export default function AdminPayments() {
   const navigate = useNavigate();
   const [payments, setPayments] = useState([]);
@@ -46,9 +78,9 @@ export default function AdminPayments() {
       .catch(() => setError('Failed to load payments.'))
       .finally(() => setLoading(false));
   }, []);
-
-  const byTab = (tab) => payments.filter((p) => STATUS_MAP[p.status] === tab);
-
+  // Expression body, so the comparison is returned — with `{ ... }` and no
+  // `return` the filter keeps nothing and every tab is empty.
+  const byTab = (tab) => payments.filter((p) => TAB_BY_STATUS[p.status] === tab);
   const counts = Object.fromEntries(TABS.map(({ key }) => [key, byTab(key).length]));
   const totals = Object.fromEntries(TABS.map(({ key }) => [key, formatTotals(byTab(key))]));
 
@@ -98,7 +130,8 @@ export default function AdminPayments() {
                 <Loader2 size={18} className="animate-spin text-secondary mt-2" />
               ) : (
                 <>
-                  <p className="text-2xl font-bold tnum text-on-surface mt-1">{counts[key] ?? 0}</p>
+                  {<p className="text-2xl font-bold tnum text-on-surface mt-1">{counts[key] ?? 0}</p>}
+                  {/* {payments.} */}
                   <p className="text-xs text-on-surface-variant mt-0.5">Total {totals[key] ?? formatCurrency(0, 'USD')}</p>
                 </>
               )}
@@ -106,17 +139,16 @@ export default function AdminPayments() {
           ))}
         </div>
 
-        <Card className="p-0 overflow-hidden">
-          <div className="flex border-b border-outline-variant">
+        <Card className="p-0 overflow-x-auto">
+          <div className="flex border-b border-outline-variant  w-full min-w-[820px]">
             {TABS.map(({ key, icon: Icon }) => (
               <button
                 key={key}
                 onClick={() => setActiveTab(key)}
-                className={`flex items-center gap-2 px-5 py-3 text-sm font-medium border-b-2 transition-colors ${
-                  activeTab === key
-                    ? 'border-secondary text-secondary bg-secondary/5'
-                    : 'border-transparent text-on-surface-variant hover:text-on-surface'
-                }`}
+                className={`flex items-center gap-2 whitespace-nowrap flex-shrink-0 px-5 py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === key
+                  ? 'border-secondary text-secondary bg-secondary/5'
+                  : 'border-transparent text-on-surface-variant hover:text-on-surface'
+                  }`}
               >
                 <Icon size={15} />
                 {key}
@@ -127,14 +159,14 @@ export default function AdminPayments() {
             ))}
           </div>
 
-          <div className="flex items-center gap-3 px-4 py-3 border-b border-outline-variant">
+          <div className="flex items-center gap-3 px-4 py-3 border-b border-outline-variant w-full min-w-[820px]">
             <div className="relative flex-1 max-w-md">
               <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-outline" />
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Filter by vendor, invoice, or rail..."
-                className="w-full pl-8 pr-3 py-1.5 text-sm bg-surface-low rounded border border-outline-variant focus:outline-none focus:ring-2 focus:ring-secondary"
+                className="w-full pl-8 pr-3 py-1.5 text-sm bg-surface-container rounded border border-outline-variant focus:outline-none focus:ring-2 focus:ring-secondary"
               />
             </div>
           </div>
@@ -153,12 +185,13 @@ export default function AdminPayments() {
           ) : (
             <>
               {/* Desktop / tablet: table */}
-              <div className="hidden md:block overflow-x-auto">
-                <table className="w-full">
+              <div className=" ">
+                <table className="">
                   <thead>
-                    <tr className="bg-surface-low border-b border-outline-variant">
+                    <tr className="bg-surface-container border-b border-outline-variant">
                       {['Vendor', 'Invoice #', 'Rail', 'Amount', 'Date', 'Status', 'Action'].map((h) => (
-                        <th key={h} className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-on-surface-variant">
+                        <th key={h} className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-on-surface-variant whitespace-nowrap"
+                        >
                           {h}
                         </th>
                       ))}
@@ -166,23 +199,23 @@ export default function AdminPayments() {
                   </thead>
                   <tbody className="divide-y divide-outline-variant">
                     {filtered.map((p) => (
-                      <tr key={p.id} className="hover:bg-surface-low/50 transition-colors cursor-pointer" onClick={() => navigate(`/admin/invoices/${p.id}`)}>
+                      <tr key={p.id} className="hover:bg-surface-container/50 transition-colors cursor-pointer" onClick={() => navigate(`/admin/invoices/${p.id}`)}>
                         <td className="px-6 py-4">
-                          <p className="text-sm font-semibold text-on-surface">{p.vendor_name ?? '—'}</p>
+                          <p className="text-sm font-semibold text-on-surface whitespace-nowrap">{p.vendor_name ?? '—'}</p>
                         </td>
-                        <td className="px-6 py-4 text-sm text-on-surface-variant">{p.invoice_number}</td>
-                        <td className="px-6 py-4 text-sm text-on-surface-variant">{p.payment_rail ?? '—'}</td>
-                        <td className="px-6 py-4 text-sm font-semibold tnum text-on-surface">
+                        <td className="px-6 py-4 text-sm text-on-surface-variant whitespace-nowrap">{p.invoice_number}</td>
+                        <td className="px-6 py-4 text-sm text-on-surface-variant whitespace-nowrap">{p.payment_rail ?? '—'}</td>
+                        <td className="px-6 py-4 text-sm font-semibold tnum text-on-surface whitespace-nowrap">
                           {formatCurrency(p.amount, p.currency)}
                         </td>
-                        <td className="px-6 py-4 text-sm text-on-surface-variant">
+                        <td className="px-6 py-4 text-sm text-on-surface-variant whitespace-nowrap">
                           {formatDate(p.payment_date ?? p.submitted_at)}
                         </td>
                         <td className="px-6 py-4">
-                          <StatusChip status={STATUS_MAP[p.status] ?? p.status} />
+                          <StatusChip status={STATUS_LABEL[p.status] ?? p.status} className="flex-shrink-0 whitespace-nowrap" />
                         </td>
                         <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
-                          {p.status === 'paid' && (
+                          {PAID_STATUSES.includes(p.status) && (
                             <Button variant="ghost" size="sm" className="p-1.5" title="Receipt">
                               <Receipt size={15} />
                             </Button>
@@ -195,19 +228,19 @@ export default function AdminPayments() {
               </div>
 
               {/* Phone: stacked cards */}
-              <div className="md:hidden divide-y divide-outline-variant">
+              {/* <div className="md:hidden divide-y divide-outline-variant">
                 {filtered.map((p) => (
                   <div
                     key={p.id}
                     onClick={() => navigate(`/admin/invoices/${p.id}`)}
-                    className="px-4 py-4 active:bg-surface-low/50 transition-colors cursor-pointer"
+                    className="px-4 py-4 active:bg-surface-container/50 transition-colors cursor-pointer"
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
                         <p className="text-sm font-semibold text-on-surface truncate">{p.vendor_name ?? '—'}</p>
                         <p className="text-xs text-on-surface-variant mt-0.5">{p.invoice_number}</p>
                       </div>
-                      <StatusChip status={STATUS_MAP[p.status] ?? p.status} className="flex-shrink-0" />
+                      <StatusChip status={STATUS_LABEL[p.status] ?? p.status} className="flex-shrink-0" />
                     </div>
                     <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 mt-3 text-xs">
                       <div>
@@ -225,7 +258,7 @@ export default function AdminPayments() {
                         <span className="text-on-surface">{formatDate(p.payment_date ?? p.submitted_at)}</span>
                       </div>
                     </div>
-                    {p.status === 'paid' && (
+                    {PAID_STATUSES.includes(p.status) && (
                       <div onClick={(e) => e.stopPropagation()}>
                         <Button variant="secondary" size="sm" className="w-full mt-3 flex items-center justify-center gap-1.5">
                           <Receipt size={13} /> Receipt
@@ -234,9 +267,10 @@ export default function AdminPayments() {
                     )}
                   </div>
                 ))}
-              </div>
+              </div> */}
             </>
-          )}
+          )
+          }
 
           <div className="px-6 py-3 border-t border-outline-variant flex flex-col sm:flex-row items-center gap-1 sm:justify-between">
             <p className="text-xs text-on-surface-variant">
@@ -246,8 +280,8 @@ export default function AdminPayments() {
               Total {formatTotals(filtered)}
             </p>
           </div>
-        </Card>
-      </div>
-    </AppLayout>
+        </Card >
+      </div >
+    </AppLayout >
   );
 }
