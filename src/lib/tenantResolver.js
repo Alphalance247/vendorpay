@@ -3,7 +3,8 @@ import axios from "axios";
 import { environment } from "../env/env.local";
 
 const BASE_URL =
-  import.meta.env.VITE_BACKEND_URL || environment.baseUrl.replace(/\/+$/, "");
+  // import.meta.env.VITE_BACKEND_URL ||
+  environment.baseUrl.replace(/\/+$/, "");
 
 // The frontend's own subdomain root, derived from the same canonical base
 // URL — "localhost" is kept alongside it for local dev, where the app isn't
