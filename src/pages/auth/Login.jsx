@@ -170,13 +170,13 @@ export default function Login() {
                   Password
                 </label>
 
-                {/* <button
+                <button
                   type="button"
                   onClick={() => navigate("/forgot-password")}
                   className="text-xs text-secondary hover:underline"
                 >
                   Forgot password?
-                </button> */}
+                </button>
               </div>
 
               <div className="relative">

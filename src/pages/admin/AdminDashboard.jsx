@@ -6,7 +6,7 @@ import {
   History,
   Receipt,
   Loader2,
-  Download,
+  // Download,
   Plus,
   UserPlus,
   Users,
@@ -102,7 +102,7 @@ export default function AdminDashboard() {
     vendorService
       .getAdminDashboard()
       .then(setDash)
-      .catch(() => {})
+      .catch(() => { })
       .finally(() => setLoading(false));
   }, []);
 
@@ -145,27 +145,27 @@ export default function AdminDashboard() {
 
   const quickActions = isFirstRun
     ? [
-        {
-          label: "Invite Vendors",
-          icon: Users,
-          onClick: () => setInviteOpen(true),
-        },
-        { label: "Invite Team Members", path: "/admin/team", icon: UserPlus },
-        // { label: 'Set Up Billing', path: '/admin/billing', icon: CreditCard },
-      ]
+      {
+        label: "Invite Vendors",
+        icon: Users,
+        onClick: () => setInviteOpen(true),
+      },
+      { label: "Invite Team Members", path: "/admin/team", icon: UserPlus },
+      // { label: 'Set Up Billing', path: '/admin/billing', icon: CreditCard },
+    ]
     : [
-        {
-          label: "Review Pending Invoices",
-          path: "/admin/invoices",
-          icon: Receipt,
-        },
-        {
-          label: "View All Vendors",
-          path: "/admin/vendors",
-          icon: AlertCircle,
-        },
-        { label: "Payment History", path: "/admin/payments", icon: Clock },
-      ];
+      {
+        label: "Review Pending Invoices",
+        path: "/admin/invoices",
+        icon: Receipt,
+      },
+      {
+        label: "View All Vendors",
+        path: "/admin/vendors",
+        icon: AlertCircle,
+      },
+      { label: "Payment History", path: "/admin/payments", icon: Clock },
+    ];
 
   return (
     <AppLayout role="admin">
@@ -185,9 +185,9 @@ export default function AdminDashboard() {
             </p>
           </div>
           <div className="flex gap-2">
-            <Button variant="secondary" size="sm">
+            {/* <Button variant="secondary" size="sm">
               <Download size={14} /> Export Report
-            </Button>
+            </Button> */}
             <Tooltip text="Jump straight to the approval queue — you can also get there via the sidebar.">
               <Button size="sm" onClick={() => navigate("/admin/invoices")}>
                 <Plus size={14} /> Review Invoices
@@ -264,7 +264,7 @@ export default function AdminDashboard() {
                   };
                   return (
                     <div key={key} className="flex items-center gap-3">
-                      <span className="text-xs text-on-surface-variant capitalize w-20 flex-shrink-0">
+                      <span className="text-xs text-on-surface-variant capitalize w-28 flex-shrink-0">
                         {key}
                       </span>
                       <div className="flex-1 h-2 bg-surface-container rounded-full overflow-hidden">

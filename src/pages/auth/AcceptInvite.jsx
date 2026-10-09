@@ -234,10 +234,10 @@ export default function AcceptInvite() {
                 value={form.password}
                 onChange={handleChange}
                 // placeholder=""
-                hint="At least 8 characters"
+                hint="At least 10 characters"
                 error={
                   tooShort
-                    ? "Password must be at least 8 characters"
+                    ? "Password must be at least 10 characters"
                     : undefined
                 }
                 required

@@ -279,6 +279,10 @@ export default function VendorDetail() {
                   <span className="text-on-surface-variant w-36 flex-shrink-0">Bank Code</span>
                   <span className="text-on-surface">{banking.bank_code ?? '—'}</span>
                 </div>
+                <div className="flex gap-2">
+                  <span className="text-on-surface-variant w-36 flex-shrink-0">Account Number</span>
+                  <span className="text-on-surface">{banking.account_number ?? '—'}</span>
+                </div>
                 {banking.swift_code && (
                   <div className="flex gap-2">
                     <span className="text-on-surface-variant w-36 flex-shrink-0">SWIFT / BIC</span>

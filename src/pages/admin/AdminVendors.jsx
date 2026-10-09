@@ -198,18 +198,20 @@ export default function AdminVendors() {
               Manage all registered vendor accounts.
             </p>
           </div>
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 text-on-surface-variant">
-              <Users size={16} />
-              <span className="text-sm font-medium capitalize">
-                {registeredVendors.length} active
-              </span>
-            </div>
-            <div className="flex items-center gap-2 text-on-surface">
-              <Users size={16} />
-              <span className="text-sm font-medium capitalize">
-                {pendingVendorInvites.length} pending
-              </span>
+          <div className="flex md:flex-row flex-col gap-3">
+            <div className="flex gap-4">
+              <div className="flex items-center gap-2 text-on-surface-variant">
+                <Users size={16} />
+                <span className="text-sm font-medium capitalize">
+                  {registeredVendors.length} active
+                </span>
+              </div>
+              <div className="flex items-center gap-2 text-on-surface">
+                <Users size={16} />
+                <span className="text-sm font-medium capitalize">
+                  {pendingVendorInvites.length} pending
+                </span>
+              </div>
             </div>
             <Button
               onClick={() => setInviteOpen(true)}
@@ -219,7 +221,6 @@ export default function AdminVendors() {
               Invite Vendor
             </Button>
           </div>
-
         </div>
         <TutorialCard
           id="admin-vendors"
@@ -270,8 +271,8 @@ export default function AdminVendors() {
               </Button>
             </div>
           ) : (
-            <div className="hidden md:block overflow-x-auto">
-              <table className="w-full">
+            <div className=" overflow-x-auto">
+              <table className="w-[300px] lg:w-full">
                 <thead>
                   <tr className="bg-surface-container border-b border-outline-variant">
                     {["Company", "Contact", "Industry", "Status", "Action"].map(
@@ -293,7 +294,7 @@ export default function AdminVendors() {
                         key={vendor.id}
                         title="View full profile, banking details, and invoice history"
                         className="hover:bg-surface-container/50 transition-colors cursor-pointer"
-                      // onClick={() => navigate(`/admin/vendors/${vendor.id}`)}
+                        onClick={() => navigate(`/admin/vendors/${vendor.id}`)}
                       >
                         <td className="px-6 py-4">
                           <p className="text-sm font-semibold text-on-surface">
@@ -305,7 +306,8 @@ export default function AdminVendors() {
                         </td>
                         <td className="px-6 py-4">
                           <p className="text-sm text-on-surface">
-                            {vendor.contact_first_name || vendor.contact_last_name
+                            {vendor.contact_first_name ||
+                            vendor.contact_last_name
                               ? `${vendor.contact_first_name ?? ""} ${vendor.contact_last_name ?? ""}`.trim()
                               : "—"}
                           </p>
@@ -318,8 +320,7 @@ export default function AdminVendors() {
                         </td>
                         <td className="px-6 py-4">
                           <StatusChip
-                            status={vendor.status}
-                          // status={vendor.is_active ? "Active" : "Inactive"}
+                            status={vendor.is_active ? "Active" : "Inactive"}
                           />
                         </td>
                         <td
@@ -331,10 +332,13 @@ export default function AdminVendors() {
                               {
                                 label: "View",
                                 icon: Eye,
-                                onClick: () => navigate(`/admin/vendors/${vendor.id}`),
+                                onClick: () =>
+                                  navigate(`/admin/vendors/${vendor.id}`),
                               },
                               {
-                                label: vendor.is_active ? "Deactivate" : "Activate",
+                                label: vendor.is_active
+                                  ? "Deactivate"
+                                  : "Activate",
                                 icon: vendor.is_active ? PowerOff : Power,
                                 onClick: () => handleToggleStatus(vendor),
                               },
@@ -408,7 +412,8 @@ export default function AdminVendors() {
                           </td>
                           <td className="px-6 py-4">
                             <p className="text-sm text-on-surface">
-                              {invite.contact_first_name || invite.contact_last_name
+                              {invite.contact_first_name ||
+                              invite.contact_last_name
                                 ? `${invite.contact_first_name ?? ""} ${invite.contact_last_name ?? ""}`.trim()
                                 : "—"}
                             </p>
@@ -429,14 +434,18 @@ export default function AdminVendors() {
                             <ActionMenu
                               items={[
                                 {
-                                  label: resending ? "Resending…" : "Resend invitation",
+                                  label: resending
+                                    ? "Resending…"
+                                    : "Resend invitation",
                                   icon: resending ? Loader2 : Mail,
                                   loading: resending,
                                   disabled: resending,
                                   onClick: () => handleResendInvite(invite),
                                 },
                                 {
-                                  label: cancelling ? "Revoking…" : "Revoke access",
+                                  label: cancelling
+                                    ? "Revoking…"
+                                    : "Revoke access",
                                   icon: cancelling ? Loader2 : Trash2,
                                   loading: cancelling,
                                   disabled: cancelling,
@@ -449,7 +458,8 @@ export default function AdminVendors() {
                         </tr>
                       );
                     })}
-                  </tbody>) : (
+                  </tbody>
+                ) : (
                   <tbody>
                     <tr>
                       <td
@@ -460,8 +470,7 @@ export default function AdminVendors() {
                       </td>
                     </tr>
                   </tbody>
-                )
-                }
+                )}
               </table>
             </div>
           )}

@@ -89,7 +89,7 @@ export default function InvoiceDetail() {
         setDocUrl(doc.url);
         setDocContentType(doc.contentType);
       })
-      .catch(() => {})
+      .catch(() => { })
       .finally(() => setDocLoading(false));
     return () => {
       if (url) window.URL.revokeObjectURL(url);
@@ -124,7 +124,7 @@ export default function InvoiceDetail() {
           return data;
         });
       })
-      .catch(() => {});
+      .catch(() => { });
   }, [id]);
 
   useEffect(() => {
@@ -639,8 +639,8 @@ export default function InvoiceDetail() {
         </Card>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 min-w-0">
           <div className="lg:col-span-2 min-w-0 space-y-4">
-            <Card className="overflow-hidden">
-              <div className="grid grid-cols-3 gap-4 overflow-x-auto">
+            <Card className="lg:overflow-hidden overflow-x-auto">
+              <div className="grid grid-cols-3 gap-4  w-full min-w-[620px]">
                 <div>
                   <p className="text-xs text-on-surface-variant uppercase tracking-wide">
                     Invoice #
@@ -670,7 +670,7 @@ export default function InvoiceDetail() {
                   <p className="text-xl font-bold tnum text-on-surface mt-0.5">
                     {formatCurrency(invoice.amount, invoice.currency)}
                   </p>
-                  <StatusChip status={displayStatus} className="mt-1" />
+                  <StatusChip status={displayStatus} className="mt-1 flex-shrink-0 whitespace-nowrap" />
                 </div>
               </div>
               {invoice.notes && (
@@ -784,7 +784,7 @@ export default function InvoiceDetail() {
                 <button
                   onClick={sendMessage}
                   disabled={msgSending || !msgInput.trim()}
-                  className="p-1.5 rounded bg-navy text-white disabled:opacity-40 hover:bg-navy/90 transition-colors"
+                  className="p-1.5 px-3 rounded bg-navy text-white disabled:opacity-40 hover:bg-navy/90 transition-colors"
                 >
                   {msgSending ? (
                     <Loader2 size={12} className="animate-spin" />
@@ -849,7 +849,7 @@ export default function InvoiceDetail() {
                 <p className="text-xs text-on-surface-variant mb-2">
                   Ask about this invoice:
                 </p>
-                <div className="flex gap-2">
+                <div className="flex  gap-2">
                   <input
                     value={aiInput}
                     onChange={(e) => setAiInput(e.target.value)}
@@ -857,14 +857,14 @@ export default function InvoiceDetail() {
                     placeholder="e.g. When will this be paid?"
                     className="flex-1 text-xs border border-outline-variant rounded px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-success"
                   />
-                  <Button
-                    size="sm"
+                  <button
+                    // size="sm"
                     onClick={sendAiMessage}
-                    className="p-1.5"
+                    className="p-1.5 px-3 rounded bg-primary text-on-primary hover:bg-primary/90 active:bg-primary/90"
                     disabled={!aiInput.trim() || aiTyping}
                   >
                     <Send size={14} />
-                  </Button>
+                  </button>
                 </div>
                 <div className="flex gap-1 mt-2 flex-wrap">
                   {["Payment status?", "Why pending?", "Download receipt"].map(
