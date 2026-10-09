@@ -1812,14 +1812,24 @@ export default function Onboarding() {
           business_address: data.address,
           industry: data.industry,
           currency: data.currency,
-
           contact_first_name: data.firstName,
           contact_last_name: data.lastName,
           contact_email: data.email,
           phone: data.phone,
           job_title: data.title,
           department: data.department,
-
+          // bankName: data.bankName,
+          // accountName: data.accountName,
+          // accountType: data.accountType,
+          // accountNumber: data.accountNumber,
+          // confirmAccount: data.confirmAccount,
+          // routingNumber: data.routingNumber,
+          // sortCode: data.sortCode,
+          // swiftCode: data.swiftCode,
+          // branchCode: data.branchCode,
+          // iban: data.iban,
+          // transitNumber: data.transitNumber,
+          // institutionNumber: data.institutionNumber,
           ...(data.website && {
             website: data.website,
           }),
@@ -1830,45 +1840,45 @@ export default function Onboarding() {
       // 2. Setup banking using the FINAL edited data
       // Only read the fields the selected country actually asks for, so
       // leftovers from a previously selected country are never sent.
-      // const countryFields = new Set(
-      //   COUNTRY_PROFILES[data.country]?.fields?.map((f) => f.name) ?? [],
-      // );
-      // const pick = (key) => (countryFields.has(key) ? data[key] : "");
+      const countryFields = new Set(
+        COUNTRY_PROFILES[data.country]?.fields?.map((f) => f.name) ?? [],
+      );
+      const pick = (key) => (countryFields.has(key) ? data[key] : "");
 
-      // const routingNumber =
-      //   pick("routingNumber") ||
-      //   pick("sortCode") ||
-      //   pick("branchCode") ||
-      //   pick("transitNumber") ||
-      //   "";
+      const routingNumber =
+        pick("routingNumber") ||
+        pick("sortCode") ||
+        pick("branchCode") ||
+        pick("transitNumber") ||
+        "";
 
-      // const COUNTRY_TYPE_MAP = {
-      //   US: "ACH",
-      //   GB: "FASTER_PAYMENTS",
-      //   NG: "NIP",
-      //   KE: "PESALINK",
-      // };
+      const COUNTRY_TYPE_MAP = {
+        US: "ACH",
+        GB: "FASTER_PAYMENTS",
+        NG: "NIP",
+        KE: "PESALINK",
+      };
 
-      // const countryType = COUNTRY_TYPE_MAP[data.country] ?? "SWIFT";
+      const countryType = COUNTRY_TYPE_MAP[data.country] ?? "SWIFT";
 
-      // await vendorService.setupBanking({
-      //   bank_name: data.bankName,
-      //   account_name: data.accountName,
-      //   account_type: data.accountType,
-      //   account_number: data.accountNumber,
-      //   routing_number: routingNumber,
-      //   country_type: countryType,
+      await vendorService.setupBanking({
+        bank_name: data.bankName,
+        account_name: data.accountName,
+        account_type: data.accountType,
+        account_number: data.accountNumber,
+        routing_number: routingNumber,
+        country_type: countryType,
 
-      //   ...(pick("swiftCode") && {
-      //     swift_code: pick("swiftCode"),
-      //   }),
+        ...(pick("swiftCode") && {
+          swift_code: pick("swiftCode"),
+        }),
 
-      //   ...(pick("iban") && {
-      //     iban: pick("iban"),
-      //   }),
+        ...(pick("iban") && {
+          iban: pick("iban"),
+        }),
 
-      //   authorized_test_deposit: true,
-      // });
+        authorized_test_deposit: true,
+      });
 
       // 3. Complete onboarding
       completeOnboarding();

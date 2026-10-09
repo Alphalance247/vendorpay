@@ -6,6 +6,7 @@ import {
   Loader2,
   ChevronLeft,
   ChevronRight,
+  Download,
 } from "lucide-react";
 import TutorialCard from "../../components/ui/TutorialCard";
 import AppLayout from "../../components/layout/AppLayout";
@@ -94,7 +95,7 @@ function ReceiptLink({ url, className = "" }) {
         className,
       )}
     >
-      <Receipt size={14} className="text-on-surface-variant" />
+      <Download size={14} className="text-on-surface-variant" />
     </a>
   );
 }
@@ -386,6 +387,8 @@ export default function Billing() {
   const planCurrency = billingStatus?.price?.currency ?? "USD";
   const invoiceUsed = billingStatus?.invoices_this_month?.used;
   const invoiceLimit = billingStatus?.invoices_this_month?.limit;
+  const aiRequestsUsed = billingStatus?.ai_requests_this_month?.used;
+  const aiRequestsLimit = billingStatus?.ai_requests_this_month?.limit;
   const usagePct =
     effectiveVendorCount == null || !Number.isFinite(vendorLimit)
       ? 0
@@ -406,6 +409,10 @@ export default function Billing() {
   //   setCardModalOpen(false);
   //   toast('Payment method updated.');
   // }
+  const aiRequestsBarPct =
+    aiRequestsUsed == null || !Number.isFinite(aiRequestsLimit)
+      ? 0
+      : Math.min(100, (aiRequestsUsed / aiRequestsLimit) * 100);
   async function handleCancel() {
     const ok = await confirm({
       title: "Cancel Subscription",
@@ -525,7 +532,7 @@ export default function Billing() {
                 />
               </div>
             </div>
-            <div>
+            <div className="mb-5">
               <div className="flex items-center justify-between text-sm mb-1.5">
                 <span className="text-on-surface-variant">Invoice used</span>
                 <span className="font-medium text-on-surface tnum">
@@ -544,6 +551,30 @@ export default function Billing() {
                     usagePct >= 90 ? "bg-error" : "bg-success",
                   )}
                   style={{ width: `${invoiceBarPct}%` }}
+                />
+              </div>
+            </div>
+            <div>
+              <div className="flex items-center justify-between text-sm mb-1.5">
+                <span className="text-on-surface-variant">
+                  AI Requests used
+                </span>
+                <span className="font-medium text-on-surface tnum">
+                  {aiRequestsUsed ?? "—"} /{" "}
+                  {!billingStatus
+                    ? "—"
+                    : Number.isFinite(aiRequestsLimit)
+                      ? aiRequestsLimit
+                      : "Unlimited"}
+                </span>
+              </div>
+              <div className="h-2 rounded-full bg-surface-container overflow-hidden">
+                <div
+                  className={cn(
+                    "h-full rounded-full transition-all",
+                    usagePct >= 90 ? "bg-error" : "bg-success",
+                  )}
+                  style={{ width: `${aiRequestsBarPct}%` }}
                 />
               </div>
             </div>

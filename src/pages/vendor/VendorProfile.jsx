@@ -9,7 +9,7 @@ import {
   User,
   Landmark,
   Pencil,
-  X,
+  // X,
   Camera,
   Trash2,
 } from "lucide-react";
@@ -456,7 +456,7 @@ export default function VendorProfile() {
               <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant mb-4 flex items-center gap-1.5">
                 <User size={12} /> Contact Information
               </p>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 <Input
                   label="First Name"
                   name="contact_first_name"
@@ -537,7 +537,7 @@ export default function VendorProfile() {
               </div>
             </Card>
 
-            <div className="flex gap-3">
+            <div className="flex md:flex-row flex-col gap-3">
               <Button type="submit" disabled={saving} size="lg">
                 {saving ? (
                   <>
@@ -579,7 +579,7 @@ export default function VendorProfile() {
               <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant mb-4">
                 Company Details
               </p>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 <Input
                   label="Legal Company Name"
                   name="company_name"
@@ -668,7 +668,7 @@ export default function VendorProfile() {
               </div>
             </Card>
 
-            <div className="flex gap-3">
+            <div className="flex md:flex-row flex-col gap-3">
               <Button type="submit" disabled={saving} size="lg">
                 {saving ? (
                   <>
@@ -792,7 +792,7 @@ export default function VendorProfile() {
                   account.
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                   <Input
                     label="Bank Name"
                     name="bank_name"
@@ -886,7 +886,7 @@ export default function VendorProfile() {
                   />
                 </div>
 
-                <div className="flex gap-3">
+                <div className="flex md:flex-row flex-col gap-3">
                   <Button
                     type="submit"
                     disabled={updateBanking.isPending}
@@ -910,7 +910,8 @@ export default function VendorProfile() {
                     onClick={cancelBankingEdit}
                     disabled={updateBanking.isPending}
                   >
-                    <X size={15} /> Cancel
+                    {/* <X size={15} /> */}
+                    Cancel
                   </Button>
                 </div>
               </form>

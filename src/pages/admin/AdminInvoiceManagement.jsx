@@ -1,6 +1,9 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, X, Loader2, ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  Search, X, Loader2,
+  // ChevronLeft, ChevronRight
+} from "lucide-react";
 import TutorialCard from "../../components/ui/TutorialCard";
 import AppLayout from "../../components/layout/AppLayout";
 import Card from "../../components/ui/Card";
@@ -106,7 +109,7 @@ function InvoiceActions({
       </div>
     );
   }
-  if (inv.status === "funding") {
+  if (inv.status === "awaiting_payment" || inv.status === "funding") {
     return (
       <div className={className}>
         <Button
@@ -124,6 +127,32 @@ function InvoiceActions({
       </div>
     );
   }
+  // if (inv.status === "rejected" || inv.status === "denied") {
+  //   return (
+  //     <div className={className}>
+  //       <Button
+  //         size="sm"
+  //         variant="secondary"
+  //         onClick={onMarkPaid}
+  //         disabled={!!loading}
+  //       >
+  //         {loading === "paid" ? (
+  //           <Loader2 size={11} className="animate-spin" />
+  //         ) : (
+  //           ""
+  //         )}
+  //       </Button>
+  //     </div>
+  //   );
+  // }
+  // paid: 'Paid',
+  //   payment_confirmed: 'Paid',
+  //     payment_disputed: 'Paid',
+  //       funding: 'Awaiting Payment',
+  //         rejected: 'Denied',
+  //           submitted: 'Awaiting Payment',
+  //             reviewed: 'Awaiting Payment',
+  //               flagged:
   return null;
 }
 
@@ -327,18 +356,17 @@ export default function AdminInvoiceManagement() {
           </Card>
         </div>
 
-        <Card className="p-0 overflow-hidden">
+        <Card className="p-0 overflow-x-auto">
           {/* Tab bar */}
-          <div className="flex border-b border-outline-variant overflow-x-auto">
+          <div className="flex border-b border-outline-variant  w-full min-w-[820px]">
             {TABS.map((tab, idx) => (
               <button
                 key={tab.label}
                 onClick={() => switchTab(idx)}
-                className={`px-4 py-3 text-sm font-medium whitespace-nowrap transition-colors flex-shrink-0 ${
-                  activeTab === idx
-                    ? "text-secondary border-b-2 border-secondary -mb-px"
-                    : "text-on-surface-variant hover:text-on-surface"
-                }`}
+                className={`px-4 py-3 text-sm font-medium whitespace-nowrap transition-colors flex-shrink-0 ${activeTab === idx
+                  ? "text-secondary border-b-2 border-secondary -mb-px"
+                  : "text-on-surface-variant hover:text-on-surface"
+                  }`}
               >
                 {tab.label}
               </button>
@@ -346,7 +374,7 @@ export default function AdminInvoiceManagement() {
           </div>
 
           {/* Search */}
-          <div className="px-4 py-3 border-b border-outline-variant flex items-center gap-3">
+          <div className="px-4 py-3 border-b border-outline-variant flex items-center gap-3 w-full min-w-[820px]">
             <div className="relative flex-1 max-w-sm">
               <Search
                 size={14}
@@ -365,12 +393,12 @@ export default function AdminInvoiceManagement() {
                   setSearch("");
                   setPage(1);
                 }}
-                className="flex items-center gap-1 text-xs text-on-surface-variant hover:text-on-surface"
+                className="flex items-center  gap-1 text-xs text-on-surface-variant hover:text-on-surface"
               >
                 <X size={12} /> Clear
               </button>
             )}
-            <p className="text-xs text-on-surface-variant ml-auto">
+            <p className="text-xs text-on-surface-variant ml-auto ">
               {total} invoice{total !== 1 ? "s" : ""}
             </p>
           </div>
@@ -390,8 +418,8 @@ export default function AdminInvoiceManagement() {
           ) : (
             <>
               {/* Desktop / tablet: table */}
-              <div className="hidden md:block overflow-x-auto">
-                <table className="w-full min-w-[820px]">
+              <div className=" ">
+                <table className="">
                   <thead>
                     <tr className="bg-surface-container border-b border-outline-variant">
                       {[
@@ -466,7 +494,7 @@ export default function AdminInvoiceManagement() {
                             )}
                           </td>
                           <td className="px-3 py-2.5">
-                            <StatusChip status={status} />
+                            <StatusChip status={status} className="flex-shrink-0 whitespace-nowrap" />
                           </td>
                           <td className="px-3 py-2.5 text-xs text-on-surface-variant whitespace-nowrap">
                             {inv.payment_date ? (
@@ -476,7 +504,7 @@ export default function AdminInvoiceManagement() {
                             )}
                           </td>
                           <td
-                            className="px-3 py-2.5"
+                            className="px-3 py-2.5 whitespace-nowrap"
                             onClick={(e) => e.stopPropagation()}
                           >
                             <InvoiceActions
@@ -497,7 +525,7 @@ export default function AdminInvoiceManagement() {
               </div>
 
               {/* Phone: stacked cards */}
-              <div className="md:hidden divide-y divide-outline-variant">
+              {/* <div className="md:hidden divide-y divide-outline-variant w-[300px] lg:w-full overflow-x-auto">
                 {invoices.map((inv) => {
                   const overdue = isOverdue(inv);
                   const rowKey = rowLoading[inv.id];
@@ -591,12 +619,12 @@ export default function AdminInvoiceManagement() {
                     </div>
                   );
                 })}
-              </div>
+              </div> */}
             </>
           )}
 
           {/* Pagination */}
-          <div className="px-4 py-3 border-t border-outline-variant flex flex-col sm:flex-row items-center gap-2 sm:justify-between">
+          {/* <div className="px-4 py-3 border-t border-outline-variant flex flex-col sm:flex-row items-center gap-2 sm:justify-between">
             <p className="text-xs text-on-surface-variant">
               Showing {invoices.length === 0 ? 0 : (page - 1) * PAGE_SIZE + 1}–
               {(page - 1) * PAGE_SIZE + invoices.length} of {total}
@@ -620,7 +648,7 @@ export default function AdminInvoiceManagement() {
                 <ChevronRight size={14} />
               </button>
             </div>
-          </div>
+          </div> */}
         </Card>
       </div>
     </AppLayout>

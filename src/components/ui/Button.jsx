@@ -9,9 +9,9 @@ const variants = {
 };
 
 const sizes = {
-  sm: 'px-3 py-1.5 text-sm font-bold',
-  md: 'px-4 py-2.5 text-sm font-bold',
-  lg: 'px-5 py-3 text-base font-bold',
+  sm: 'w-full lg:w-auto px-3 py-1.5 text-sm font-bold',
+  md: 'w-full lg:w-auto px-4 py-2.5 text-sm font-bold',
+  lg: 'w-full lg:w-auto px-5 py-3 text-base font-bold',
 };
 
 const Button = forwardRef(function Button(
