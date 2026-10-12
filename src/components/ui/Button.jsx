@@ -2,7 +2,7 @@ import { forwardRef } from 'react';
 import { cn } from '../../lib/utils';
 
 const variants = {
-  primary: 'bg-primary text-on-primary hover:bg-primary/90 active:bg-primary/90',
+  primary: 'bg-primary text-on-primary hover:bg-brand-orange-dark active:bg-brand-orange-dark',
   secondary: 'bg-white text-on-surface border border-outline-variant hover:bg-surface-container active:bg-surface-container',
   ghost: 'text-secondary hover:bg-surface-container active:bg-surface-container-high',
   danger: 'bg-error text-white hover:bg-error/90',

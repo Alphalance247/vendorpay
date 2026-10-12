@@ -33,9 +33,14 @@ export default {
         'outline-variant': '#E4E7EC',
         navy: '#0C111D',
 
-        // Action orange: the darkest orange used on alluvium.net, so white
-        // text passes AA (5.45:1). Tints are the site's orange tints.
-        primary: '#A1560F',
+        // Action orange: the true Alluvium brand orange (same value as
+        // brand-orange below). White text on this orange measures ~3:1,
+        // which fails the 4.5:1 WCAG AA minimum for normal text and also
+        // falls short of the large-text exception (needs 14pt/~18.7px
+        // bold or larger; our buttons run 14 to 16px). This is a
+        // deliberate brand-over-audit call, made and confirmed with the
+        // user across several rounds, not an oversight.
+        primary: '#E37915',
         'on-primary': '#FFFFFF',
         'primary-fixed': '#FCF2E8',
         'primary-fixed-dim': '#F6D5B6',

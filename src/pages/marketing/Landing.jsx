@@ -30,9 +30,9 @@ const FEATURES = [
   },
   {
     icon: "public",
-    title: "Global Payment Rails",
+    title: "Localized Banking Collection",
     description:
-      "Direct settlement via local domestic clearing networks across 50+ countries.",
+      "Vendors enter banking details in the format your finance team expects, with tailored field sets for 50+ countries, reviewed before approval.",
   },
   {
     icon: "badge",
@@ -42,15 +42,15 @@ const FEATURES = [
   },
   {
     icon: "storefront",
-    title: "Branded Company Workspaces",
+    title: "Dedicated Company Workspaces",
     description:
-      "Whitelabel supplier portals with your company's identity and custom subdomain.",
+      "Every company gets its own workspace, reachable at its own subdomain, where vendors and your team work in one dedicated space.",
   },
   {
     icon: "notifications_active",
     title: "Real-Time Notifications",
     description:
-      "Instant updates to suppliers upon submission, review, funding, and payment dispatch.",
+      "Instant updates to suppliers upon submission, review, and every status change through to Paid.",
   },
 ];
 
@@ -59,7 +59,7 @@ const STEPS = [
     num: "01",
     title: "Create your workspace",
     description:
-      "Configure approval rules, payment methods, and invite finance teammates.",
+      "Configure approval rules, invite finance teammates, and set up your review workflow.",
   },
   {
     num: "02",
@@ -77,7 +77,7 @@ const STEPS = [
     num: "04",
     title: "Review, fund, and pay",
     description:
-      "Approve with one click and release payments via the optimal domestic rail.",
+      "Approve with one click, then move each invoice through funding to paid as your team completes it.",
   },
 ];
 
@@ -118,9 +118,9 @@ export default function Landing() {
     return () => document.documentElement.classList.remove("scroll-smooth");
   }, []);
 
-  // Quick test wiring — logs the REST Countries call to the console on load.
+  // Quick test wiring: logs the REST Countries call to the console on load.
   useEffect(() => {
-    getCountries().catch(() => { });
+    getCountries().catch(() => {});
   }, []);
 
   return (
@@ -145,19 +145,16 @@ export default function Landing() {
           <div className="flex items-center gap-space-24">
             <a
               onClick={() => navigate("/login")}
-              className="font-label-caps text-label-caps text-on-surface uppercase tracking-wider hover:text-secondary transition-colors cursor-pointer"
+              className="inline-flex items-center justify-center px-space-20 py-space-12 rounded-lg border border-outline text-on-surface font-label-caps text-sm font-bold uppercase tracking-[0.08em] hover:bg-surface-container transition-colors cursor-pointer"
             >
               Sign In
             </a>
             <a
               onClick={() => navigate("/signup-company")}
-              className="inline-flex items-center justify-center px-space-24 py-space-12 rounded-lg bg-primary text-on-primary font-label-caps text-label-caps uppercase tracking-wider hover:bg-primary/90 transition-colors shadow-sm cursor-pointer"
+              className="inline-flex items-center justify-center px-space-20 py-space-12 rounded-lg bg-brand-orange text-on-primary font-label-caps text-sm font-bold uppercase tracking-[0.08em] hover:bg-brand-orange-dark transition-colors shadow-sm cursor-pointer"
             >
               GET STARTED
             </a>
-            <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center ml-space-4">
-              <Icon name="person" className="text-on-primary text-[18px]" />
-            </div>
           </div>
         </div>
       </header>
@@ -182,19 +179,19 @@ export default function Landing() {
                   </h1>
                   <p className="font-body-lg text-body-lg text-on-surface-variant max-w-xl mb-space-32">
                     Onboard vendors, review invoices, and track invoice
-                    correctly — across the countries and currencies your
+                    correctly, across the countries and currencies your
                     suppliers actually use.
                   </p>
                   <div className="flex flex-wrap items-center gap-space-16 mb-space-40">
                     <a
                       onClick={() => navigate("/signup-company")}
-                      className="inline-flex items-center justify-center px-space-24 py-space-12 rounded-lg bg-primary text-on-primary font-label-caps text-label-caps uppercase tracking-wider hover:bg-primary/90 transition-all shadow-sm cursor-pointer"
+                      className="inline-flex items-center justify-center px-space-20 py-space-12 rounded-lg bg-brand-orange text-on-primary font-label-caps text-sm font-bold uppercase tracking-[0.08em] hover:bg-brand-orange-dark transition-all shadow-sm cursor-pointer"
                     >
                       GET STARTED →
                     </a>
                     <a
                       onClick={() => navigate("/login")}
-                      className="inline-flex items-center justify-center px-space-24 py-space-12 rounded-lg bg-surface-container-lowest text-on-surface font-label-caps text-label-caps uppercase tracking-wider hover:bg-surface-container transition-all shadow-sm cursor-pointer"
+                      className="inline-flex items-center justify-center px-space-20 py-space-12 rounded-lg bg-surface-container-lowest text-on-surface font-label-caps text-sm font-bold uppercase tracking-[0.08em] hover:bg-surface-container transition-all shadow-sm cursor-pointer"
                     >
                       SIGN IN
                     </a>
@@ -505,7 +502,7 @@ export default function Landing() {
                       {[
                         "Vendor banking details collected over email and loose PDFs",
                         "Approval chains living in Slack threads with no record afterward",
-                        "Payment errors from routing the wrong rail to the wrong country",
+                        "No visibility into whether a vendor's banking details were ever verified",
                       ].map((item) => (
                         <li
                           key={item}
@@ -536,8 +533,8 @@ export default function Landing() {
                     <ul className="space-y-space-20">
                       {[
                         "Vendors self-onboard with country-specific banking fields",
-                        "A clear review workflow — submit, review, fund, paid — with a full audit trail",
-                        "The right payment rail for each vendor's country, every time",
+                        "A clear review workflow (submit, review, fund, paid) with a full audit trail",
+                        "Every vendor's banking details reviewed and approved before your team relies on them",
                       ].map((item) => (
                         <li
                           key={item}
@@ -628,8 +625,6 @@ export default function Landing() {
             </div>
           </section>
 
-          {/* SECTION 6: PAYMENT RAILS (DARK SECTION) — not generated in source, intentionally omitted */}
-
           {/* SECTION 7: SECURITY SECTION */}
           <section
             id="security"
@@ -648,7 +643,7 @@ export default function Landing() {
                   </h2>
                   <p className="font-body-lg text-body-lg text-on-surface-variant">
                     Vendor bank account numbers, routing details, and IBANs are
-                    sensitive by nature — VendorPay is built with that in mind
+                    sensitive by nature. VendorPay is built with that in mind
                     from the ground up, not bolted on after the fact.
                   </p>
                 </div>
@@ -710,17 +705,24 @@ export default function Landing() {
                 ) : (
                   (billingPlanList ?? []).map((plan) => {
                     return (
-                      <div key={plan.slug} className="p-space-32 rounded-xl bg-surface-container-lowest shadow-sm flex flex-col justify-between">
+                      <div
+                        key={plan.slug}
+                        className="p-space-32 rounded-xl bg-surface-container-lowest shadow-sm flex flex-col justify-between"
+                      >
                         <div>
                           <span className="font-label-eyebrow text-label-eyebrow uppercase tracking-wider text-secondary font-bold ">
                             {plan.name}
                           </span>
                           <div className="mt-space-16 mb-space-8 flex items-baseline">
                             <span className="font-headline-xl text-headline-xl text-on-surface font-bold">
-                              {plan.price.amount === 0 ? 'Free' : `$${plan.price.amount}`}
+                              {plan.price.amount === 0
+                                ? "Free"
+                                : `$${plan.price.amount}`}
                             </span>
                             <span className="font-body-md text-body-md text-on-surface-variant ml-space-4">
-                              /{plan.price.interval}
+                              {plan?.name === "Free"
+                                ? ""
+                                : `/${plan.price.interval}`}
                             </span>
                           </div>
                           <p className="font-body-sm text-body-sm text-on-surface-variant mb-space-24">
@@ -798,8 +800,8 @@ export default function Landing() {
                 className="text-secondary/30 text-[64px] leading-none mb-space-16 select-none"
               />
               <blockquote className="font-headline-md text-headline-md lg:text-headline-lg lg:leading-[42px] text-on-surface italic mb-space-24 font-normal">
-                "We built VendorPay because paying a vendor in Lagos and one in
-                Berlin shouldn't take two different processes — or a week of
+                "We built VendorPay because managing a vendor in Lagos and one
+                in Berlin shouldn't take two different workflows, or a week of
                 your finance team's time."
               </blockquote>
               <div className="flex items-center gap-space-8">
@@ -820,12 +822,12 @@ export default function Landing() {
                 <span className="text-secondary-fixed"> chaos</span>.
               </h2>
               <p className="font-body-lg text-body-lg text-surface-variant mb-space-32 max-w-xl">
-                Set up your company workspace in a few minutes — no sales call
+                Set up your company workspace in a few minutes. No sales call
                 required.
               </p>
               <a
                 onClick={() => navigate("/signup-company")}
-                className="inline-flex items-center justify-center px-space-32 py-space-16 rounded-lg bg-primary text-on-primary font-label-caps text-label-caps uppercase tracking-wider hover:bg-primary/90 transition-all shadow-md cursor-pointer"
+                className="inline-flex items-center justify-center px-space-32 py-space-16 rounded-lg bg-brand-orange text-on-primary font-label-caps text-sm font-bold uppercase tracking-[0.08em] hover:bg-brand-orange-dark transition-all shadow-md cursor-pointer"
               >
                 GET STARTED →
               </a>
@@ -842,7 +844,7 @@ export default function Landing() {
               <div className="space-y-space-16">
                 <Logo variant="dark" />
                 <p className="font-body-md text-body-md text-surface-variant max-w-sm">
-                  Vendor payments, without the chaos.
+                  Vendor Management, without the chaos.
                 </p>
               </div>
             </div>
