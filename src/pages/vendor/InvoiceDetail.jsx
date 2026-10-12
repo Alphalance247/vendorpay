@@ -27,7 +27,11 @@ import {
   invoiceMessageService,
 } from "../../lib/services/invoiceService";
 import { supportService } from "../../lib/services/supportService";
-import { formatCurrency, formatDate, extractErrorMessage } from "../../lib/utils";
+import {
+  formatCurrency,
+  formatDate,
+  extractErrorMessage,
+} from "../../lib/utils";
 
 // Old audit records stored emails — convert to display name if needed
 function displayActor(performedBy) {
@@ -89,7 +93,7 @@ export default function InvoiceDetail() {
         setDocUrl(doc.url);
         setDocContentType(doc.contentType);
       })
-      .catch(() => { })
+      .catch(() => {})
       .finally(() => setDocLoading(false));
     return () => {
       if (url) window.URL.revokeObjectURL(url);
@@ -124,7 +128,7 @@ export default function InvoiceDetail() {
           return data;
         });
       })
-      .catch(() => { });
+      .catch(() => {});
   }, [id]);
 
   useEffect(() => {
@@ -586,9 +590,7 @@ export default function InvoiceDetail() {
               <p className="text-sm font-semibold text-error">
                 Invoice Rejected
               </p>
-              <p className="text-sm text-error mt-0.5">
-                {rejectionLog.notes}
-              </p>
+              <p className="text-sm text-error mt-0.5">{rejectionLog.notes}</p>
               <p className="text-xs text-error mt-1">
                 By {displayActor(rejectionLog.performed_by)} ·{" "}
                 {formatDate(rejectionLog.timestamp)}
@@ -670,7 +672,10 @@ export default function InvoiceDetail() {
                   <p className="text-xl font-bold tnum text-on-surface mt-0.5">
                     {formatCurrency(invoice.amount, invoice.currency)}
                   </p>
-                  <StatusChip status={displayStatus} className="mt-1 flex-shrink-0 whitespace-nowrap" />
+                  <StatusChip
+                    status={displayStatus}
+                    className="mt-1 flex-shrink-0 whitespace-nowrap"
+                  />
                 </div>
               </div>
               {invoice.notes && (

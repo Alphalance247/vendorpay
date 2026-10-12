@@ -127,7 +127,7 @@ export default function Landing() {
     <div className="bg-surface font-body-md text-body-md text-on-surface antialiased min-h-screen flex flex-col">
       {/* Header */}
       <header className="fixed top-0 left-0 w-full z-50 bg-surface-container-lowest border-b border-surface-variant/40 shadow-[0_1px_8px_rgba(0,0,0,0.03)]">
-        <div className="h-20 w-full max-w-7xl mx-auto px-space-24 lg:px-space-48 flex items-center justify-between">
+        <div className="h-20 w-full max-w-7xl mx-auto px-4 sm:px-space-24 lg:px-space-48 flex items-center justify-between gap-2">
           <div className="flex items-center gap-8">
             <Logo variant="light" onClick={() => navigate("/")} />
           </div>
@@ -142,16 +142,16 @@ export default function Landing() {
               </a>
             ))}
           </nav>
-          <div className="flex items-center gap-space-24">
+          <div className="flex items-center gap-2 sm:gap-space-16 md:gap-space-24">
             <a
               onClick={() => navigate("/login")}
-              className="inline-flex items-center justify-center px-space-20 py-space-12 rounded-lg border border-outline text-on-surface font-label-caps text-sm font-bold uppercase tracking-[0.08em] hover:bg-surface-container transition-colors cursor-pointer"
+              className="inline-flex items-center justify-center px-3 py-2 sm:px-space-20 sm:py-space-12 rounded-lg border border-outline text-on-surface font-label-caps text-xs sm:text-sm font-bold uppercase tracking-wide sm:tracking-[0.08em] hover:bg-surface-container transition-colors cursor-pointer whitespace-nowrap"
             >
               Sign In
             </a>
             <a
               onClick={() => navigate("/signup-company")}
-              className="inline-flex items-center justify-center px-space-20 py-space-12 rounded-lg bg-brand-orange text-on-primary font-label-caps text-sm font-bold uppercase tracking-[0.08em] hover:bg-brand-orange-dark transition-colors shadow-sm cursor-pointer"
+              className="inline-flex items-center justify-center px-3 py-2 sm:px-space-20 sm:py-space-12 rounded-lg bg-brand-orange text-on-primary font-label-caps text-xs sm:text-sm font-bold uppercase tracking-wide sm:tracking-[0.08em] hover:bg-brand-orange-dark transition-colors shadow-sm cursor-pointer whitespace-nowrap"
             >
               GET STARTED
             </a>

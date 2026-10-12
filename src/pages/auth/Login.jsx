@@ -214,15 +214,17 @@ export default function Login() {
               </span>
             </label> */}
 
-            <Button
-              type="submit"
-              className="w-full"
-              size="lg"
-              disabled={loading}
-            >
-              {loading ? "Signing in..." : "Sign in"}
-              <ArrowRight size={16} />
-            </Button>
+            <div className="w-full">
+              <Button
+                type="submit"
+                className="!w-full"
+                size="lg"
+                disabled={loading}
+              >
+                {loading ? "Signing in..." : "Sign in"}
+                <ArrowRight size={16} />
+              </Button>
+            </div>
           </form>
 
           <div className="mt-8 pt-6 border-t border-outline-variant space-y-5">
@@ -248,7 +250,7 @@ export default function Login() {
                 type="button"
                 variant="secondary"
                 size="lg"
-                className="w-full flex items-center justify-center gap-2"
+                className="!w-full flex items-center justify-center gap-2"
                 onClick={() => navigate("/signup-company")}
               >
                 <Building2 size={16} />
