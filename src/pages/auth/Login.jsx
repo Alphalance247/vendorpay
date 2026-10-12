@@ -200,7 +200,7 @@ export default function Login() {
               </div>
             </div>
 
-            <label className="flex items-center gap-2 cursor-pointer select-none">
+            {/* <label className="flex items-center gap-2 cursor-pointer select-none">
               <input
                 type="checkbox"
                 name="remember"
@@ -212,7 +212,7 @@ export default function Login() {
               <span className="text-sm text-on-surface-variant">
                 Keep me signed in for 30 days
               </span>
-            </label>
+            </label> */}
 
             <Button
               type="submit"
