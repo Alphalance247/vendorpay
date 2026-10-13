@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
+import { AlertTriangle, CheckCircle } from 'lucide-react';
 import { authService } from '../../lib/services/authService';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
+import AuthLayout from '../../components/layout/AuthLayout';
 
 export default function ResetPassword() {
   const [searchParams] = useSearchParams();
@@ -17,13 +19,22 @@ export default function ResetPassword() {
 
   if (!token) {
     return (
-      <div className="max-w-sm mx-auto p-6 text-center space-y-3">
-        <h2 className="font-headline-lg text-xl font-semibold">Invalid Link</h2>
-        <p className="text-sm text-on-surface-variant">This password reset link is missing a token. Please request a new one.</p>
-        <Button variant="secondary" onClick={() => navigate('/forgot-password')}>
-          Request New Link
-        </Button>
-      </div>
+      <AuthLayout>
+        <div className="text-center">
+          <div className="w-12 h-12 rounded-full bg-error-container flex items-center justify-center mx-auto mb-4">
+            <AlertTriangle size={22} className="text-error" />
+          </div>
+          <h2 className="font-headline-lg text-2xl font-semibold text-on-surface tracking-tight">
+            Invalid link
+          </h2>
+          <p className="text-sm text-on-surface-variant mt-1.5">
+            This password reset link is missing a token. Please request a new one.
+          </p>
+          <Button className="w-full mt-6" onClick={() => navigate('/forgot-password')}>
+            Request New Link
+          </Button>
+        </div>
+      </AuthLayout>
     );
   }
 
@@ -54,46 +65,71 @@ export default function ResetPassword() {
 
   if (done) {
     return (
-      <div className="max-w-sm mx-auto p-6 text-center space-y-3">
-        <h2 className="font-headline-lg text-xl font-semibold">Password Updated</h2>
-        <p className="text-sm text-on-surface-variant">Your password has been reset. You can now log in.</p>
-        <Button onClick={() => navigate('/login')}>Go to Login</Button>
-      </div>
+      <AuthLayout>
+        <div className="text-center">
+          <div className="w-12 h-12 rounded-full bg-success-container flex items-center justify-center mx-auto mb-4">
+            <CheckCircle size={22} className="text-success" />
+          </div>
+          <h2 className="font-headline-lg text-2xl font-semibold text-on-surface tracking-tight">
+            Password updated
+          </h2>
+          <p className="text-sm text-on-surface-variant mt-1.5">
+            Your password has been reset. You can now log in.
+          </p>
+          <Button className="w-full mt-6" onClick={() => navigate('/login')}>
+            Go to Login
+          </Button>
+        </div>
+      </AuthLayout>
     );
   }
 
   return (
-    <form onSubmit={handleSubmit} className="max-w-sm mx-auto p-6 space-y-4">
-      <h2 className="font-headline-lg text-xl font-semibold">Set New Password</h2>
+    <AuthLayout>
+      <div className="mb-8">
+        <h2 className="font-headline-lg text-2xl font-semibold text-on-surface tracking-tight">
+          Set a new password
+        </h2>
+        <p className="text-on-surface-variant text-sm mt-1">
+          Choose a new password for your account.
+        </p>
+      </div>
 
-      <Input
-        label="New Password"
-        type="password"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-        required
-        minLength={8}
-      />
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <Input
+          label="New Password"
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+          minLength={8}
+          autoFocus
+        />
 
-      <Input
-        label="Confirm Password"
-        type="password"
-        value={confirm}
-        onChange={(e) => setConfirm(e.target.value)}
-        required
-      />
+        <Input
+          label="Confirm Password"
+          type="password"
+          value={confirm}
+          onChange={(e) => setConfirm(e.target.value)}
+          required
+        />
 
-      {error && <p className="text-error text-sm">{error}</p>}
+        {error && (
+          <div className="p-3 bg-error/5 border border-error/30 rounded text-error text-sm">
+            {error}
+          </div>
+        )}
 
-      <Button type="submit" className="w-full" disabled={loading}>
-        {loading ? 'Updating…' : 'Reset Password'}
-      </Button>
+        <Button type="submit" className="w-full" size="lg" disabled={loading}>
+          {loading ? 'Updating...' : 'Reset Password'}
+        </Button>
 
-      <p className="text-center text-sm text-on-surface-variant">
-        <button type="button" className="underline" onClick={() => navigate('/login')}>
-          Back to login
-        </button>
-      </p>
-    </form>
+        <p className="text-center text-sm text-on-surface-variant">
+          <button type="button" className="text-secondary hover:underline" onClick={() => navigate('/login')}>
+            Back to login
+          </button>
+        </p>
+      </form>
+    </AuthLayout>
   );
 }

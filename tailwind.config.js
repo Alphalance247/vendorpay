@@ -4,16 +4,19 @@ export default {
   theme: {
     extend: {
       colors: {
-        // ---- Alluvium VendorPay design system (see DESIGN.md) ----
-        // Every value here comes from the Alluvium brand: either the live
-        // alluvium.net site or the Alluvium design kit. Do not add colours
-        // from outside these sources, and do not use raw Tailwind palettes
-        // (gray-*, blue-*, emerald-*, ...) in components.
+        // ---- Alluvium VendorPay design system ----
+        // Updated to the official Alluvium brand color spec (confirmed with
+        // the user 2026-10-13), which supersedes the earlier values pulled
+        // from the live alluvium.net site. DESIGN.md was already out of
+        // sync with tailwind.config.js before this change (it documents a
+        // third, different set of hex values) and has not been reconciled
+        // here, this file is the live source of truth.
 
-        // Brand reference colours (alluvium.net). Fills/accents only: white
-        // text on brand-orange or brand-cyan does not meet WCAG AA.
-        'brand-orange': '#E37915',
-        'brand-orange-dark': '#CF6E13',
+        // Brand reference colours. Fills/accents only: white text on
+        // brand-orange or brand-cyan does not meet WCAG AA at normal text
+        // sizes.
+        'brand-orange': '#F79009',
+        'brand-orange-dark': '#DE8208',
         'brand-cyan': '#009BC0',
         'brand-cyan-dark': '#008DAF',
 
@@ -26,39 +29,41 @@ export default {
         'surface-container-highest': '#E4E7EC',
         'surface-variant': '#E4E7EC',
         'on-surface': '#1D2939',
-        'on-surface-variant': '#475467',
+        'on-surface-variant': '#344054',
         'inverse-surface': '#0C111D',
         'inverse-on-surface': '#F2F4F7',
-        outline: '#98A2B3',
+        outline: '#D0D5DD',
         'outline-variant': '#E4E7EC',
         navy: '#0C111D',
 
-        // Action orange: the true Alluvium brand orange (same value as
-        // brand-orange below). White text on this orange measures ~3:1,
+        // Action orange: the official brand primary (same value as
+        // brand-orange above). White text on this orange measures ~3.3:1,
         // which fails the 4.5:1 WCAG AA minimum for normal text and also
         // falls short of the large-text exception (needs 14pt/~18.7px
-        // bold or larger; our buttons run 14 to 16px). This is a
-        // deliberate brand-over-audit call, made and confirmed with the
-        // user across several rounds, not an oversight.
-        primary: '#E37915',
+        // bold or larger; our buttons run 14 to 16px). Deliberate
+        // brand-over-audit call, confirmed with the user, not an oversight.
+        primary: '#F79009',
         'on-primary': '#FFFFFF',
         'primary-fixed': '#FCF2E8',
         'primary-fixed-dim': '#F6D5B6',
 
-        // Interactive cyan: Alluvium kit deep cyan (5.52:1 on white) and tints.
-        secondary: '#007387',
+        // Interactive cyan: the official brand secondary, for links and
+        // secondary buttons (same value as brand-cyan above). White text on
+        // this cyan measures ~3.25:1, same AA shortfall as primary above.
+        secondary: '#009BC0',
         'on-secondary': '#FFFFFF',
         'secondary-container': '#E9F6FA',
         'secondary-fixed': '#CBEAF2',
         'secondary-fixed-dim': '#4FC0D9',
 
-        // Status colours. Alluvium has no green, so success uses the brand
-        // deep cyan; warning and danger come from the Alluvium design kit.
-        success: '#007387',
-        'success-container': '#E9F6FA',
-        warning: '#D98A0B',
+        // Status colours, per the official brand spec. Success is now an
+        // actual green, reversing the earlier "Alluvium has no green, use
+        // cyan instead" rule from this file's previous version.
+        success: '#039855',
+        'success-container': '#E7F6EC',
+        warning: '#DC6803',
         'warning-container': '#FBF0DC',
-        error: '#D6463C',
+        error: '#D92D20',
         'on-error': '#FFFFFF',
         'error-container': '#FAE7E5',
       },
