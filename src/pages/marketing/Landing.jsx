@@ -86,7 +86,7 @@ const ROLES = [
     icon: "workspace_premium",
     title: "Owner",
     description:
-      "Full access, including billing and team management. There's only ever one, and it can't be reassigned.",
+      "Full access, including billing and team management. There's only ever one, and it can't be reassigned..",
   },
   {
     icon: "admin_panel_settings",
