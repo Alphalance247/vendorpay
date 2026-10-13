@@ -21,7 +21,7 @@ import Input from "../../components/ui/Input";
 import Select from "../../components/ui/Select";
 import Card from "../../components/ui/Card";
 import Logo from "../../components/ui/Logo";
-import { cn } from "../../lib/utils";
+import { cn, MIN_PASSWORD_LENGTH } from "../../lib/utils";
 import { environment } from "../../env/env.local";
 import { useRegisterCompany } from "../../hooks/useQueries/companyAuth/useRegisterCompany";
 import { useVerifyCompanyOtp } from "../../hooks/useQueries/companyAuth/useVerifyCompanyOtp";
@@ -62,7 +62,11 @@ const EMAIL_PATTERN = /\S+@\S+\.\S+/;
 // A stronger rule than a bare length check, with live per-requirement
 // feedback — appropriate for a product that's going to be moving payments.
 const PASSWORD_RULES = [
-  { key: "length", label: "At least 8 characters", test: (v) => v.length >= 8 },
+  {
+    key: "length",
+    label: `At least ${MIN_PASSWORD_LENGTH} characters`,
+    test: (v) => v.length >= MIN_PASSWORD_LENGTH,
+  },
   { key: "upper", label: "One uppercase letter", test: (v) => /[A-Z]/.test(v) },
   { key: "lower", label: "One lowercase letter", test: (v) => /[a-z]/.test(v) },
   { key: "number", label: "One number", test: (v) => /[0-9]/.test(v) },

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, ShieldCheck, Zap } from 'lucide-react';
 import { authService } from '../../lib/services/authService';
+import { MIN_PASSWORD_LENGTH } from '../../lib/utils';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Logo from '../../components/ui/Logo';
@@ -30,10 +31,23 @@ export default function Register() {
     }));
   }
 
+  const tooShort = form.password && form.password.length < MIN_PASSWORD_LENGTH;
+  const mismatch =
+    form.password && form.confirmPassword && form.password !== form.confirmPassword;
+  const canSubmit =
+    form.email &&
+    form.password.length >= MIN_PASSWORD_LENGTH &&
+    form.password === form.confirmPassword;
+
   async function handleSubmit(e) {
     e.preventDefault();
 
     setError('');
+
+    if (form.password.length < MIN_PASSWORD_LENGTH) {
+      setError(`Password must be at least ${MIN_PASSWORD_LENGTH} characters`);
+      return;
+    }
 
     if (form.password !== form.confirmPassword) {
       setError('Passwords do not match');
@@ -156,6 +170,8 @@ export default function Register() {
               value={form.password}
               onChange={handleChange}
               placeholder="••••••••"
+              hint={`At least ${MIN_PASSWORD_LENGTH} characters`}
+              error={tooShort ? `Password must be at least ${MIN_PASSWORD_LENGTH} characters` : undefined}
               required
               suffix={
                 <button
@@ -176,6 +192,7 @@ export default function Register() {
               value={form.confirmPassword}
               onChange={handleChange}
               placeholder="••••••••"
+              error={mismatch ? 'Passwords do not match' : undefined}
               required
               suffix={
                 <button
@@ -193,7 +210,7 @@ export default function Register() {
               type="submit"
               className="w-full"
               size="lg"
-              disabled={loading}
+              disabled={loading || !canSubmit}
             >
               {loading ? 'Creating Account...' : 'Create Account'}
             </Button>

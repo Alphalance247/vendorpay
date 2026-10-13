@@ -3,6 +3,7 @@ import { useState } from "react";
 import Input from "./Input";
 import Button from "./Button";
 import { authService } from "../../lib/services/authService";
+import { MIN_PASSWORD_LENGTH } from "../../lib/utils";
 import { Toast } from "../../pages/onboarding/Onboarding";
 import { Eye, EyeOff } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -68,8 +69,8 @@ const SecuritySection = () => {
 
     if (!formData.newPassword.trim()) {
       newErrors.newPassword = "New password is required";
-    } else if (formData.newPassword.length < 8) {
-      newErrors.newPassword = "Password must be at least 8 characters";
+    } else if (formData.newPassword.length < MIN_PASSWORD_LENGTH) {
+      newErrors.newPassword = `Password must be at least ${MIN_PASSWORD_LENGTH} characters`;
     }
 
     if (!formData.confirmPassword.trim()) {
@@ -263,7 +264,7 @@ const SecuritySection = () => {
             </p>
 
             <ul className="text-xs text-on-surface-variant space-y-1">
-              <li>• At least 8 characters</li>
+              <li>• At least {MIN_PASSWORD_LENGTH} characters</li>
               <li>• Use a combination of letters and numbers</li>
               <li>• Avoid using easily guessed information</li>
             </ul>

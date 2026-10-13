@@ -2,6 +2,12 @@ export function cn(...classes) {
   return classes.filter(Boolean).join(' ');
 }
 
+// The backend requires a minimum of 10 characters for any password. Several
+// forms had drifted to checking 8 instead, which let users submit a
+// password the backend would then reject. Use this constant everywhere a
+// password length is validated so the two never diverge again.
+export const MIN_PASSWORD_LENGTH = 10;
+
 // The backend issues finer-grained roles (admin, owner, staff, member, ...)
 // than the app's two dashboards. Only an explicit "vendor" role belongs on
 // the vendor dashboard — every other role lands on the admin dashboard.
