@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { AlertTriangle, CheckCircle } from 'lucide-react';
 import { authService } from '../../lib/services/authService';
+import { MIN_PASSWORD_LENGTH } from '../../lib/utils';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import AuthLayout from '../../components/layout/AuthLayout';
@@ -16,6 +17,10 @@ export default function ResetPassword() {
   const [error, setError] = useState('');
   const [done, setDone] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  const tooShort = password && password.length < MIN_PASSWORD_LENGTH;
+  const mismatch = password && confirm && password !== confirm;
+  const canSubmit = password.length >= MIN_PASSWORD_LENGTH && password === confirm;
 
   if (!token) {
     return (
@@ -46,8 +51,8 @@ export default function ResetPassword() {
       setError('Passwords do not match.');
       return;
     }
-    if (password.length < 8) {
-      setError('Password must be at least 8 characters.');
+    if (password.length < MIN_PASSWORD_LENGTH) {
+      setError(`Password must be at least ${MIN_PASSWORD_LENGTH} characters.`);
       return;
     }
 
@@ -102,7 +107,9 @@ export default function ResetPassword() {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
-          minLength={8}
+          minLength={MIN_PASSWORD_LENGTH}
+          hint={`At least ${MIN_PASSWORD_LENGTH} characters`}
+          error={tooShort ? `Password must be at least ${MIN_PASSWORD_LENGTH} characters` : undefined}
           autoFocus
         />
 
@@ -112,6 +119,7 @@ export default function ResetPassword() {
           value={confirm}
           onChange={(e) => setConfirm(e.target.value)}
           required
+          error={mismatch ? 'Passwords do not match' : undefined}
         />
 
         {error && (
@@ -120,7 +128,7 @@ export default function ResetPassword() {
           </div>
         )}
 
-        <Button type="submit" className="w-full" size="lg" disabled={loading}>
+        <Button type="submit" className="w-full" size="lg" disabled={loading || !canSubmit}>
           {loading ? 'Updating...' : 'Reset Password'}
         </Button>
 
