@@ -1,7 +1,6 @@
 /* Alluvium brand fonts (as on alluvium.net): Merriweather for headlines,
    Manrope for body/UI. JetBrains Mono for code/reference values. */
 @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500&family=Manrope:wght@400;500;600;700;800&family=Merriweather:ital,wght@0,400;0,700;0,900;1,400;1,700&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap');
 
 @tailwind base;
 @tailwind components;
