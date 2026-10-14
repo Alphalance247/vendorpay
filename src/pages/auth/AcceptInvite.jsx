@@ -15,6 +15,7 @@ import Card from "../../components/ui/Card";
 import Logo from "../../components/ui/Logo";
 import { useAcceptInvite } from "../../hooks/useQueries/companyAuth/useAcceptInvite";
 import { useInviteDetails } from "../../hooks/useQueries/companyAuth/useInviteDetails";
+import { MIN_PASSWORD_LENGTH } from "../../lib/utils";
 
 function Brand() {
   const navigate = useNavigate();
@@ -136,12 +137,12 @@ export default function AcceptInvite() {
     form.password &&
     form.confirmPassword &&
     form.password !== form.confirmPassword;
-  const tooShort = form.password && form.password.length < 8;
+  const tooShort = form.password && form.password.length < MIN_PASSWORD_LENGTH;
 
   function validate() {
     return (
       form.password &&
-      form.password.length >= 8 &&
+      form.password.length >= MIN_PASSWORD_LENGTH &&
       form.password === form.confirmPassword &&
       form.fullName
     );
@@ -234,10 +235,10 @@ export default function AcceptInvite() {
                 value={form.password}
                 onChange={handleChange}
                 // placeholder=""
-                hint="At least 10 characters"
+                hint={`At least ${MIN_PASSWORD_LENGTH} characters`}
                 error={
                   tooShort
-                    ? "Password must be at least 10 characters"
+                    ? `Password must be at least ${MIN_PASSWORD_LENGTH} characters`
                     : undefined
                 }
                 required

@@ -5,9 +5,9 @@ import { useToast } from "../../../components/ui/Toast";
 import { environment } from "../../../env/env.local";
 import { currentTenantBaseUrl } from "../../../lib/tenantResolver";
 
-const BASE_URL =
-  // import.meta.env.VITE_BACKEND_URL ||
-  environment.baseUrl.replace(/\/+$/, "");
+const BASE_URL = environment.baseUrl.replace(/\/+$/, "");
+
+console.log(BASE_URL);
 
 // Same reasoning as useInviteDetails — the accept-invite POST must land on
 // the inviting company's own subdomain, extracted from the current URL.

@@ -1,7 +1,9 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  Search, X, Loader2,
+  Search,
+  X,
+  Loader2,
   // ChevronLeft, ChevronRight
 } from "lucide-react";
 import TutorialCard from "../../components/ui/TutorialCard";
@@ -363,10 +365,11 @@ export default function AdminInvoiceManagement() {
               <button
                 key={tab.label}
                 onClick={() => switchTab(idx)}
-                className={`px-4 py-3 text-sm font-medium whitespace-nowrap transition-colors flex-shrink-0 ${activeTab === idx
-                  ? "text-secondary border-b-2 border-secondary -mb-px"
-                  : "text-on-surface-variant hover:text-on-surface"
-                  }`}
+                className={`px-4 py-3 text-sm font-medium whitespace-nowrap transition-colors flex-shrink-0 ${
+                  activeTab === idx
+                    ? "text-secondary border-b-2 border-secondary -mb-px"
+                    : "text-on-surface-variant hover:text-on-surface"
+                }`}
               >
                 {tab.label}
               </button>
@@ -494,7 +497,10 @@ export default function AdminInvoiceManagement() {
                             )}
                           </td>
                           <td className="px-3 py-2.5">
-                            <StatusChip status={status} className="flex-shrink-0 whitespace-nowrap" />
+                            <StatusChip
+                              status={status}
+                              className="flex-shrink-0 whitespace-nowrap"
+                            />
                           </td>
                           <td className="px-3 py-2.5 text-xs text-on-surface-variant whitespace-nowrap">
                             {inv.payment_date ? (

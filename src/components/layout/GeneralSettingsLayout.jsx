@@ -1,5 +1,5 @@
 import TopBar from "./TopBar";
-import SettingsSidebar from "./settingsSidebar";
+import SettingsSidebar from "./SettingsSidebar";
 import { useEffect, useState } from "react";
 import { vendorService } from "../../lib/services/vendorService";
 

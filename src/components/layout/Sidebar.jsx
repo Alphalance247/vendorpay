@@ -93,14 +93,14 @@ export default function Sidebar({
       {open && (
         <div
           onClick={onClose}
-          className="fixed inset-0 bg-black/40 z-20 lg:hidden"
+          className="fixed inset-0 bg-black/40 z-[55] lg:hidden"
           aria-hidden="true"
         />
       )}
 
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 w-72 max-w-[85vw] bg-inverse-surface flex flex-col z-30 transition-transform duration-200",
+          "fixed inset-y-0 left-0 w-72 max-w-[85vw] bg-inverse-surface flex flex-col z-[58] transition-transform duration-200",
           "lg:translate-x-0",
           open ? "translate-x-0" : "-translate-x-full",
         )}

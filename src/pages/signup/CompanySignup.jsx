@@ -16,12 +16,13 @@ import {
   FileText,
   CreditCard,
 } from "lucide-react";
+import { getData as getCountryData } from "country-list";
 import Button from "../../components/ui/Button";
 import Input from "../../components/ui/Input";
 import Select from "../../components/ui/Select";
 import Card from "../../components/ui/Card";
 import Logo from "../../components/ui/Logo";
-import { cn } from "../../lib/utils";
+import { cn, MIN_PASSWORD_LENGTH } from "../../lib/utils";
 import { environment } from "../../env/env.local";
 import { useRegisterCompany } from "../../hooks/useQueries/companyAuth/useRegisterCompany";
 import { useVerifyCompanyOtp } from "../../hooks/useQueries/companyAuth/useVerifyCompanyOtp";
@@ -50,6 +51,41 @@ const COMPANY_SIZES = [
   "500+ employees",
 ];
 
+// country-list ships official ISO 3166-1 short names (e.g. "United States
+// of America (the)", "Korea (the Republic of)"), which read oddly in a
+// sign-up form — clean those up for display while keeping the ISO code
+// as the stored value.
+const COUNTRY_NAME_OVERRIDES = {
+  US: "United States",
+  GB: "United Kingdom",
+  KR: "South Korea",
+  KP: "North Korea",
+  TW: "Taiwan",
+  RU: "Russia",
+  VE: "Venezuela",
+  BO: "Bolivia",
+  IR: "Iran",
+  LA: "Laos",
+  SY: "Syria",
+  NL: "Netherlands",
+  MD: "Moldova",
+  VA: "Vatican City",
+  CD: "DR Congo",
+  CG: "Republic of the Congo",
+  FK: "Falkland Islands",
+  VG: "British Virgin Islands",
+  VI: "U.S. Virgin Islands",
+  FM: "Micronesia",
+};
+
+const COUNTRIES = getCountryData()
+  .map(({ code, name }) => ({
+    code,
+    name:
+      COUNTRY_NAME_OVERRIDES[code] ?? name.replace(/\s*\(the\)$/i, "").trim(),
+  }))
+  .sort((a, b) => a.name.localeCompare(b.name));
+
 function slugify(value) {
   return value
     .toLowerCase()
@@ -62,7 +98,11 @@ const EMAIL_PATTERN = /\S+@\S+\.\S+/;
 // A stronger rule than a bare length check, with live per-requirement
 // feedback — appropriate for a product that's going to be moving payments.
 const PASSWORD_RULES = [
-  { key: "length", label: "At least 8 characters", test: (v) => v.length >= 8 },
+  {
+    key: "length",
+    label: `At least ${MIN_PASSWORD_LENGTH} characters`,
+    test: (v) => v.length >= MIN_PASSWORD_LENGTH,
+  },
   { key: "upper", label: "One uppercase letter", test: (v) => /[A-Z]/.test(v) },
   { key: "lower", label: "One lowercase letter", test: (v) => /[a-z]/.test(v) },
   { key: "number", label: "One number", test: (v) => /[0-9]/.test(v) },
@@ -352,6 +392,22 @@ function CompanyStep({ data, onChange, checkStatus }) {
             <option key={s}>{s}</option>
           ))}
         </Select>
+        <div className="col-span-2">
+          <Select
+            label="Country"
+            name="country"
+            value={data.country}
+            onChange={onChange}
+            required
+          >
+            <option value="">Select country</option>
+            {COUNTRIES.map(({ code, name }) => (
+              <option key={code} value={name}>
+                {name}
+              </option>
+            ))}
+          </Select>
+        </div>
       </div>
 
       <div className="space-y-4 pt-4 border-t border-outline">
@@ -410,6 +466,7 @@ function ReviewStep({ data }) {
     { label: "Company", value: data.companyName },
     { label: "Industry", value: data.industry },
     { label: "Company Size", value: data.companySize },
+    { label: "Country", value: data.country },
     { label: "Workspace URL", value: `${data.subdomain}.${ROOT_DOMAIN}` },
   ];
 
@@ -542,6 +599,7 @@ export default function CompanySignup() {
     companyName: "",
     industry: "",
     companySize: "",
+    country: "",
     subdomain: "",
   });
 
@@ -616,6 +674,7 @@ export default function CompanySignup() {
           data.companyName &&
           data.industry &&
           data.companySize &&
+          data.country &&
           data.subdomain.length >= 3 &&
           checkStatus === "available"
         );
@@ -647,6 +706,7 @@ export default function CompanySignup() {
       subdomain: data.subdomain,
       industry: data.industry,
       company_size: data.companySize,
+      country: data.country,
     });
   };
 

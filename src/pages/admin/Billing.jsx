@@ -492,10 +492,12 @@ export default function Billing() {
                         ? formatCurrency(planPrice, planCurrency)
                         : ""}
                   </span>
-                  {planInterval ? `/${planInterval}` : ""}
+                  {planInterval
+                    ? `${planName === "Free" ? "" : `/${planInterval}`}`
+                    : ""}
                   {status === "active"
-                    ? ` . Renews ${formatDate(renewsOn ?? renewalDate())}`
-                    : " · Access ends at period end"}
+                    ? `. Renews ${formatDate(renewsOn ?? renewalDate())}`
+                    : "· Access ends at period end"}
                 </p>
               </div>
               <div className="flex items-center gap-2">

@@ -1,56 +1,72 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import {
+  MdOutlineVerifiedUser,
+  MdOutlineLock,
+  MdOutlineDownload,
+  MdOutlineLightbulb,
+  MdOutlineExpandMore,
+  MdOutlineClose,
+  MdOutlineCheckCircle,
+  MdOutlineChevronRight,
+  MdOutlineCancel,
+  MdOutlineCheck,
+  MdOutlineVerified,
+  MdOutlineEnhancedEncryption,
+  MdOutlineFormatQuote,
+  MdOutlineHowToReg,
+  MdOutlineFactCheck,
+  MdOutlinePublic,
+  MdOutlineBadge,
+  MdOutlineStorefront,
+  MdOutlineNotificationsActive,
+  MdOutlineWorkspacePremium,
+  MdOutlineAdminPanelSettings,
+  MdOutlineVisibility,
+  MdOutlineDescription,
+  MdOutlineGroup,
+  MdOutlineHistory,
+} from "react-icons/md";
 import { getCountries } from "../../lib/country";
 import Logo from "../../components/ui/Logo";
 import { useBillingPlanList } from "../../hooks/useQueries/billingPlan/useBillingPlanList";
 
-function Icon({ name, className = "", filled = false }) {
-  return (
-    <span
-      className={`material-symbols-outlined ${className}`}
-      style={filled ? { fontVariationSettings: "'FILL' 1" } : undefined}
-    >
-      {name}
-    </span>
-  );
-}
-
 const FEATURES = [
   {
-    icon: "how_to_reg",
+    icon: MdOutlineHowToReg,
     title: "Vendor Onboarding",
     description:
       "Self-service portal where suppliers enter their localized tax and banking information.",
   },
   {
-    icon: "fact_check",
+    icon: MdOutlineFactCheck,
     title: "Invoice Review Workflow",
     description:
       "Multi-stage review with customized approval thresholds and instant notifications.",
   },
   {
-    icon: "public",
-    title: "Global Payment Rails",
+    icon: MdOutlinePublic,
+    title: "Localized Banking Collection",
     description:
-      "Direct settlement via local domestic clearing networks across 50+ countries.",
+      "Vendors enter banking details in the format your finance team expects, with tailored field sets for 50+ countries, reviewed before approval.",
   },
   {
-    icon: "badge",
+    icon: MdOutlineBadge,
     title: "Team Roles & Permissions",
     description:
       "Granular separation between workspace owners, invoice reviewers, and finance admins.",
   },
   {
-    icon: "storefront",
-    title: "Branded Company Workspaces",
+    icon: MdOutlineStorefront,
+    title: "Dedicated Company Workspaces",
     description:
-      "Whitelabel supplier portals with your company's identity and custom subdomain.",
+      "Every company gets its own workspace, reachable at its own subdomain, where vendors and your team work in one dedicated space.",
   },
   {
-    icon: "notifications_active",
+    icon: MdOutlineNotificationsActive,
     title: "Real-Time Notifications",
     description:
-      "Instant updates to suppliers upon submission, review, funding, and payment dispatch.",
+      "Instant updates to suppliers upon submission, review, and every status change through to Paid.",
   },
 ];
 
@@ -59,7 +75,7 @@ const STEPS = [
     num: "01",
     title: "Create your workspace",
     description:
-      "Configure approval rules, payment methods, and invite finance teammates.",
+      "Configure approval rules, invite finance teammates, and set up your review workflow.",
   },
   {
     num: "02",
@@ -77,25 +93,25 @@ const STEPS = [
     num: "04",
     title: "Review, fund, and pay",
     description:
-      "Approve with one click and release payments via the optimal domestic rail.",
+      "Approve with one click, then move each invoice through funding to paid as your team completes it.",
   },
 ];
 
 const ROLES = [
   {
-    icon: "workspace_premium",
+    icon: MdOutlineWorkspacePremium,
     title: "Owner",
     description:
-      "Full access, including billing and team management. There's only ever one, and it can't be reassigned.",
+      "Full access, including billing and team management. There's only ever one, and it can't be reassigned..",
   },
   {
-    icon: "admin_panel_settings",
+    icon: MdOutlineAdminPanelSettings,
     title: "Admin",
     description:
       "Manages vendors, invoices, and payments. No access to billing or removing the Owner.",
   },
   {
-    icon: "visibility",
+    icon: MdOutlineVisibility,
     title: "Reviewer",
     description:
       "Reviews and approves or rejects invoices only. No access to payments, team, or billing.",
@@ -118,16 +134,16 @@ export default function Landing() {
     return () => document.documentElement.classList.remove("scroll-smooth");
   }, []);
 
-  // Quick test wiring — logs the REST Countries call to the console on load.
+  // Quick test wiring: logs the REST Countries call to the console on load.
   useEffect(() => {
-    getCountries().catch(() => { });
+    getCountries().catch(() => {});
   }, []);
 
   return (
     <div className="bg-surface font-body-md text-body-md text-on-surface antialiased min-h-screen flex flex-col">
       {/* Header */}
       <header className="fixed top-0 left-0 w-full z-50 bg-surface-container-lowest border-b border-surface-variant/40 shadow-[0_1px_8px_rgba(0,0,0,0.03)]">
-        <div className="h-20 w-full max-w-7xl mx-auto px-space-24 lg:px-space-48 flex items-center justify-between">
+        <div className="h-20 w-full max-w-7xl mx-auto px-4 sm:px-space-24 lg:px-space-48 flex items-center justify-between gap-2">
           <div className="flex items-center gap-8">
             <Logo variant="light" onClick={() => navigate("/")} />
           </div>
@@ -142,22 +158,19 @@ export default function Landing() {
               </a>
             ))}
           </nav>
-          <div className="flex items-center gap-space-24">
+          <div className="flex items-center gap-2 sm:gap-space-16 md:gap-space-24">
             <a
               onClick={() => navigate("/login")}
-              className="font-label-caps text-label-caps text-on-surface uppercase tracking-wider hover:text-secondary transition-colors cursor-pointer"
+              className="inline-flex items-center justify-center px-3 py-2 sm:px-space-20 sm:py-space-12 rounded-lg border border-outline text-on-surface font-label-caps text-xs sm:text-sm font-bold uppercase tracking-wide sm:tracking-[0.08em] hover:bg-surface-container transition-colors cursor-pointer whitespace-nowrap"
             >
               Sign In
             </a>
             <a
               onClick={() => navigate("/signup-company")}
-              className="inline-flex items-center justify-center px-space-24 py-space-12 rounded-lg bg-primary text-on-primary font-label-caps text-label-caps uppercase tracking-wider hover:bg-primary/90 transition-colors shadow-sm cursor-pointer"
+              className="inline-flex items-center justify-center px-3 py-2 sm:px-space-20 sm:py-space-12 rounded-lg bg-brand-orange text-on-primary font-label-caps text-xs sm:text-sm font-bold uppercase tracking-wide sm:tracking-[0.08em] hover:bg-brand-orange-dark transition-colors shadow-sm cursor-pointer whitespace-nowrap"
             >
               GET STARTED
             </a>
-            <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center ml-space-4">
-              <Icon name="person" className="text-on-primary text-[18px]" />
-            </div>
           </div>
         </div>
       </header>
@@ -182,19 +195,19 @@ export default function Landing() {
                   </h1>
                   <p className="font-body-lg text-body-lg text-on-surface-variant max-w-xl mb-space-32">
                     Onboard vendors, review invoices, and track invoice
-                    correctly — across the countries and currencies your
+                    correctly, across the countries and currencies your
                     suppliers actually use.
                   </p>
                   <div className="flex flex-wrap items-center gap-space-16 mb-space-40">
                     <a
                       onClick={() => navigate("/signup-company")}
-                      className="inline-flex items-center justify-center px-space-24 py-space-12 rounded-lg bg-primary text-on-primary font-label-caps text-label-caps uppercase tracking-wider hover:bg-primary/90 transition-all shadow-sm cursor-pointer"
+                      className="inline-flex items-center justify-center px-space-20 py-space-12 rounded-lg bg-brand-orange text-on-primary font-label-caps text-sm font-bold uppercase tracking-[0.08em] hover:bg-brand-orange-dark transition-all shadow-sm cursor-pointer"
                     >
                       GET STARTED →
                     </a>
                     <a
                       onClick={() => navigate("/login")}
-                      className="inline-flex items-center justify-center px-space-24 py-space-12 rounded-lg bg-surface-container-lowest text-on-surface font-label-caps text-label-caps uppercase tracking-wider hover:bg-surface-container transition-all shadow-sm cursor-pointer"
+                      className="inline-flex items-center justify-center px-space-20 py-space-12 rounded-lg bg-surface-container-lowest text-on-surface font-label-caps text-sm font-bold uppercase tracking-[0.08em] hover:bg-surface-container transition-all shadow-sm cursor-pointer"
                     >
                       SIGN IN
                     </a>
@@ -202,21 +215,16 @@ export default function Landing() {
                   {/* Trust Badges */}
                   <div className="flex flex-wrap items-center gap-space-24 pt-space-8">
                     <div className="inline-flex items-center gap-space-8 text-on-surface-variant">
-                      <Icon
-                        name="verified_user"
-                        className="text-secondary text-[20px]"
-                        filled
+                      <MdOutlineVerifiedUser
+                        size={20}
+                        className="text-secondary"
                       />
                       <span className="font-label-caps text-label-caps uppercase tracking-wider text-on-surface">
                         SOC 2 Compliant
                       </span>
                     </div>
                     <div className="inline-flex items-center gap-space-8 text-on-surface-variant">
-                      <Icon
-                        name="lock"
-                        className="text-secondary text-[20px]"
-                        filled
-                      />
+                      <MdOutlineLock size={20} className="text-secondary" />
                       <span className="font-label-caps text-label-caps uppercase tracking-wider text-on-surface">
                         256-bit Encryption
                       </span>
@@ -243,9 +251,9 @@ export default function Landing() {
                             type="button"
                             className="inline-flex items-center gap-space-4 px-space-12 py-1.5 rounded-lg border border-surface-variant/40 bg-surface-container-lowest text-on-surface font-label-caps text-label-caps text-[11px] hover:bg-surface-container-low transition-colors shadow-sm"
                           >
-                            <Icon
-                              name="download"
-                              className="text-[14px] text-on-surface-variant"
+                            <MdOutlineDownload
+                              size={14}
+                              className="text-on-surface-variant"
                             />{" "}
                             Export Report
                           </button>
@@ -261,7 +269,7 @@ export default function Landing() {
                       <div className="rounded-lg bg-primary-fixed border border-primary-fixed-dim p-space-12 flex items-center justify-between gap-space-8 text-on-surface">
                         <div className="flex items-center gap-space-8 min-w-0">
                           <div className="w-6 h-6 rounded-full bg-primary-fixed flex items-center justify-center text-primary shrink-0">
-                            <Icon name="lightbulb" className="text-[15px]" />
+                            <MdOutlineLightbulb size={15} />
                           </div>
                           <div className="truncate">
                             <span className="font-label-caps text-label-caps text-[11px] font-bold text-on-surface">
@@ -274,13 +282,13 @@ export default function Landing() {
                           </div>
                         </div>
                         <div className="flex items-center gap-space-4 shrink-0 text-on-surface-variant">
-                          <Icon
-                            name="expand_more"
-                            className="text-[16px] cursor-pointer hover:text-on-surface"
+                          <MdOutlineExpandMore
+                            size={16}
+                            className="cursor-pointer hover:text-on-surface"
                           />
-                          <Icon
-                            name="close"
-                            className="text-[16px] cursor-pointer hover:text-on-surface"
+                          <MdOutlineClose
+                            size={16}
+                            className="cursor-pointer hover:text-on-surface"
                           />
                         </div>
                       </div>
@@ -400,41 +408,42 @@ export default function Landing() {
                               <span className="font-label-eyebrow text-label-eyebrow text-[10px] text-on-surface font-bold uppercase tracking-wider">
                                 Quick Actions
                               </span>
-                              <Icon
-                                name="check_circle"
-                                className="text-secondary text-[16px]"
+                              <MdOutlineCheckCircle
+                                size={16}
+                                className="text-secondary"
                               />
                             </div>
                             <div className="space-y-space-8">
                               {[
                                 [
-                                  "description",
+                                  MdOutlineDescription,
                                   "text-primary",
                                   "Review Invoices",
                                 ],
-                                ["group", "text-secondary", "View All Vendors"],
                                 [
-                                  "history",
+                                  MdOutlineGroup,
+                                  "text-secondary",
+                                  "View All Vendors",
+                                ],
+                                [
+                                  MdOutlineHistory,
                                   "text-on-surface-variant",
                                   "Payment History",
                                 ],
-                              ].map(([icon, color, label]) => (
+                              ].map(([ItemIcon, color, label]) => (
                                 <div
                                   key={label}
                                   className="p-space-8 rounded-lg bg-surface-container-low hover:bg-surface-container flex items-center justify-between cursor-pointer transition-colors"
                                 >
                                   <div className="flex items-center gap-space-8">
-                                    <Icon
-                                      name={icon}
-                                      className={`text-[16px] ${color}`}
-                                    />
+                                    <ItemIcon size={16} className={color} />
                                     <span className="font-body-sm text-body-sm text-[11px] text-on-surface font-medium">
                                       {label}
                                     </span>
                                   </div>
-                                  <Icon
-                                    name="chevron_right"
-                                    className="text-[14px] text-on-surface-variant"
+                                  <MdOutlineChevronRight
+                                    size={14}
+                                    className="text-on-surface-variant"
                                   />
                                 </div>
                               ))}
@@ -495,7 +504,7 @@ export default function Landing() {
                   <div>
                     <div className="flex items-center gap-space-12 mb-space-24">
                       <span className="w-8 h-8 rounded-full bg-error flex items-center justify-center text-on-error">
-                        <Icon name="close" className="text-[18px]" />
+                        <MdOutlineClose size={18} />
                       </span>
                       <h3 className="font-sans text-headline-sm text-error font-bold">
                         Without it
@@ -505,15 +514,15 @@ export default function Landing() {
                       {[
                         "Vendor banking details collected over email and loose PDFs",
                         "Approval chains living in Slack threads with no record afterward",
-                        "Payment errors from routing the wrong rail to the wrong country",
+                        "No visibility into whether a vendor's banking details were ever verified",
                       ].map((item) => (
                         <li
                           key={item}
                           className="flex items-start gap-space-12"
                         >
-                          <Icon
-                            name="cancel"
-                            className="text-error text-[20px] shrink-0 mt-0.5"
+                          <MdOutlineCancel
+                            size={20}
+                            className="text-error shrink-0 mt-0.5"
                           />
                           <span className="font-body-md text-body-md text-on-surface">
                             {item}
@@ -527,7 +536,7 @@ export default function Landing() {
                   <div>
                     <div className="flex items-center gap-space-12 mb-space-24">
                       <span className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center text-on-secondary">
-                        <Icon name="check" className="text-[18px]" />
+                        <MdOutlineCheck size={18} />
                       </span>
                       <h3 className="font-sans text-headline-sm text-secondary font-bold">
                         With VendorPay
@@ -536,16 +545,16 @@ export default function Landing() {
                     <ul className="space-y-space-20">
                       {[
                         "Vendors self-onboard with country-specific banking fields",
-                        "A clear review workflow — submit, review, fund, paid — with a full audit trail",
-                        "The right payment rail for each vendor's country, every time",
+                        "A clear review workflow (submit, review, fund, paid) with a full audit trail",
+                        "Every vendor's banking details reviewed and approved before your team relies on them",
                       ].map((item) => (
                         <li
                           key={item}
                           className="flex items-start gap-space-12"
                         >
-                          <Icon
-                            name="check_circle"
-                            className="text-secondary text-[20px] shrink-0 mt-0.5"
+                          <MdOutlineCheckCircle
+                            size={20}
+                            className="text-secondary shrink-0 mt-0.5"
                           />
                           <span className="font-body-md text-body-md text-on-surface">
                             {item}
@@ -580,7 +589,7 @@ export default function Landing() {
                     className="p-space-32 rounded-xl bg-surface-container-lowest shadow-sm flex flex-col items-start transition-all hover:shadow-md"
                   >
                     <div className="w-12 h-12 rounded-full bg-surface-container flex items-center justify-center text-secondary mb-space-20">
-                      <Icon name={f.icon} className="text-[26px]" />
+                      <f.icon size={26} />
                     </div>
                     <h3 className="font-sans text-headline-sm text-on-surface mb-space-8">
                       {f.title}
@@ -628,8 +637,6 @@ export default function Landing() {
             </div>
           </section>
 
-          {/* SECTION 6: PAYMENT RAILS (DARK SECTION) — not generated in source, intentionally omitted */}
-
           {/* SECTION 7: SECURITY SECTION */}
           <section
             id="security"
@@ -648,14 +655,14 @@ export default function Landing() {
                   </h2>
                   <p className="font-body-lg text-body-lg text-on-surface-variant">
                     Vendor bank account numbers, routing details, and IBANs are
-                    sensitive by nature — VendorPay is built with that in mind
+                    sensitive by nature. VendorPay is built with that in mind
                     from the ground up, not bolted on after the fact.
                   </p>
                 </div>
                 <div className="lg:col-span-6 grid grid-cols-1 sm:grid-cols-2 gap-space-24">
                   <div className="p-space-32 rounded-xl bg-surface-container-lowest shadow-sm flex flex-col justify-between">
                     <div className="w-12 h-12 rounded-full bg-surface-container flex items-center justify-center text-secondary mb-space-20">
-                      <Icon name="verified" className="text-[28px]" filled />
+                      <MdOutlineVerified size={28} />
                     </div>
                     <div>
                       <h3 className="font-sans text-headline-sm text-on-surface mb-space-8">
@@ -668,11 +675,7 @@ export default function Landing() {
                   </div>
                   <div className="p-space-32 rounded-xl bg-surface-container-lowest shadow-sm flex flex-col justify-between">
                     <div className="w-12 h-12 rounded-full bg-surface-container flex items-center justify-center text-secondary mb-space-20">
-                      <Icon
-                        name="enhanced_encryption"
-                        className="text-[28px]"
-                        filled
-                      />
+                      <MdOutlineEnhancedEncryption size={28} />
                     </div>
                     <div>
                       <h3 className="font-sans text-headline-sm text-on-surface mb-space-8">
@@ -710,17 +713,24 @@ export default function Landing() {
                 ) : (
                   (billingPlanList ?? []).map((plan) => {
                     return (
-                      <div key={plan.slug} className="p-space-32 rounded-xl bg-surface-container-lowest shadow-sm flex flex-col justify-between">
+                      <div
+                        key={plan.slug}
+                        className="p-space-32 rounded-xl bg-surface-container-lowest shadow-sm flex flex-col justify-between"
+                      >
                         <div>
                           <span className="font-label-eyebrow text-label-eyebrow uppercase tracking-wider text-secondary font-bold ">
                             {plan.name}
                           </span>
                           <div className="mt-space-16 mb-space-8 flex items-baseline">
                             <span className="font-headline-xl text-headline-xl text-on-surface font-bold">
-                              {plan.price.amount === 0 ? 'Free' : `$${plan.price.amount}`}
+                              {plan.price.amount === 0
+                                ? "Free"
+                                : `$${plan.price.amount}`}
                             </span>
                             <span className="font-body-md text-body-md text-on-surface-variant ml-space-4">
-                              /{plan.price.interval}
+                              {plan?.name === "Free"
+                                ? ""
+                                : `/${plan.price.interval}`}
                             </span>
                           </div>
                           <p className="font-body-sm text-body-sm text-on-surface-variant mb-space-24">
@@ -732,9 +742,9 @@ export default function Landing() {
                                 key={f}
                                 className="flex items-center gap-space-8 text-on-surface font-body-sm text-body-sm"
                               >
-                                <Icon
-                                  name="check"
-                                  className="text-secondary text-[18px]"
+                                <MdOutlineCheck
+                                  size={18}
+                                  className="text-secondary"
                                 />
                                 {f}
                               </li>
@@ -775,7 +785,7 @@ export default function Landing() {
                   >
                     <div>
                       <div className="w-12 h-12 rounded-full bg-surface-container flex items-center justify-center text-secondary mb-space-20">
-                        <Icon name={role.icon} className="text-[26px]" />
+                        <role.icon size={26} />
                       </div>
                       <h3 className="font-sans text-headline-sm text-on-surface mb-space-12">
                         {role.title}
@@ -793,13 +803,13 @@ export default function Landing() {
           {/* SECTION 10: TESTIMONIAL */}
           <section className="w-full bg-surface-container-low py-space-64 lg:py-space-80">
             <div className="w-full max-w-4xl mx-auto px-space-24 lg:px-space-48 text-center flex flex-col items-center">
-              <Icon
-                name="format_quote"
-                className="text-secondary/30 text-[64px] leading-none mb-space-16 select-none"
+              <MdOutlineFormatQuote
+                size={64}
+                className="text-secondary/30 leading-none mb-space-16 select-none"
               />
               <blockquote className="font-headline-md text-headline-md lg:text-headline-lg lg:leading-[42px] text-on-surface italic mb-space-24 font-normal">
-                "We built VendorPay because paying a vendor in Lagos and one in
-                Berlin shouldn't take two different processes — or a week of
+                "We built VendorPay because managing a vendor in Lagos and one
+                in Berlin shouldn't take two different workflows, or a week of
                 your finance team's time."
               </blockquote>
               <div className="flex items-center gap-space-8">
@@ -820,12 +830,12 @@ export default function Landing() {
                 <span className="text-secondary-fixed"> chaos</span>.
               </h2>
               <p className="font-body-lg text-body-lg text-surface-variant mb-space-32 max-w-xl">
-                Set up your company workspace in a few minutes — no sales call
+                Set up your company workspace in a few minutes. No sales call
                 required.
               </p>
               <a
                 onClick={() => navigate("/signup-company")}
-                className="inline-flex items-center justify-center px-space-32 py-space-16 rounded-lg bg-primary text-on-primary font-label-caps text-label-caps uppercase tracking-wider hover:bg-primary/90 transition-all shadow-md cursor-pointer"
+                className="inline-flex items-center justify-center px-space-32 py-space-16 rounded-lg bg-brand-orange text-on-primary font-label-caps text-sm font-bold uppercase tracking-[0.08em] hover:bg-brand-orange-dark transition-all shadow-md cursor-pointer"
               >
                 GET STARTED →
               </a>
@@ -842,7 +852,7 @@ export default function Landing() {
               <div className="space-y-space-16">
                 <Logo variant="dark" />
                 <p className="font-body-md text-body-md text-surface-variant max-w-sm">
-                  Vendor payments, without the chaos.
+                  Vendor Management, without the chaos.
                 </p>
               </div>
             </div>
