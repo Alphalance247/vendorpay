@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { CheckCircle, Camera, Loader2, Trash2 } from "lucide-react";
+import { getData as getCountryData } from "country-list";
 import Input from "./Input";
 import Select from "./Select";
 import { adminService } from "../../lib/services/adminService";
@@ -8,6 +9,38 @@ import { extractErrorMessage } from "../../lib/utils";
 import { useConfirm } from "../../hooks/useConfirm";
 import { useToast } from "./Toast";
 
+// country-list ships official ISO 3166-1 short names (e.g. "United States
+// of America (the)", "Korea (the Republic of)"), which read oddly in this
+// form — clean those up for display.
+const COUNTRY_NAME_OVERRIDES = {
+  US: "United States",
+  GB: "United Kingdom",
+  KR: "South Korea",
+  KP: "North Korea",
+  TW: "Taiwan",
+  RU: "Russia",
+  VE: "Venezuela",
+  BO: "Bolivia",
+  IR: "Iran",
+  LA: "Laos",
+  SY: "Syria",
+  NL: "Netherlands",
+  MD: "Moldova",
+  VA: "Vatican City",
+  CD: "DR Congo",
+  CG: "Republic of the Congo",
+  FK: "Falkland Islands",
+  VG: "British Virgin Islands",
+  VI: "U.S. Virgin Islands",
+  FM: "Micronesia",
+};
+
+const COUNTRIES = getCountryData()
+  .map(({ code, name }) => ({
+    code,
+    name: COUNTRY_NAME_OVERRIDES[code] ?? name.replace(/\s*\(the\)$/i, "").trim(),
+  }))
+  .sort((a, b) => a.name.localeCompare(b.name));
 
 const industry_type = [
   { value: "Technology", label: "Technology" },
@@ -42,6 +75,7 @@ export default function VendorCompany() {
     logo_url: "",
     industry: "",
     company_size: "",
+    country: "",
     name: "",
     plan: "",
   });
@@ -82,6 +116,7 @@ export default function VendorCompany() {
           industry: data?.industry ?? "",
           plan: data?.plan ?? "",
           company_size: data?.company_size ?? "",
+          country: data?.country ?? "",
         });
       } catch (error) {
         console.error("FAILED TO LOAD COMPANY:", error);
@@ -183,6 +218,10 @@ export default function VendorCompany() {
       setError("Company size is required.");
       return;
     }
+    if (!form.country?.trim()) {
+      setError("Country is required.");
+      return;
+    }
 
     setLoading(true);
     setError("");
@@ -193,6 +232,7 @@ export default function VendorCompany() {
         name: form.name.trim(),
         industry: form.industry,
         company_size: form.company_size,
+        country: form.country,
       };
 
       const updated =
@@ -211,6 +251,8 @@ export default function VendorCompany() {
           updated?.plan ?? prev.plan,
         company_size:
           updated?.company_size ?? prev.company_size,
+        country:
+          updated?.country ?? prev.country,
       }));
 
       setLogoPreview(null);
@@ -361,6 +403,18 @@ export default function VendorCompany() {
             <option key={index} value={c}>
               {c}
             </option>)}
+        </Select>
+        <Select
+          label="country"
+          value={form.country}
+          onChange={handleChange("country")}
+        >
+          <option value="">Select country</option>
+          {COUNTRIES.map(({ code, name }) => (
+            <option key={code} value={name}>
+              {name}
+            </option>
+          ))}
         </Select>
         <div className="flex flex-col md:flex-row md:justify-end gap-4">
           <button

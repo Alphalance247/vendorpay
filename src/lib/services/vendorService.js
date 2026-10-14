@@ -1,7 +1,5 @@
 import apiClient from "../apiClient";
 
-
-
 export const vendorService = {
   // =========================
   // AUTH-RELATED (kept here for now)
@@ -26,7 +24,6 @@ export const vendorService = {
     const res = await apiClient.post("/auth/reset-password", payload);
     return res.data;
   },
-
 
   // =========================
   // VENDOR FLOW
@@ -63,7 +60,7 @@ export const vendorService = {
 
   getAllVendors: async () => {
     const res = await apiClient.get("/vendors/");
-    return res.data;
+    return res.data?.items;
   },
 
   getVendorById: async (id) => {
@@ -72,7 +69,9 @@ export const vendorService = {
   },
 
   updateVendorStatus: async (id, isActive) => {
-    const res = await apiClient.patch(`/vendors/${id}/status`, { is_active: isActive });
+    const res = await apiClient.patch(`/vendors/${id}/status`, {
+      is_active: isActive,
+    });
     return res.data;
   },
 
@@ -80,5 +79,4 @@ export const vendorService = {
     const res = await apiClient.delete(`/vendors/${id}`);
     return res.data;
   },
-
 };
