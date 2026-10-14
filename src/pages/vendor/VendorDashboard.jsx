@@ -81,6 +81,9 @@ export default function VendorDashboard() {
     day: "numeric",
   });
 
+  const hour = new Date().getHours();
+  const period = hour < 12 ? "morning" : hour < 17 ? "afternoon" : "evening";
+
   useEffect(() => {
     vendorService
       .getDashboard()
@@ -90,7 +93,7 @@ export default function VendorDashboard() {
     vendorService
       .getProfile()
       .then(setProfile)
-      .catch(() => {});
+      .catch(() => { });
   }, []);
 
   if (loading) {
@@ -163,14 +166,14 @@ export default function VendorDashboard() {
       <div className="space-y-6">
         <div>
           <p className="text-xs text-on-surface-variant">{today}</p>
-          <h1 className="font-headline-lg text-2xl font-semibold text-on-surface mt-0.5">
-            Good morning{" "}
+          <h1 className="font-headline-lg text-2xl font-semibold text-on-surface mt-0.5 capitalize">
+            Good {period}
             <span className="capitalize">
               {data.first_name ? `, ${data.first_name}` : ""}
             </span>
           </h1>
           <p className="text-sm text-on-surface-variant mt-0.5">
-            Here is what&apos;s happening with your accounts today.
+            Here is what&apos;s happening with your account today.
           </p>
         </div>
 
@@ -318,9 +321,9 @@ export default function VendorDashboard() {
                 }}
               >
                 <FiPieChart size={24} color="gray" />
-                <h3 className="text-sm  text-on-surface font-bold">
+                {/* <h3 className="text-sm  text-on-surface font-bold">
                   Status Distribution
-                </h3>
+                </h3> */}
                 <p className="text-sm text-on-surface-variant text-center font-semibold ">
                   No invoices yet.
                 </p>

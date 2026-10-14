@@ -6,6 +6,7 @@ import apiClient from "../apiClient";
 // actually got back is to sniff the file's own magic bytes.
 async function detectBlobType(blob) {
   const bytes = new Uint8Array(await blob.slice(0, 12).arrayBuffer());
+
   const hex = [...bytes].map((b) => b.toString(16).padStart(2, '0')).join('');
 
   if (hex.startsWith('25504446')) return 'application/pdf'; // %PDF
@@ -13,6 +14,8 @@ async function detectBlobType(blob) {
   if (hex.startsWith('ffd8ff')) return 'image/jpeg';
   if (hex.startsWith('47494638')) return 'image/gif'; // GIF87a / GIF89a
   if (hex.startsWith('52494646') && hex.slice(16, 24) === '57454250') return 'image/webp'; // RIFF....WEBP
+  if (hex.startsWith('504b0304')) return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'; // PK zip (.docx)
+  if (hex.startsWith('d0cf11e0')) return 'application/msword'; // OLE2 (.doc)
 
   return blob.type || 'application/octet-stream';
 }
@@ -23,6 +26,8 @@ const EXTENSION_BY_CONTENT_TYPE = {
   'image/jpeg': 'jpg',
   'image/gif': 'gif',
   'image/webp': 'webp',
+  'application/msword': 'doc',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'docx',
 };
 
 export const extractInvoiceWithAI = async (file) => {
@@ -39,6 +44,7 @@ export const extractInvoiceWithAI = async (file) => {
     invoiceDate: d.invoice_date || null,
     dueDate: d.due_date || null,
     vendorName: d.vendor_name || null,
+    // isInvoice: typeof d.is_invoice === 'boolean' ? d.is_invoice : null,
   };
 };
 

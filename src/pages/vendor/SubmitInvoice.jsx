@@ -13,8 +13,8 @@ import TutorialCard from '../../components/ui/TutorialCard';
 
 const workflowSteps = [
   { icon: Upload, label: 'Submission', desc: 'Drafting details & uploading file', done: true },
-  { icon: Clock, label: 'Internal Review', desc: 'Approval by Finance Manager', done: false },
-  { icon: Banknote, label: 'Disbursement', desc: 'Direct ACH or Wire transfer', done: false },
+  { icon: Clock, label: 'Internal Review', desc: 'Approval by Admin', done: false },
+  { icon: Banknote, label: 'Disbursement', desc: "", done: false },
 ];
 
 const guidelines = [
@@ -22,6 +22,41 @@ const guidelines = [
   'Tax ID must be visible on document',
   'Break down line items clearly',
 ];
+
+// const WORD_EXTENSIONS = ['.doc', '.docx'];
+// const ACCEPTED_EXTENSIONS = ['.pdf', '.jpg', '.jpeg', '.png', ...WORD_EXTENSIONS];
+// const ACCEPTED_MIME_TYPES = [
+//   'application/pdf',
+//   'image/jpeg',
+//   'image/png',
+//   'application/msword',
+//   // 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+// ];
+// const MAX_FILE_SIZE = 25 * 1024 * 1024;
+
+// // The input's `accept` only filters the browse dialog — dropped files skip it,
+// // so every file is checked here too.
+// function validateInvoiceFile(file) {
+//   const ext = file.name.slice(file.name.lastIndexOf('.')).toLowerCase();
+//   const typeOk = file.type ? ACCEPTED_MIME_TYPES.includes(file.type) : true;
+//   if (!ACCEPTED_EXTENSIONS.includes(ext) || !typeOk) {
+//     return `"${file.name}" isn't a supported file type. Please upload your invoice as a PDF, Word document (DOC/DOCX), JPG or PNG.`;
+//   }
+//   if (file.size > MAX_FILE_SIZE) {
+//     return `"${file.name}" is larger than 25 MB. Please upload a smaller file.`;
+//   }
+//   return null;
+// }
+
+// function looksLikeInvoice(extracted) {
+//   if (extracted.isInvoice === false) return false;
+//   return Boolean(
+//     extracted.invoiceNumber ||
+//     extracted.amount != null ||
+//     extracted.invoiceDate ||
+//     extracted.dueDate
+//   );
+// }
 
 function parseAmountFromFilename(name) {
   if (!name) return null;
@@ -68,6 +103,15 @@ export default function SubmitInvoice() {
   });
   const [submitted, setSubmitted] = useState(false);
 
+  const missingFields = extractedData
+    ? [
+      !extractedData.invoiceNumber && 'invoice number',
+      extractedData.amount == null && 'amount',
+      !extractedData.currency && 'currency',
+      !extractedData.invoiceDate && 'invoice date',
+    ].filter(Boolean)
+    : [];
+
   useEffect(() => {
     return () => {
       if (previewUrl) URL.revokeObjectURL(previewUrl);
@@ -92,11 +136,18 @@ export default function SubmitInvoice() {
   async function ingestFile(picked) {
     if (!picked) return;
 
+    // const fileError = validateInvoiceFile(picked);
+    // if (fileError) {
+    //   setError(fileError);
+    //   return;
+    // }
+
     if (previewUrl) URL.revokeObjectURL(previewUrl);
 
     setFile(picked);
     setIsExtracting(true);
     setExtractedData(null);
+    // setError('');
 
     const objectUrl = URL.createObjectURL(picked);
     setPreviewUrl(objectUrl);
@@ -107,6 +158,20 @@ export default function SubmitInvoice() {
     } catch {
       extracted = null;
     }
+
+    // Extraction succeeded but found nothing an invoice would have — reject
+    // the file rather than letting the vendor submit e.g. a photo or a CV.
+    // if (extracted && !looksLikeInvoice(extracted)) {
+    //   URL.revokeObjectURL(objectUrl);
+    //   setFile(null);
+    //   setPreviewUrl(null);
+    //   setIsExtracting(false);
+    //   setError(
+    //     `"${picked.name}" doesn't look like an invoice. We couldn't find an invoice number, amount or date in it. Please upload your invoice document.`
+    //   );
+    //   return;
+    // }
+
     setExtractedData(extracted);
     setIsExtracting(false);
     setShowManual(true);
@@ -206,6 +271,7 @@ export default function SubmitInvoice() {
   }
 
   const isPdf = file?.type === 'application/pdf' || file?.name?.endsWith('.pdf');
+  // const isWord = WORD_EXTENSIONS.some((ext) => file?.name?.toLowerCase().endsWith(ext));
 
   return (
     <AppLayout role="vendor">
@@ -229,9 +295,10 @@ export default function SubmitInvoice() {
           title="How to Submit an Invoice"
           description="Upload your invoice file and let AI fill in the details — then review before submitting."
           tips={[
-            "Drag and drop or click Browse to upload a PDF or image of your invoice (max 25 MB).",
+            "Drag and drop or click Browse to upload a PDF, Word document or image of your invoice (max 25 MB).",
             "AI will automatically extract the invoice number, amount, currency, and dates — form fields are locked during this process.",
-            "Review the extracted values carefully; you can edit any field before submitting.",
+            // "AI can misread values — compare each extracted field with your document and click Edit to fix anything that's wrong.",
+            // "If AI can't read your invoice or misses a field, you'll be asked to fill it in manually from your document.",
             "When you click Submit, a confirmation dialog will ask you to verify the amount matches your document.",
           ]}
         />
@@ -265,7 +332,7 @@ export default function SubmitInvoice() {
                   <div className="text-center">
                     <p className="text-sm font-semibold text-on-surface">Upload Invoice File</p>
                     <p className="text-xs text-on-surface-variant mt-1">
-                      Drag and drop your PDF, Image, or DOC file here, or{' '}
+                      Drag and drop your PDF, JPG or PNG file here, or{' '}
                       <span className="text-secondary underline">browse computer</span>
                     </p>
                   </div>
@@ -276,7 +343,12 @@ export default function SubmitInvoice() {
                   type="file"
                   className="hidden"
                   accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-                  onChange={(e) => ingestFile(e.target.files[0])}
+                  // accept={ACCEPTED_EXTENSIONS.join(',')}
+                  onChange={(e) => {
+                    ingestFile(e.target.files[0]);
+                    // Clear so re-picking the same file after a rejection fires onChange again
+                    // e.target.value = '';
+                  }}
                 />
               </Card>
             ) : (
@@ -302,6 +374,27 @@ export default function SubmitInvoice() {
 
                 {/* PREVIEW */}
                 <div className="p-4 bg-surface-container">
+                  {/* {isWord ? (
+                    // Browsers can't render Word documents, so show a placeholder instead of a preview
+                    <div className="relative">
+                      <div className="h-[200px] rounded border border-outline-variant bg-white flex flex-col items-center justify-center gap-2 text-center px-4">
+                        <FileText size={32} className="text-secondary" />
+                        <p className="text-sm font-semibold text-on-surface">{file.name}</p>
+                        <p className="text-xs text-on-surface-variant">Preview isn&apos;t available for Word documents.</p>
+                      </div>
+                      {isExtracting && (
+                        <div className="absolute inset-0 rounded bg-navy/60 backdrop-blur-sm flex flex-col items-center justify-center gap-3">
+                          <div className="w-14 h-14 rounded-full bg-white/10 border border-white/20 flex items-center justify-center">
+                            <Loader2 size={28} className="animate-spin text-white" />
+                          </div>
+                          <div className="text-center">
+                            <p className="text-white text-sm font-semibold">AI Reading Invoice</p>
+                            <p className="text-white/70 text-xs mt-0.5">Extracting fields from your document…</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ) :*/}
                   {isPdf ? (
                     <div className="relative">
                       <iframe
@@ -369,7 +462,19 @@ export default function SubmitInvoice() {
                       ? `Detected: ${extractedData.currency} ${extractedData.amount.toLocaleString()}`
                       : 'Data extracted'}
                   </div>
-                ) : null}
+                ) : null
+                  //       (
+                  //   <div className="px-4 py-3 border-t border-warning/30 bg-warning/5 flex items-start gap-3">
+                  //     <AlertCircle size={16} className="text-warning flex-shrink-0 mt-0.5" />
+                  //     <div>
+                  //       <p className="text-sm font-semibold text-on-surface">We couldn&apos;t read this invoice automatically</p>
+                  //       <p className="text-xs text-on-surface-variant mt-0.5">
+                  //         Please fill in the form below from your document. Any pre-filled values were guessed from the file name or set to defaults — check each one before submitting.
+                  //       </p>
+                  //     </div>
+                  //   </div>
+                  // )
+                }
               </Card>
             )}
 
@@ -429,7 +534,36 @@ export default function SubmitInvoice() {
                       <p className="text-sm font-medium text-on-surface">{extractedData.invoiceDate}</p>
                     </div>
                   )}
+                  {extractedData.dueDate && (
+                    <div className="bg-white rounded border border-success/20 px-3 py-2">
+                      <p className="text-xs text-on-surface-variant">Due Date</p>
+                      <p className="text-sm font-medium text-on-surface">{extractedData.dueDate}</p>
+                    </div>
+                  )}
                 </div>
+
+                {!extractedData.dueDate && (
+                  <div className="mt-3 flex items-start gap-2 rounded border border-warning/30 bg-warning/5 px-3 py-2">
+                    <AlertCircle size={14} className="text-warning flex-shrink-0 mt-0.5" />
+                    <p className="text-xs text-on-surface">
+                      No due date found on your invoice, so it has been set to {form.dueDate} by default. Click Edit to change it to match your payment terms — this date decides when the invoice shows as overdue.
+                    </p>
+                  </div>
+                )}
+
+                {missingFields.length > 0 && (
+                  <div className="mt-3 flex items-start gap-2 rounded border border-warning/30 bg-warning/5 px-3 py-2">
+                    <AlertCircle size={14} className="text-warning flex-shrink-0 mt-0.5" />
+                    <p className="text-xs text-on-surface">
+                      AI couldn&apos;t find the {missingFields.join(', ')}. Click Edit and enter{' '}
+                      {missingFields.length > 1 ? 'them' : 'it'} from your document.
+                    </p>
+                  </div>
+                )}
+
+                <p className="mt-3 text-xs text-on-surface-variant">
+                  AI can misread values. Compare these with your document — if anything is wrong, click Edit to correct it. You&apos;ll confirm the amount again before the invoice is submitted.
+                </p>
               </Card>
             )}
 
@@ -499,7 +633,15 @@ export default function SubmitInvoice() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <Input label="Invoice Date" name="invoiceDate" type="date" value={form.invoiceDate} onChange={handleChange} required />
-                  <Input label="Due Date" name="dueDate" type="date" value={form.dueDate} onChange={handleChange} required />
+                  <Input
+                    label="Due Date"
+                    name="dueDate"
+                    type="date"
+                    value={form.dueDate}
+                    onChange={handleChange}
+                    hint="Set this from your payment terms. If the invoice is unpaid after this date, it will show as overdue."
+                    required
+                  />
                 </div>
 
                 <div className="flex flex-col gap-1">
@@ -548,7 +690,7 @@ export default function SubmitInvoice() {
               </div>
             </Card>
 
-            <Card>
+            {file && !isExtracting && <Card>
               <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant mb-3">Guidelines</p>
               <ul className="space-y-2">
                 {guidelines.map((g) => (
@@ -558,18 +700,18 @@ export default function SubmitInvoice() {
                   </li>
                 ))}
               </ul>
-            </Card>
+            </Card>}
 
-            <Button
+            <button
               onClick={handleSubmit}
-              className="w-full"
+              className="w-full bg-primary text-on-primary hover:bg-primary/90 active:bg-primary/90 px-5 py-3 text-base font-bold inline-flex items-center justify-center gap-2 rounded transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary disabled:opacity-50 disabled:pointer-events-none whitespace-nowrap"
               size="lg"
               disabled={!form.currency || isExtracting || loading || !file}
             >
               {loading ? <><Loader2 size={15} className="animate-spin" /> Submitting...</> :
                 isExtracting ? <><Loader2 size={15} className="animate-spin" /> Reading...</> :
                   <>Submit <Send size={15} /></>}
-            </Button>
+            </button>
           </div>
         </div>
       </div>

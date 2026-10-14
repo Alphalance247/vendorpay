@@ -419,7 +419,7 @@ export default function AdminInvoiceManagement() {
             <>
               {/* Desktop / tablet: table */}
               <div className=" ">
-                <table className="">
+                <table className="w-full">
                   <thead>
                     <tr className="bg-surface-container border-b border-outline-variant">
                       {[

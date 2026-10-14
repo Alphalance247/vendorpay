@@ -44,6 +44,7 @@ const STATUS_OPTIONS = [
   "payment_disputed",
   "flagged",
   "rejected",
+  "pending"
 ];
 
 const STATUS_LABEL = {
@@ -55,6 +56,7 @@ const STATUS_LABEL = {
   payment_disputed: "Payment Disputed",
   rejected: "Rejected",
   flagged: "Flagged",
+  pending: "Pending"
 };
 
 export default function InvoiceHistory() {
@@ -111,7 +113,7 @@ export default function InvoiceHistory() {
     vendorService
       .getProfile()
       .then(setProfile)
-      .catch(() => {});
+      .catch(() => { });
   }, []);
 
   async function handleDownload(invoiceId) {
@@ -277,6 +279,9 @@ export default function InvoiceHistory() {
             ) : (
               <p className="text-xs mt-0.5 text-success">None overdue</p>
             )}
+            <p className="text-xs mt-0.5 text-on-surface-variant">
+              Unpaid past the due date you set when submitting
+            </p>
           </Card>
           <Card className="py-4">
             <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant">
@@ -329,7 +334,7 @@ export default function InvoiceHistory() {
                 )}
               </div>
             </div>
-            <div className="flex items-center gap-4 text-sm py-4 whitespace-nowrap ">
+            <div className="flex items-center gap-4 text-sm py-4 whitespace-nowrap  flex-shrink-0">
               <span className="text-xs font-semibold text-on-surface-variant uppercase tracking-wide">
                 Status
               </span>
@@ -340,11 +345,10 @@ export default function InvoiceHistory() {
                     setStatusFilter(s);
                     setPage(1);
                   }}
-                  className={`px-4 py-2 rounded-full text-xs font-medium border transition-colors ${
-                    statusFilter === s
-                      ? "border-navy bg-navy text-white"
-                      : "border-outline-variant text-on-surface-variant hover:bg-surface-container"
-                  }`}
+                  className={`px-4 py-2 rounded-full text-xs font-medium border transition-colors ${statusFilter === s
+                    ? "border-navy bg-navy text-white"
+                    : "border-outline-variant text-on-surface-variant hover:bg-surface-container"
+                    }`}
                 >
                   {STATUS_LABEL[s] ?? "All"}
                 </button>
@@ -743,7 +747,7 @@ export default function InvoiceHistory() {
             </h3>
           </div>
           {trendData.length === 0 ? (
-            <div className="flex flex-col gap-1">
+            <div className="flex flex-col items-center justify-center gap-1">
               <BiBarChartAlt2 size={24} color="gray" />
               <p className="text-sm text-on-surface-variant text-center py-8">
                 No payment history yet.

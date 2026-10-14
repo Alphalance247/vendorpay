@@ -26,7 +26,7 @@ import { authService } from "../../lib/services/authService";
 import { resolveMediaUrl } from "../../lib/apiClient";
 import { useCurrentUser } from "../../hooks/useQueries/vendorAdmin/useCurrentUser";
 import { useConfirm } from "../../hooks/useConfirm";
-import { extractErrorMessage, CURRENCY_SYMBOLS, cn } from "../../lib/utils";
+import { extractErrorMessage, cn } from "../../lib/utils";
 
 const MAX_PHOTO_SIZE = 2 * 1024 * 1024; // 2MB
 const ALLOWED_PHOTO_TYPES = ["image/jpeg", "image/png", "image/webp"];
@@ -61,7 +61,7 @@ const ACCOUNT_TYPES = [
   "Domiciliary",
   "Transmission",
 ];
-const COUNTRY_TYPES = ["ACH", "FASTER_PAYMENTS", "NIP", "PESALINK", "SWIFT"];
+const PAYMENT_RAIL = ["ACH", "FASTER_PAYMENTS", "NIP", "PESALINK", "SWIFT"];
 
 const BANKING_STATUS_LABEL = {
   pending: "Pending Review",
@@ -639,24 +639,7 @@ export default function VendorProfile() {
                   onChange={handleChange}
                   placeholder="https://acme.com"
                 />
-                <div className="flex flex-col gap-1">
-                  <label className="text-xs font-semibold tracking-wide text-on-surface-variant uppercase">
-                    Preferred Currency
-                  </label>
-                  <select
-                    name="currency"
-                    value={form.currency}
-                    onChange={handleChange}
-                    className="w-full rounded border border-outline-variant bg-white px-3 py-2 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-warning focus:border-warning transition-colors"
-                  >
-                    <option value="">Select currency</option>
-                    {Object.keys(CURRENCY_SYMBOLS).map((code) => (
-                      <option key={code} value={code}>
-                        {code} ({CURRENCY_SYMBOLS[code]})
-                      </option>
-                    ))}
-                  </select>
-                </div>
+
                 <Input
                   label="Business Address"
                   name="business_address"
@@ -753,7 +736,7 @@ export default function VendorProfile() {
                     </div>
                     <div className="flex flex-col gap-1">
                       <label className="text-xs font-semibold tracking-wide text-on-surface-variant uppercase">
-                        Country Type
+                        Payment Rail
                       </label>
                       <p className="text-sm text-on-surface py-2">
                         {banking.country_type || "—"}
@@ -838,7 +821,7 @@ export default function VendorProfile() {
                       className="w-full rounded border border-outline-variant bg-white px-3 py-2 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-warning focus:border-warning transition-colors"
                     >
                       <option value="">Select country type</option>
-                      {COUNTRY_TYPES.map((t) => (
+                      {PAYMENT_RAIL.map((t) => (
                         <option key={t} value={t}>
                           {t}
                         </option>
