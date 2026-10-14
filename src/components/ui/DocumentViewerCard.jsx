@@ -11,6 +11,10 @@ export default function DocumentViewerCard({
   emptyLabel = "Document unavailable",
 }) {
   const isImage = contentType?.startsWith("image/");
+  const isWord =
+    contentType === "application/msword" ||
+    contentType ===
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
 
   return (
     <Card className="p-0 overflow-hidden">
@@ -42,6 +46,21 @@ export default function DocumentViewerCard({
               alt={title}
               className="max-w-full max-h-[600px] object-contain"
             />
+          </div>
+        ) : url && isWord ? (
+          // Browsers can't render Word documents inline
+          <div className="p-8 bg-surface-container min-h-[200px] flex items-center justify-center">
+            <div className="text-center">
+              <FileText size={48} className="text-secondary mx-auto mb-3" />
+              <p className="text-sm text-on-surface-variant">
+                Preview isn&apos;t available for Word documents.
+              </p>
+              {onDownload && (
+                <Button variant="ghost" size="sm" className="mt-3" onClick={onDownload}>
+                  <Download size={14} /> Download to view
+                </Button>
+              )}
+            </div>
           </div>
         ) : url ? (
           <div className="w-[900px] max-w-none md:w-[900px]">

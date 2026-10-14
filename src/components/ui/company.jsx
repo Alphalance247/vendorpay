@@ -5,7 +5,7 @@ import Input from "./Input";
 import Select from "./Select";
 import { adminService } from "../../lib/services/adminService";
 import { resolveMediaUrl } from "../../lib/apiClient";
-import { extractErrorMessage } from "../../lib/utils";
+import { CURRENCY_SYMBOLS, extractErrorMessage } from "../../lib/utils";
 import { useConfirm } from "../../hooks/useConfirm";
 import { useToast } from "./Toast";
 
@@ -78,6 +78,7 @@ export default function VendorCompany() {
     country: "",
     name: "",
     plan: "",
+    default_currency: ""
   });
   const [logoPreview, setLogoPreview] = useState(null);
   const [logoError, setLogoError] = useState("");
@@ -117,6 +118,7 @@ export default function VendorCompany() {
           plan: data?.plan ?? "",
           company_size: data?.company_size ?? "",
           country: data?.country ?? "",
+          default_currency: data.default_currency ?? ""
         });
       } catch (error) {
         console.error("FAILED TO LOAD COMPANY:", error);
@@ -222,7 +224,10 @@ export default function VendorCompany() {
       setError("Country is required.");
       return;
     }
-
+    if (!form.default_currency?.trim()) {
+      setError("Currency is required.");
+      return;
+    }
     setLoading(true);
     setError("");
     setSaved(false);
@@ -233,6 +238,7 @@ export default function VendorCompany() {
         industry: form.industry,
         company_size: form.company_size,
         country: form.country,
+        default_currency: form.default_currency
       };
 
       const updated =
@@ -253,6 +259,8 @@ export default function VendorCompany() {
           updated?.company_size ?? prev.company_size,
         country:
           updated?.country ?? prev.country,
+        default_currency:
+          updated?.default_currency ?? prev.default_currency
       }));
 
       setLogoPreview(null);
@@ -416,6 +424,24 @@ export default function VendorCompany() {
             </option>
           ))}
         </Select>
+        <div className="flex flex-col gap-1">
+          <label className="text-xs font-semibold tracking-wide text-on-surface-variant uppercase">
+            Preferred Currency
+          </label>
+          <Select
+            name="currency"
+            value={form.default_currency}
+            onChange={handleChange("default_currency")}
+            className="w-full rounded border border-outline-variant bg-white px-3 py-2 text-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-warning focus:border-warning transition-colors"
+          >
+            <option value="">Select currency</option>
+            {Object.keys(CURRENCY_SYMBOLS).map((code) => (
+              <option key={code} value={code}>
+                {code} ({CURRENCY_SYMBOLS[code]})
+              </option>
+            ))}
+          </Select>
+        </div>
         <div className="flex flex-col md:flex-row md:justify-end gap-4">
           <button
             type="button"
