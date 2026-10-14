@@ -138,6 +138,7 @@ export default function VendorDetail() {
   const totalInvoiced = invoices.reduce((sum, inv) => sum + (inv.amount ?? 0), 0);
   const paidInvoices = invoices.filter((inv) => inv.status === 'paid');
   const totalPaid = paidInvoices.reduce((sum, inv) => sum + (inv.amount ?? 0), 0);
+  // const outstandingPayment=
   const vendorCurrency = vendor.currency ?? invoices[0]?.currency ?? 'USD';
 
   return (
@@ -322,7 +323,7 @@ export default function VendorDetail() {
           )}
         </Card>
 
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <Card>
             <p className="text-xs uppercase text-on-surface-variant">Total Invoices</p>
             <p className="text-2xl font-bold text-on-surface mt-1">{invoices.length}</p>
@@ -333,6 +334,10 @@ export default function VendorDetail() {
           </Card>
           <Card>
             <p className="text-xs uppercase text-on-surface-variant">Total Paid</p>
+            <p className="text-2xl font-bold text-on-surface tnum mt-1">{formatCurrency(totalPaid, vendorCurrency)}</p>
+          </Card>
+          <Card>
+            <p className="text-xs uppercase text-on-surface-variant">Outstanding Payment</p>
             <p className="text-2xl font-bold text-on-surface tnum mt-1">{formatCurrency(totalPaid, vendorCurrency)}</p>
           </Card>
         </div>
