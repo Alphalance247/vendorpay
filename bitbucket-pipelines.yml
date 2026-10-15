@@ -16,8 +16,8 @@
 # merge unless "Require passing builds before merge" is enabled in
 # Repository settings -> Branch restrictions for both `main` and `prod`.
 #
-# Nothing is built in CI for deployment: the deploy steps only SSH to the Ubuntu
-# host, which runs `docker compose up -d --build` itself.
+# Nothing is built in CI for deployment: the deploy steps only dispatch an AWS SSM Run
+# Command (no SSH, no inbound ports); the Ubuntu host runs `docker compose up -d --build`.
 
 definitions:
   steps:
@@ -115,7 +115,7 @@ definitions:
           enabled: false
         script:
           - export AWS_REGION="${AWS_REGION:-us-east-1}"
-          - export AWS_ROLE_ARN="${AWS_ROLE_ARN:-arn:aws:iam::863859422390:role/bitbucket-pipelines-ec2-deployer}"
+          - export AWS_ROLE_ARN="arn:aws:iam::863859422390:role/bitbucket-pipelines-ec2-deployer"
           - export AWS_WEB_IDENTITY_TOKEN_FILE="/tmp/web-identity-token"
           - echo "$BITBUCKET_STEP_OIDC_TOKEN" > "$AWS_WEB_IDENTITY_TOKEN_FILE"
           - |
@@ -129,22 +129,22 @@ definitions:
             echo "AWS Region:  $AWS_REGION"
             echo "IAM Role:    $AWS_ROLE_ARN"
 
+            # Production may only ever be deployed from the prod branch (reached via PR).
+            if [ "${BITBUCKET_DEPLOYMENT_ENVIRONMENT:-}" = "production" ] && [ "$BITBUCKET_BRANCH" != "prod" ]; then
+              echo "BLOCKED: production deploys only from 'prod', not '$BITBUCKET_BRANCH'."
+              exit 1
+            fi
+
             # 0. Authenticate & Verify AWS Identity via OIDC
             echo "Authenticating to AWS via OIDC Web Identity..."
             aws sts get-caller-identity
 
             # 1. Resolve Target EC2 Instance based on Deployment Environment
-            if [ -n "${TARGET_INSTANCE_ID:-}" ]; then
-              INSTANCE_ID="$TARGET_INSTANCE_ID"
-              echo "Using explicitly configured Target Instance ID: $INSTANCE_ID"
-            elif [ "${BITBUCKET_DEPLOYMENT_ENVIRONMENT:-test}" = "production" ]; then
-              TARGET_TAG="${TARGET_APP_TAG:-vendor - prod}"
-              echo "Production Environment: resolving EC2 instance with tag 'Original Name=$TARGET_TAG' in $AWS_REGION..."
-              INSTANCE_ID=$(aws ec2 describe-instances \
-                --region "$AWS_REGION" \
-                --filters "Name=tag:Original Name,Values=$TARGET_TAG" "Name=instance-state-name,Values=running" \
-                --query "Reservations[0].Instances[0].InstanceId" \
-                --output text)
+            if [ "${BITBUCKET_DEPLOYMENT_ENVIRONMENT:-test}" = "production" ]; then
+              # Production instance is pinned here on purpose (not a variable, no tag lookup).
+              INSTANCE_ID="i-0c1d4cab454104d92"
+              TARGET_TAG="vendor - prod"
+              echo "Production Environment: using fixed Target Instance ID: $INSTANCE_ID"
             else
               TARGET_TAG="${TARGET_APP_TAG:-TenderFlow_VendorPay}"
               echo "Test Environment: resolving EC2 instance with tag 'Original Name=$TARGET_TAG' in $AWS_REGION..."
@@ -192,7 +192,24 @@ definitions:
             echo "  Backend URL: $VITE_BACKEND_URL"
 
             # 4. Construct SSM Run Command payload
-            python3 -c 'import os, json; app = os.environ.get("APP_PATH", "/home/ubuntu/merged-vp"); branch = os.environ.get("BRANCH", "main"); backend_url = os.environ.get("VITE_BACKEND_URL", "https://vpay.goalluvium.net/"); params = {"commands": ["set -e", "echo === Deploying Frontend on $(hostname) at $(date) ===", f"sudo -u ubuntu -i bash -c \"cd '\''{app}'\'' && git fetch --all --prune && git checkout '\''{branch}'\'' && git reset --hard '\''origin/{branch}'\'' && export VITE_BACKEND_URL='\''{backend_url}'\'' && docker compose up -d --build && docker image prune -f\"", "echo === Docker Container Status ===", "sudo -u ubuntu -i docker ps --filter name=vendorpay-frontend", "echo === Deployment Finished Successfully ==="], "workingDirectory": [app]}; open("/tmp/ssm-parameters.json", "w").write(json.dumps(params, indent=2))'
+            # The remote script is shipped base64-encoded so no value needs shell/JSON
+            # escaping, and nothing here depends on python3 or jq in the aws-cli image.
+            cat > /tmp/remote-deploy.sh <<REMOTE
+            set -e
+            echo "=== Deploying Frontend on \$(hostname) at \$(date) ==="
+            cd '$APP_PATH'
+            git fetch --all --prune
+            git checkout '$BRANCH'
+            git reset --hard 'origin/$BRANCH'
+            export VITE_BACKEND_URL='$VITE_BACKEND_URL'
+            docker compose up -d --build
+            docker image prune -f
+            echo "=== Docker Container Status ==="
+            docker ps --filter name=vendorpay-frontend
+            echo "=== Deployment Finished Successfully ==="
+            REMOTE
+            REMOTE_B64=$(base64 < /tmp/remote-deploy.sh | tr -d '\n')
+            printf '{"commands":["echo %s | base64 -d | sudo -u ubuntu -i bash"]}' "$REMOTE_B64" > /tmp/ssm-parameters.json
 
             echo "Dispatching deployment commands to $INSTANCE_ID..."
             COMMAND_ID=$(aws ssm send-command \
@@ -303,13 +320,15 @@ pipelines:
 #     Without these, Bitbucket still allows merging a red build. The step
 #     ordering above is what guarantees a failed gate blocks the deploy.
 #
-#  3. The `test` and `production` deployment environments must define distinct
-#     SSH_HOST / DEPLOY_PATH / VITE_BACKEND_URL values.
+#  3. Deployments use AWS SSM + Bitbucket OIDC (no SSH keys, no known_hosts). The
+#     AWS-side setup is fixed in the deploy step (the role ARN is hardcoded there,
+#     not a variable), and so is the production EC2 instance ID. Optional deployment
+#     variables (AWS_REGION, TARGET_APP_TAG for test, DEPLOY_PATH, VITE_BACKEND_URL)
+#     may be set on the `test` and `production` deployment environments.
 #
-#  4. Both deployment environments must also define SSH_PRIVATE_KEY_B64 (masked)
-#     and KNOWN_HOSTS_B64. These are deployment-scoped, so they are only visible
-#     to steps declaring `deployment:`. Clear the key under Repository settings
-#     -> Pipelines -> SSH keys, or it will collide with the one written here.
+#  4. Clear any key under Repository settings -> Pipelines -> SSH keys; it is no
+#     longer used. The EC2 host still needs its own read-only Bitbucket access key
+#     so `git fetch` works when SSM runs the deploy as `ubuntu`.
 #
 #  5. THE `prod` BRANCH MUST CARRY THIS SAME FILE.
 #     Bitbucket always reads bitbucket-pipelines.yml from the branch being built,
