@@ -45,6 +45,7 @@ function displayActor(performedBy) {
   return performedBy;
 }
 import { useConfirm } from "../../hooks/useConfirm";
+import { MdOutlineArrowOutward } from "react-icons/md";
 
 export default function InvoiceDetail() {
   const navigate = useNavigate();
@@ -60,12 +61,14 @@ export default function InvoiceDetail() {
   const [docContentType, setDocContentType] = useState(null);
   const [docLoading, setDocLoading] = useState(false);
 
+
   const [aiMessages, setAiMessages] = useState([
     {
       role: "ai",
-      text: `Hi! I can answer questions about this invoice — status, payment timing, rejection reasons, or anything else.`,
+      text: `Hi! I'm your AI invoice assistant. I can access the invoice details provided to me, including its current status, amount, submission date, due date, vendor notes, and recorded audit history. I can use this information to help explain your invoice status, payment progress, and recorded rejection reasons. I can only answer using the information available to me, so I may not have access to payment records or updates that haven't been recorded here.`,
     },
   ]);
+
   const [aiInput, setAiInput] = useState("");
   const [aiTyping, setAiTyping] = useState(false);
 
@@ -93,7 +96,7 @@ export default function InvoiceDetail() {
         setDocUrl(doc.url);
         setDocContentType(doc.contentType);
       })
-      .catch(() => {})
+      .catch(() => { })
       .finally(() => setDocLoading(false));
     return () => {
       if (url) window.URL.revokeObjectURL(url);
@@ -128,7 +131,7 @@ export default function InvoiceDetail() {
           return data;
         });
       })
-      .catch(() => {});
+      .catch(() => { });
   }, [id]);
 
   useEffect(() => {
@@ -259,8 +262,8 @@ export default function InvoiceDetail() {
     }
   }
 
-  async function sendAiMessage() {
-    const text = aiInput.trim();
+  async function sendAiMessage(question) {
+    const text = (question ?? aiInput).trim();
     if (!text || aiTyping || !invoice) return;
 
     const userMsg = { role: "user", text };
@@ -301,13 +304,18 @@ export default function InvoiceDetail() {
       ];
 
       const reply = await supportService.chat(history);
-      setAiMessages((prev) => [...prev, { role: "ai", text: reply }]);
+
+      setAiMessages((prev) => [
+        ...prev,
+        { role: "ai", text: reply },
+      ]);
     } catch {
       setAiMessages((prev) => [
         ...prev,
         {
           role: "ai",
-          text: "I'm having trouble connecting right now. Please try again or raise a support ticket.",
+          // text: "I'm having trouble connecting right now. Please try again or raise a support ticket.",
+          text: "I'm unable to retrieve an answer right now. Please try again, or use the Raise a Support Ticket option below to contact our support team.",
         },
       ]);
     } finally {
@@ -709,12 +717,12 @@ export default function InvoiceDetail() {
                       <div className="w-1.5 h-1.5 rounded-full bg-success mt-1.5 flex-shrink-0" />
                       <div>
                         <p className="text-xs text-on-surface">
-                          {log.action}
+                          <span className="capitalize"> {log.action}</span>
                           {log.notes ? ` — ${log.notes}` : ""}
                         </p>
                         <p className="text-xs text-outline">
-                          {displayActor(log.performed_by)} ·{" "}
-                          {formatDate(log.timestamp)}
+                          <span className="capitalize">{displayActor(log.performed_by)}</span> ·{" "}
+                          <span className="capitalize"> {formatDate(log.timestamp)}</span>
                         </p>
                       </div>
                     </div>
@@ -807,13 +815,14 @@ export default function InvoiceDetail() {
                   <p className="text-xs font-semibold uppercase tracking-wide text-success">
                     AI Support
                   </p>
-                  <span className="ml-auto text-xs text-success bg-success/10 px-2 py-0.5 rounded-full flex items-center gap-1">
+                  {/* <span className="ml-auto text-xs text-success bg-success/10 px-2 py-0.5 rounded-full flex items-center gap-1">
                     <span className="w-1 h-1 rounded-full bg-success animate-pulse" />
                     Online
-                  </span>
+                  </span> */}
                 </div>
               </div>
-              <div className="p-4 space-y-3 max-h-[200px] overflow-y-auto bg-surface-container/30">
+              {/* <div className="p-4 space-y-3 max-h-[200px] overflow-y-auto bg-surface-container/30"> */}
+              <div className="p-3 space-y-3 h-[180px] overflow-y-auto bg-surface-container/30">
                 {aiMessages.map((msg, i) => (
                   <div
                     key={i}
@@ -850,7 +859,8 @@ export default function InvoiceDetail() {
                   </div>
                 )}
               </div>
-              <div className="px-4 py-3 border-t border-outline-variant bg-white">
+              {/* <div className="px-4 py-3 border-t border-outline-variant bg-white"> */}
+              <div className="px-3 py-3 border-t border-outline-variant bg-white">
                 <p className="text-xs text-on-surface-variant mb-2">
                   Ask about this invoice:
                 </p>
@@ -862,28 +872,91 @@ export default function InvoiceDetail() {
                     placeholder="e.g. When will this be paid?"
                     className="flex-1 text-xs border border-outline-variant rounded px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-success"
                   />
+
                   <button
-                    // size="sm"
+                    type="button"
+                    onClick={() => sendAiMessage()}
+                    disabled={!aiInput.trim() || aiTyping}
+                    aria-label="Send message to AI Support"
+                    className={`p-2 px-3 rounded-lg flex items-center justify-center transition-colors ${!aiInput.trim() || aiTyping
+                      ? "bg-surface-container text-outline cursor-not-allowed opacity-60"
+                      : "bg-primary text-on-primary hover:bg-primary/90 active:bg-primary/80 cursor-pointer"
+                      }`}
+                  >
+                    {aiTyping ? (
+                      <Loader2 size={14} className="animate-spin" />
+                    ) : (
+                      <Send size={14} />
+                    )}
+                  </button>
+
+                  {/* <button
+                    
                     onClick={sendAiMessage}
                     className="p-1.5 px-3 rounded bg-primary text-on-primary hover:bg-primary/90 active:bg-primary/90"
                     disabled={!aiInput.trim() || aiTyping}
                   >
                     <Send size={14} />
-                  </button>
+                  </button> */}
                 </div>
-                <div className="flex gap-1 mt-2 flex-wrap">
-                  {["Payment status?", "Why pending?", "Download receipt"].map(
-                    (q) => (
+                {/* <div className="flex gap-1 mt-2 flex-wrap"> */}
+                <div className="grid grid-cols-1  gap-2 mt-2">
+                  {["What is the current status of this invoice?",
+                    "Why is this invoice still pending?",
+                    "When is this invoice due for payment?",
+                    "What should I do if my invoice is rejected?",].map(
+                      (q) => (
+                        <button
+                          key={q}
+                          type="button"
+                          onClick={() => sendAiMessage(q)}
+                          disabled={aiTyping}
+                          className="flex justify-between text-left text-xs px-3 py-2.5 rounded-lg border border-outline-variant bg-white text-on-surface hover:border-success hover:bg-success/5 transition-colors disabled:opacity-50"
+                        >
+                          {q}
+                          <MdOutlineArrowOutward size={14} className="text-on-surface" />
+
+                        </button>
+                      ),
+                    )}
+                </div>
+
+                <div className="px-4 py-3 border-t border-outline-variant bg-surface-container/30">
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-success/10 flex items-center justify-center shrink-0">
+                      <MessageSquare size={16} className="text-success" />
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-on-surface">
+                        Still need help?
+                      </p>
+
+                      {/* <p className="text-xs text-on-surface-variant mt-1 leading-relaxed">
+                        If the AI assistant couldn't resolve your question, contact our
+                        support team by raising a support ticket.
+                      </p> */}
+
+                      <p className="text-xs text-on-surface-variant mt-1 leading-relaxed">
+                        If the AI assistant can't resolve your question, raise a support
+                        ticket and the VendorPay support team will follow up with you.
+                      </p>
+
                       <button
-                        key={q}
-                        onClick={() => setAiInput(q)}
-                        className="text-xs px-2 py-1 rounded bg-surface-container text-on-surface-variant hover:bg-success/10 hover:text-success transition-colors"
+                        type="button"
+                        onClick={() =>
+                          navigate(isAdmin ? "/admin/support" : "/vendor/support")
+                        }
+                        className="mt-3 inline-flex items-center gap-2 rounded-lg bg-primary text-on-primary px-3 py-2 text-xs font-medium hover:bg-primary/90 transition-colors"
                       >
-                        {q}
+                        <MessageSquare size={14} />
+                        Raise a Support Ticket
+                        <ArrowLeft size={13} className="rotate-180" />
                       </button>
-                    ),
-                  )}
+                    </div>
+                  </div>
                 </div>
+
               </div>
             </Card>
           </div>

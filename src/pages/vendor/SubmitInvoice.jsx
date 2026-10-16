@@ -295,7 +295,7 @@ export default function SubmitInvoice() {
           title="How to Submit an Invoice"
           description="Upload your invoice file and let AI fill in the details — then review before submitting."
           tips={[
-            "Drag and drop or click Browse to upload a PDF, Word document or image of your invoice (max 25 MB).",
+            "Drag and drop or click Browse to upload a PDF or image of your invoice (max 25 MB).",
             "AI will automatically extract the invoice number, amount, currency, and dates — form fields are locked during this process.",
             // "AI can misread values — compare each extracted field with your document and click Edit to fix anything that's wrong.",
             // "If AI can't read your invoice or misses a field, you'll be asked to fill it in manually from your document.",

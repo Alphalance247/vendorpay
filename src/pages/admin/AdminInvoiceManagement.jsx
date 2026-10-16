@@ -19,7 +19,7 @@ const PAGE_SIZE = 25;
 
 const TABS = [
   { label: "All", status: undefined },
-  { label: "Pending", status: "submitted" },
+  // { label: "Pending", status: "submitted" },
   { label: "Reviewed", status: "reviewed" },
   { label: "Funding", status: "funding" },
   { label: "Paid", status: "paid" },
@@ -396,11 +396,10 @@ export default function AdminInvoiceManagement() {
               <button
                 key={tab.label}
                 onClick={() => switchTab(idx)}
-                className={`px-4 py-3 text-sm font-medium whitespace-nowrap transition-colors flex-shrink-0 ${
-                  activeTab === idx
+                className={`px-4 py-3 text-sm font-medium whitespace-nowrap transition-colors flex-shrink-0 ${activeTab === idx
                     ? "text-secondary border-b-2 border-secondary -mb-px"
                     : "text-on-surface-variant hover:text-on-surface"
-                }`}
+                  }`}
               >
                 {tab.label}
               </button>
