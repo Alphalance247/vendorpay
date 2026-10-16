@@ -40,6 +40,18 @@ const TABS = [
   { key: "Denied", icon: XCircle, accent: "text-error" },
 ];
 
+// GET /invoices/admin/payments returns pre-computed count + total per
+// status bucket (paid / awaiting_payment / denied), alongside `items` and
+// `total` (grand count). Maps each tab to its backend aggregate key so the
+// summary cards read those directly instead of recomputing from `items`.
+const AGGREGATE_KEY_BY_TAB = {
+  Paid: "paid",
+  "Awaiting Payment": "awaiting_payment",
+  Denied: "denied",
+};
+
+const EMPTY_AGGREGATE = { count: 0, total: { amount: 0, currency: "USD" } };
+
 // Which tab each backend status belongs to. Money has gone out for every
 // status in the Paid tab — the vendor may since have confirmed or disputed it.
 const TAB_BY_STATUS = {
@@ -67,6 +79,7 @@ const STATUS_LABEL = {
 export default function AdminPayments() {
   const navigate = useNavigate();
   const [payments, setPayments] = useState([]);
+  const [aggregates, setAggregates] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [activeTab, setActiveTab] = useState("Paid");
@@ -75,7 +88,14 @@ export default function AdminPayments() {
   useEffect(() => {
     invoiceService
       .getAdminPayments({ page_size: 200 })
-      .then(setPayments)
+      .then((data) => {
+        setPayments(data.items ?? []);
+        setAggregates({
+          paid: data.paid,
+          awaiting_payment: data.awaiting_payment,
+          denied: data.denied,
+        });
+      })
       .catch(() => setError("Failed to load payments."))
       .finally(() => setLoading(false));
   }, []);
@@ -83,11 +103,19 @@ export default function AdminPayments() {
   // `return` the filter keeps nothing and every tab is empty.
   const byTab = (tab) =>
     payments.filter((p) => TAB_BY_STATUS[p.status] === tab);
+
+  // Count + total per tab come straight from the backend's aggregates
+  // rather than being recomputed from the loaded `items` page.
+  const aggregateFor = (tab) =>
+    aggregates[AGGREGATE_KEY_BY_TAB[tab]] ?? EMPTY_AGGREGATE;
   const counts = Object.fromEntries(
-    TABS.map(({ key }) => [key, byTab(key).length]),
+    TABS.map(({ key }) => [key, aggregateFor(key).count ?? 0]),
   );
   const totals = Object.fromEntries(
-    TABS.map(({ key }) => [key, formatTotals(byTab(key))]),
+    TABS.map(({ key }) => {
+      const { total } = aggregateFor(key);
+      return [key, formatCurrency(total?.amount ?? 0, total?.currency ?? "USD")];
+    }),
   );
 
   const filtered = byTab(activeTab).filter((p) => {

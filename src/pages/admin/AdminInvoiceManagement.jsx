@@ -1,11 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  Search,
-  X,
-  Loader2,
-  // ChevronLeft, ChevronRight
-} from "lucide-react";
+import { Search, X, Loader2, ChevronLeft, ChevronRight } from "lucide-react";
 import TutorialCard from "../../components/ui/TutorialCard";
 import AppLayout from "../../components/layout/AppLayout";
 import Card from "../../components/ui/Card";
@@ -163,6 +158,14 @@ export default function AdminInvoiceManagement() {
 
   const [invoices, setInvoices] = useState([]);
   const [total, setTotal] = useState(0);
+  // Backend-provided aggregates across ALL invoices (not just the current
+  // page) — unlike pendingCount/disputedCount below, which are approximated
+  // from whatever page is currently loaded.
+  const [totalPaid, setTotalPaid] = useState({ amount: 0, currency: "USD" });
+  const [outstandingPayments, setOutstandingPayments] = useState({
+    amount: 0,
+    currency: "USD",
+  });
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -179,26 +182,44 @@ export default function AdminInvoiceManagement() {
   // Inline action loading per row
   const [rowLoading, setRowLoading] = useState({});
 
-  const fetchInvoices = useCallback(async () => {
-    setLoading(true);
-    setError("");
-    try {
-      const data = await adminInvoiceService.getAllInvoices({
-        status: TABS[activeTab].status,
-        search: search || undefined,
-        page,
-        pageSize: PAGE_SIZE,
+  // A plain .then()/.catch()/.finally() chain (not async/await) so that
+  // setLoading/setError run inside a deferred callback rather than
+  // synchronously in the function body — calling fetchInvoices() from the
+  // effect below would otherwise trip react-hooks/set-state-in-effect.
+  const fetchInvoices = useCallback(() => {
+    return Promise.resolve()
+      .then(() => {
+        setLoading(true);
+        setError("");
+        return adminInvoiceService.getAllInvoices({
+          status: TABS[activeTab].status,
+          search: search || undefined,
+          page,
+          pageSize: PAGE_SIZE,
+        });
+      })
+      .then((data) => {
+        const items = Array.isArray(data)
+          ? data
+          : (data.items ?? data.invoices ?? []);
+
+        setInvoices(items);
+        setTotal(data.total ?? items.length);
+        setTotalPaid({
+          amount: data.total_paid?.amount ?? 0,
+          currency: data.total_paid?.currency ?? "USD",
+        });
+        setOutstandingPayments({
+          amount: data.outstanding_payments?.amount ?? 0,
+          currency: data.outstanding_payments?.currency ?? "USD",
+        });
+      })
+      .catch((err) => {
+        setError(extractErrorMessage(err));
+      })
+      .finally(() => {
+        setLoading(false);
       });
-      const items = Array.isArray(data)
-        ? data
-        : (data.items ?? data.invoices ?? []);
-      setInvoices(items);
-      setTotal(data.total ?? items.length);
-    } catch (err) {
-      setError(extractErrorMessage(err));
-    } finally {
-      setLoading(false);
-    }
   }, [activeTab, search, page]);
 
   useEffect(() => {
@@ -270,13 +291,12 @@ export default function AdminInvoiceManagement() {
     }
   }
 
-  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
-
   // Stats derived from current page data (approximation — full stats would require separate API call)
   const pendingCount = invoices.filter((i) => i.status === "submitted").length;
   const disputedCount = invoices.filter(
     (i) => i.status === "payment_disputed",
   ).length;
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   return (
     <AppLayout role="admin">
@@ -325,7 +345,7 @@ export default function AdminInvoiceManagement() {
         )}
 
         {/* Stats row */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
           <Card className="py-4">
             <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant">
               Total Invoices
@@ -350,10 +370,21 @@ export default function AdminInvoiceManagement() {
           </Card>
           <Card className="py-4">
             <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant">
-              Page
+              Total Paid
             </p>
-            <p className="text-2xl font-bold text-on-surface mt-1">
-              {page} / {totalPages}
+            <p className="text-2xl font-bold text-on-surface tnum mt-1">
+              {formatCurrency(totalPaid.amount, totalPaid.currency)}
+            </p>
+          </Card>
+          <Card className="py-4">
+            <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant">
+              Outstanding Payment
+            </p>
+            <p className="text-2xl font-bold text-on-surface tnum mt-1">
+              {formatCurrency(
+                outstandingPayments.amount,
+                outstandingPayments.currency,
+              )}
             </p>
           </Card>
         </div>
@@ -529,132 +560,37 @@ export default function AdminInvoiceManagement() {
                   </tbody>
                 </table>
               </div>
-
-              {/* Phone: stacked cards */}
-              {/* <div className="md:hidden divide-y divide-outline-variant w-[300px] lg:w-full overflow-x-auto">
-                {invoices.map((inv) => {
-                  const overdue = isOverdue(inv);
-                  const rowKey = rowLoading[inv.id];
-                  const status = STATUS_LABEL[inv.status] ?? inv.status;
-
-                  return (
-                    <div
-                      key={inv.id}
-                      onClick={() => navigate(`/admin/invoices/${inv.id}`)}
-                      className="px-4 py-4 active:bg-surface-container/50 transition-colors cursor-pointer"
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <p className="text-sm font-semibold text-on-surface truncate">
-                            {inv.vendor_name ?? "—"}
-                          </p>
-                          <p className="text-xs font-mono text-on-surface-variant mt-0.5">
-                            {inv.invoice_number}
-                          </p>
-                        </div>
-                        <StatusChip status={status} className="flex-shrink-0" />
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 mt-3 text-xs">
-                        <div>
-                          <span className="text-on-surface-variant">
-                            Amount:{" "}
-                          </span>
-                          <span className="font-semibold tnum text-on-surface">
-                            {formatCurrency(inv.amount, inv.currency)}
-                          </span>
-                        </div>
-                        {inv.payment_rail && (
-                          <div>
-                            <span className="text-on-surface-variant">
-                              Rail:{" "}
-                            </span>
-                            <span className="text-on-surface font-medium">
-                              {inv.payment_rail}
-                            </span>
-                          </div>
-                        )}
-                        <div>
-                          <span className="text-on-surface-variant">
-                            Submitted:{" "}
-                          </span>
-                          <span className="text-on-surface">
-                            {formatDate(inv.submitted_at)}
-                          </span>
-                        </div>
-                        {inv.due_date && (
-                          <div>
-                            <span className="text-on-surface-variant">
-                              Due:{" "}
-                            </span>
-                            <span
-                              className={
-                                overdue
-                                  ? "text-error font-semibold"
-                                  : "text-on-surface"
-                              }
-                            >
-                              {formatDate(inv.due_date)}
-                              {overdue ? " (Late)" : ""}
-                            </span>
-                          </div>
-                        )}
-                        {inv.payment_date && (
-                          <div>
-                            <span className="text-on-surface-variant">
-                              Paid on:{" "}
-                            </span>
-                            <span className="text-on-surface">
-                              {formatDate(inv.payment_date)}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-
-                      <div onClick={(e) => e.stopPropagation()}>
-                        <InvoiceActions
-                          inv={inv}
-                          loading={rowKey}
-                          onApprove={() => handleApprove(inv)}
-                          onFund={() => handleFund(inv)}
-                          onMarkPaid={() => handleMarkPaid(inv)}
-                          onReject={() => openReject(inv)}
-                          className="flex items-center gap-2 mt-3"
-                        />
-                      </div>
-                    </div>
-                  );
-                })}
-              </div> */}
             </>
           )}
 
           {/* Pagination */}
-          {/* <div className="px-4 py-3 border-t border-outline-variant flex flex-col sm:flex-row items-center gap-2 sm:justify-between">
-            <p className="text-xs text-on-surface-variant">
-              Showing {invoices.length === 0 ? 0 : (page - 1) * PAGE_SIZE + 1}–
-              {(page - 1) * PAGE_SIZE + invoices.length} of {total}
-            </p>
-            <div className="flex items-center gap-1">
-              <button
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page === 1}
-                className="p-1.5 rounded text-on-surface-variant hover:bg-surface-container disabled:opacity-30 transition-colors"
-              >
-                <ChevronLeft size={14} />
-              </button>
-              <span className="px-2 text-xs text-on-surface-variant">
-                {page} / {totalPages}
-              </span>
-              <button
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                disabled={page === totalPages}
-                className="p-1.5 rounded text-on-surface-variant hover:bg-surface-container disabled:opacity-30 transition-colors"
-              >
-                <ChevronRight size={14} />
-              </button>
+          {!loading && invoices.length > 0 && (
+            <div className="px-4 py-3 border-t border-outline-variant flex flex-col sm:flex-row items-center gap-2 sm:justify-between">
+              <p className="text-xs text-on-surface-variant">
+                Showing {(page - 1) * PAGE_SIZE + 1}–
+                {(page - 1) * PAGE_SIZE + invoices.length} of {total}
+              </p>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={page === 1}
+                  className="p-1.5 rounded text-on-surface-variant hover:bg-surface-container disabled:opacity-30 transition-colors"
+                >
+                  <ChevronLeft size={14} />
+                </button>
+                <span className="px-2 text-xs text-on-surface-variant">
+                  {page} / {totalPages}
+                </span>
+                <button
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={page === totalPages}
+                  className="p-1.5 rounded text-on-surface-variant hover:bg-surface-container disabled:opacity-30 transition-colors"
+                >
+                  <ChevronRight size={14} />
+                </button>
+              </div>
             </div>
-          </div> */}
+          )}
         </Card>
       </div>
     </AppLayout>

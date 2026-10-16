@@ -2,7 +2,18 @@ import { cn } from '../../lib/utils';
 
 const styles = {
   Active: 'bg-success-container text-success',
+  active: 'bg-success-container text-success',
   Inactive: 'bg-error-container text-error',
+  inactive: 'bg-error-container text-error',
+  // Vendor invite lifecycle: Invited (invite sent, not yet accepted) reuses
+  // the same amber "awaiting action" treatment as the generic Pending state
+  // below. Onboarding (invite accepted, setup in progress) gets its own
+  // distinct secondary/cyan treatment so it reads as "in progress", not
+  // "needs your attention" or "done".
+  Invited: 'bg-warning-container text-warning',
+  invited: 'bg-warning-container text-warning',
+  Onboarding: 'bg-secondary-container text-secondary',
+  onboarding: 'bg-secondary-container text-secondary',
   Paid: 'bg-success/10 text-success',
   paid: 'bg-success/10 text-success',
   'Payment Confirmed': 'bg-success/20 text-success font-semibold',
