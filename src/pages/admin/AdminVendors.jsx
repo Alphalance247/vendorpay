@@ -103,9 +103,17 @@ export default function AdminVendors() {
   }, []);
 
   // Pending invites and registered vendors both come from the same /vendors/
-  // list — a "pending" status is a vendor who hasn't accepted their invite yet.
-  const pendingVendorInvites = vendors.filter((v) => v.status === "pending");
-  const registeredVendors = vendors.filter((v) => v.status !== "pending");
+  // list. The backend now sends one of four statuses per vendor: Invited,
+  // Onboarding, Active, Inactive. Only "Invited" (invite sent, not yet
+  // accepted) belongs in the pending-invites table below — Onboarding/
+  // Active/Inactive are all vendors who already have an account, so they
+  // show in the registered-vendors table with their real status chip.
+  // "pending" is kept here too as a fallback in case older backend
+  // responses are still in the mix during rollout.
+  const isInviteStatus = (status) =>
+    ["invited", "pending"].includes((status || "").toLowerCase());
+  const pendingVendorInvites = vendors.filter((v) => isInviteStatus(v.status));
+  const registeredVendors = vendors.filter((v) => !isInviteStatus(v.status));
   const resendInvite = useResendInvite();
   const deleteInvite = useDeleteTeamMember();
 
@@ -327,9 +335,7 @@ export default function AdminVendors() {
                           {vendor.industry ?? "—"}
                         </td>
                         <td className="px-6 py-4">
-                          <StatusChip
-                            status={vendor.is_active ? "Active" : "Inactive"}
-                          />
+                          <StatusChip status={vendor.status} />
                         </td>
                         <td
                           className="px-6 py-4"

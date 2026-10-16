@@ -6,9 +6,6 @@ import { withSubdomain, currentTenantBaseUrl } from "./tenantResolver";
 // single slash regardless of how environment.baseUrl is formatted.
 const BASE_URL = environment.baseUrl.replace(/\/+$/, "");
 
-console.log(BASE_URL);
-
-
 /**
  * Get the current company's base URL.
  *
@@ -58,12 +55,8 @@ export const resolveMediaUrl = (url) => {
 
   const baseUrl = companyBaseUrl();
 
-  return new URL(
-    url.startsWith("/") ? url : `/${url}`,
-    baseUrl
-  ).toString();
+  return new URL(url.startsWith("/") ? url : `/${url}`, baseUrl).toString();
 };
-
 
 const apiClient = axios.create({
   baseURL: companyApiBaseUrl(),
