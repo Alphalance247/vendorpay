@@ -1,5 +1,7 @@
 import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { getData as getCountryData } from "country-list";
+import CURRENCY_BY_COUNTRY from "currency-code-map";
 import { Check, ArrowRight, ArrowLeft, Save, ShieldCheck } from "lucide-react";
 import { vendorService } from "../../lib/services/vendorService";
 import { useAuth } from "../../lib/authContext";
@@ -26,8 +28,8 @@ function StepIndicator({ current }) {
                   done && "bg-secondary border-secondary text-white",
                   active && "bg-white border-secondary text-secondary",
                   !done &&
-                  !active &&
-                  "bg-white border-outline-variant text-on-surface-variant",
+                    !active &&
+                    "bg-white border-outline-variant text-on-surface-variant",
                 )}
               >
                 {done ? <Check size={14} /> : i + 1}
@@ -101,13 +103,15 @@ function CompanyStep({ data, onChange, errors }) {
           required
           error={errors?.businessType}
         /> */}
-        <Select label="Business Type"
+        <Select
+          label="Business Type"
           name="businessType"
           value={data.businessType}
           onChange={onChange}
           placeholder="e.g. LLC, Corporation"
           required
-          error={errors?.businessType}>
+          error={errors?.businessType}
+        >
           <option value="">Select business type</option>
           <option>LLC</option>
           <option>Corporation</option>
@@ -178,10 +182,47 @@ function CompanyStep({ data, onChange, errors }) {
     </div>
   );
 }
-const COUNTRY_PROFILES = {
+// country-list ships official ISO 3166-1 short names (e.g. "United States
+// of America (the)", "Korea (the Republic of)"), which read oddly in a
+// banking form — clean those up for display while keeping the ISO code as
+// the stored value. (Same cleanup used for the company-country pickers in
+// CompanySignup.jsx / company.jsx.)
+const COUNTRY_NAME_OVERRIDES = {
+  US: "United States",
+  GB: "United Kingdom",
+  KR: "South Korea",
+  KP: "North Korea",
+  TW: "Taiwan",
+  RU: "Russia",
+  VE: "Venezuela",
+  BO: "Bolivia",
+  IR: "Iran",
+  LA: "Laos",
+  SY: "Syria",
+  NL: "Netherlands",
+  MD: "Moldova",
+  VA: "Vatican City",
+  CD: "DR Congo",
+  CG: "Republic of the Congo",
+  FK: "Falkland Islands",
+  VG: "British Virgin Islands",
+  VI: "U.S. Virgin Islands",
+  FM: "Micronesia",
+};
+
+const COUNTRIES = getCountryData()
+  .map(({ code, name }) => ({
+    code,
+    name:
+      COUNTRY_NAME_OVERRIDES[code] ?? name.replace(/\s*\(the\)$/i, "").trim(),
+  }))
+  .sort((a, b) => a.name.localeCompare(b.name));
+
+// Countries with well-known, distinct local payment rails and bank-detail
+// fields — researched and curated by hand, since no public API maps
+// country -> local clearing network (see conversation with Abdul, Oct 2026).
+const SPECIFIC_COUNTRY_FIELDS = {
   US: {
-    label: "United States",
-    currency: "USD",
     rail: "ACH",
     bankPlaceholder: "e.g. Chase, Wells Fargo",
     fields: [
@@ -201,8 +242,6 @@ const COUNTRY_PROFILES = {
   },
 
   GB: {
-    label: "United Kingdom",
-    currency: "GBP",
     rail: "Faster Payments",
     bankPlaceholder: "e.g. Barclays, HSBC",
     fields: [
@@ -222,8 +261,6 @@ const COUNTRY_PROFILES = {
   },
 
   NG: {
-    label: "Nigeria",
-    currency: "NGN",
     rail: "NIP",
     bankPlaceholder: "e.g. GTBank, Access Bank",
     fields: [
@@ -244,8 +281,6 @@ const COUNTRY_PROFILES = {
   },
 
   KE: {
-    label: "Kenya",
-    currency: "KES",
     rail: "EFT / RTGS",
     bankPlaceholder: "e.g. Equity Bank, KCB",
     fields: [
@@ -270,8 +305,6 @@ const COUNTRY_PROFILES = {
   },
 
   ZA: {
-    label: "South Africa",
-    currency: "ZAR",
     rail: "EFT",
     bankPlaceholder: "e.g. Standard Bank, FNB",
     fields: [
@@ -291,8 +324,6 @@ const COUNTRY_PROFILES = {
   },
 
   CA: {
-    label: "Canada",
-    currency: "CAD",
     rail: "EFT",
     bankPlaceholder: "e.g. RBC, TD",
     fields: [
@@ -316,70 +347,93 @@ const COUNTRY_PROFILES = {
     ],
     accountTypes: ["Chequing", "Savings"],
   },
-
-  AF_OTHER: {
-    label: "Other African Country",
-    currency: "USD",
-    rail: "SWIFT",
-    bankPlaceholder: "Local bank name",
-    fields: [
-      {
-        name: "accountNumber",
-        label: "Account Number",
-        placeholder: "Enter account number",
-      },
-      {
-        name: "swiftCode",
-        label: "SWIFT / BIC",
-        placeholder: "e.g. XXXXXXXX",
-        hint: "Required for international wires",
-      },
-    ],
-    accountTypes: ["Current", "Savings"],
-  },
-
-  EU: {
-    label: "Eurozone (SEPA)",
-    currency: "EUR",
-    rail: "SEPA",
-    bankPlaceholder: "e.g. Deutsche Bank, BNP Paribas",
-    fields: [
-      {
-        name: "iban",
-        label: "IBAN",
-        placeholder: "DE89 3704 0044 0532 0130 00",
-        hint: "International Bank Account Number",
-      },
-      {
-        name: "swiftCode",
-        label: "SWIFT / BIC",
-        placeholder: "e.g. DEUTDEFF",
-      },
-    ],
-    accountTypes: ["Current", "Savings"],
-  },
-
-  OTHER: {
-    label: "Other / International Wire",
-    currency: "USD",
-    rail: "SWIFT",
-    bankPlaceholder: "Local bank name",
-    fields: [
-      {
-        name: "iban",
-        label: "IBAN / Account Number",
-        placeholder: "Enter IBAN or account number",
-      },
-      {
-        name: "swiftCode",
-        label: "SWIFT / BIC",
-        placeholder: "e.g. XXXXXXXX",
-        hint: "Required for international wires",
-      },
-    ],
-    accountTypes: ["Current", "Savings"],
-  },
 };
+
+// The 20 countries that settle over SEPA using EUR.
+const EUROZONE_CODES = [
+  "AT",
+  "BE",
+  "HR",
+  "CY",
+  "EE",
+  "FI",
+  "FR",
+  "DE",
+  "GR",
+  "IE",
+  "IT",
+  "LV",
+  "LT",
+  "LU",
+  "MT",
+  "NL",
+  "PT",
+  "SK",
+  "SI",
+  "ES",
+];
+
+const EUROZONE_FIELDS = {
+  rail: "SEPA",
+  bankPlaceholder: "e.g. Deutsche Bank, BNP Paribas",
+  fields: [
+    {
+      // Named accountNumber (not "iban") so it lines up with the
+      // required-field check and submit payload key every other
+      // country's primary field already uses.
+      name: "accountNumber",
+      label: "IBAN",
+      placeholder: "DE89 3704 0044 0532 0130 00",
+      hint: "International Bank Account Number",
+    },
+    {
+      name: "swiftCode",
+      label: "SWIFT / BIC",
+      placeholder: "e.g. DEUTDEFF",
+    },
+  ],
+  accountTypes: ["Current", "Savings"],
+};
+
+// Every other country: a generic international-wire profile. Still gets the
+// right payment rail label and the country's real currency, just without
+// hand-researched local bank fields.
+const DEFAULT_FIELDS = {
+  rail: "SWIFT",
+  bankPlaceholder: "Local bank name",
+  fields: [
+    {
+      // Named accountNumber (not "iban") — see EUROZONE_FIELDS above.
+      name: "accountNumber",
+      label: "IBAN / Account Number",
+      placeholder: "Enter IBAN or account number",
+    },
+    {
+      name: "swiftCode",
+      label: "SWIFT / BIC",
+      placeholder: "e.g. XXXXXXXX",
+      hint: "Required for international wires",
+    },
+  ],
+  accountTypes: ["Current", "Savings"],
+};
+
+const COUNTRY_PROFILES = Object.fromEntries(
+  COUNTRIES.map(({ code, name }) => {
+    const base =
+      SPECIFIC_COUNTRY_FIELDS[code] ??
+      (EUROZONE_CODES.includes(code) ? EUROZONE_FIELDS : DEFAULT_FIELDS);
+
+    return [
+      code,
+      {
+        ...base,
+        label: name,
+        currency: CURRENCY_BY_COUNTRY[code] || "",
+      },
+    ];
+  }),
+);
 // Country-specific banking inputs. When the country changes these must be
 // cleared, otherwise a value typed for the old country (e.g. a US routing
 // number) gets sent with the new one and the banking setup is rejected.
@@ -388,7 +442,6 @@ const COUNTRY_SPECIFIC_FIELDS = [
   "sortCode",
   "swiftCode",
   "branchCode",
-  "iban",
   "transitNumber",
   "institutionNumber",
 ];
@@ -413,15 +466,21 @@ function BankingStep({ data, onChange, errors }) {
     currency: "",
   };
   const countrySelected = !!country;
-  const mismatch =
-    data.accountNumber &&
-    data.confirmAccount &&
-    data.accountNumber !== data.confirmAccount;
+  // const mismatch =
+  //   data.accountNumber &&
+  //   data.confirmAccount &&
+  //   data.accountNumber !== data.confirmAccount;
   const handleCountryChange = (e) => {
     const countryCode = e.target.value;
     const next = resetForCountry(data, countryCode);
 
-    for (const key of ["country", "currency", "paymentRail", "accountType", ...COUNTRY_SPECIFIC_FIELDS]) {
+    for (const key of [
+      "country",
+      "currency",
+      "paymentRail",
+      "accountType",
+      ...COUNTRY_SPECIFIC_FIELDS,
+    ]) {
       onChange({ target: { name: key, value: next[key] } });
     }
   };
@@ -506,7 +565,7 @@ function BankingStep({ data, onChange, errors }) {
               key={field.name}
               className={
                 profile.fields.length % 2 === 1 &&
-                  field === profile.fields[profile.fields.length - 1]
+                field === profile.fields[profile.fields.length - 1]
                   ? "col-span-2"
                   : ""
               }
@@ -563,7 +622,7 @@ function BankingStep({ data, onChange, errors }) {
             required
             error={errors?.currency}
           />
-          <div className="col-span-2">
+          {/* <div className="col-span-2">
             <Input
               label="Confirm Account Number"
               name="confirmAccount"
@@ -578,26 +637,9 @@ function BankingStep({ data, onChange, errors }) {
               disabled={!countrySelected}
               required
             />
-          </div>
+          </div> */}
         </div>
       </div>
-
-      <label
-        className={cn(
-          "flex items-start gap-2 select-none text-sm",
-          !countrySelected
-            ? "text-on-surface-variant/40 cursor-not-allowed"
-            : "text-on-surface-variant cursor-pointer",
-        )}
-      >
-        <input
-          type="checkbox"
-          className="mt-0.5 accent-secondary"
-          disabled={!countrySelected}
-        />
-        I authorize VendorPay to perform a small test deposit to verify this
-        account. I understand that failure to verify may delay payment cycles.
-      </label>
     </div>
   );
 }
@@ -676,149 +718,6 @@ function ContactStep({ data, onChange, errors }) {
   );
 }
 
-// function ReviewStep({ data }) {
-//   const rows = [
-//     { label: "Company", value: data.companyName },
-//     { label: "Tax ID", value: data.taxId },
-//     { label: "Business Type", value: data.businessType },
-//     { label: "Address", value: data.address },
-//     { label: "Website", value: data.website },
-//     { label: "Industry", value: data.industry },
-//     { label: "Preferred Currency", value: data.currency },
-//     {
-//       label: "Country",
-//       value: COUNTRY_PROFILES[data.country]?.label || data.country,
-//     },
-//     { label: "Bank Name", value: data.bankName },
-//     { label: "Account Name", value: data.accountName },
-//     { label: "Account Type", value: data.accountType },
-//     { label: "Account Number", value: data.accountNumber },
-//     { label: "Contact", value: `${data.firstName} ${data.lastName}` },
-//     { label: "Email", value: data.email },
-//     { label: "Phone", value: data.phone },
-//     { label: "Title", value: data.title },
-//     { label: "Department", value: data.department },
-//   ];
-
-//   return (
-//     <div className="space-y-4">
-//       <div>
-//         <h2 className="font-headline-lg text-2xl font-semibold text-on-surface tracking-tight">
-//           Review & Submit
-//         </h2>
-//         <p className="text-on-surface-variant text-sm mt-1">
-//           Please review your information before submitting.
-//         </p>
-//       </div>
-//       <div className="bg-surface-container rounded-lg border border-outline-variant overflow-hidden">
-//         <table className="w-full text-sm">
-//           <tbody>
-//             {rows.map((row, i) =>
-//               row.value ? (
-//                 <tr
-//                   key={i}
-//                   className="border-b border-outline-variant last:border-0"
-//                 >
-//                   <td className="px-4 py-3 font-medium text-on-surface-variant w-1/3">
-//                     {row.label}
-//                   </td>
-//                   <td className="px-4 py-3 text-on-surface">{row.value}</td>
-//                 </tr>
-//               ) : null,
-//             )}
-//           </tbody>
-//         </table>
-//       </div>
-//       <div className="bg-success/5 border border-success/20 rounded-lg p-3 flex items-start gap-2 text-sm text-success">
-//         <ShieldCheck size={16} className="mt-0.5 flex-shrink-0" />
-//         By submitting, you confirm all information is accurate and agree to our
-//         verification process.
-//       </div>
-//     </div>
-//   );
-// }
-
-// const SECTIONS = [
-//   {
-//     key: "company",
-//     title: "Company",
-//     fields: [
-//       { key: "companyName", label: "Company name", type: "text" },
-//       { key: "taxId", label: "Tax ID", type: "text" },
-//       {
-//         key: "bizType",
-//         label: "Business type",
-//         type: "select",
-//         options: ["LLC", "Sole proprietorship", "Corporation", "Partnership"],
-//       },
-//       {
-//         key: "industry",
-//         label: "Industry",
-//         type: "select",
-//         options: [
-//           "Technology",
-//           "Manufacturing",
-//           "Logistics",
-//           "Professional Services",
-//           "Healthcare",
-//           "Other",
-//         ],
-//       },
-//       { key: "address", label: "Address", type: "text" },
-//       { key: "website", label: "Website", type: "text" },
-//     ],
-//   },
-//   {
-//     key: "banking",
-//     title: "Banking",
-
-//     fields: [
-//       {
-//         key: "country",
-//         label: "Country",
-//         type: "country",
-//       },
-//       {
-//         key: "currency",
-//         label: "Preferred currency",
-//         type: "readonly",
-//       },
-//       {
-//         key: "bankName",
-//         label: "Bank name",
-//         type: "text",
-//       },
-//       {
-//         key: "accounttName",
-//         label: "Account name",
-//         type: "text",
-//       },
-
-//       {
-//         key: "accountType",
-//         label: "Account type",
-//         type: "select",
-//         options: ["Savings", "Current", "Business"],
-//       },
-//       {
-//         key: "paymentRail",
-//         label: "Payment rail",
-//         type: "readonly",
-//         hint: "Set automatically based on country",
-//       },
-//     ],
-//   },
-//   {
-//     key: "contact",
-//     title: "Contact",
-//     fields: [
-//       { key: "contactName", label: "Contact name", type: "text" },
-//       { key: "title", label: "Title", type: "text" },
-//       { key: "email", label: "Email", type: "email" },
-//       { key: "phone", label: "Phone", type: "text" },
-//     ],
-//   },
-// ];
 const SECTIONS = [
   {
     key: "company",
@@ -1091,128 +990,11 @@ function EditField({ field, value, onChange, draft }) {
         />
       )}
 
-      {field.hint && (
-        <p className="mt-1 text-xs text-outline">{field.hint}</p>
-      )}
+      {field.hint && <p className="mt-1 text-xs text-outline">{field.hint}</p>}
     </div>
   );
 }
-// function SectionCard({
-//   section,
-//   index,
-//   values,
-//   isEditing,
-//   draft,
-//   onEdit,
-//   onCancel,
-//   onSave,
-//   onDraftChange,
-//   justSaved,
-// }) {
-//   return (
-//     <div className="mb-4 overflow-hidden rounded-xl border border-outline-variant bg-white">
-//       <div
-//         className={
-//           "flex items-center justify-between border-b border-outline-variant px-6 py-4 " +
-//           (isEditing ? "bg-secondary-container" : "bg-surface-container-low")
-//         }
-//       >
-//         <h2 className="flex items-center gap-2.5 text-lg font-semibold text-on-surface">
-//           <span className="flex h-5.5 w-5.5 items-center justify-center rounded-full bg-success-container text-xs font-bold text-warning">
-//             {index + 1}
-//           </span>
-//           {section.title}
-//         </h2>
-//         {isEditing ? (
-//           <button
-//             onClick={() => onCancel(section.key)}
-//             className="rounded-md px-2 py-1 text-sm font-semibold text-on-surface-variant hover:bg-surface-container"
-//           >
-//             Cancel
-//           </button>
-//         ) : (
-//           <button
-//             onClick={() => onEdit(section.key)}
-//             className="rounded-md px-2 py-1 text-sm font-semibold text-warning hover:bg-success-container"
-//           >
-//             Edit
-//           </button>
-//         )}
-//       </div>
-//       <Toast show={!!justSaved} message={justSaved} />
-//       {!isEditing ? (
-//         <>
-//           <div className="px-6 py-1">
-//             {section.fields.map((field) => (
-//               <ViewField
-//                 key={field.key}
-//                 field={field}
-//                 value={values[field.key]}
-//               />
-//             ))}
-//           </div>
-//           {section.key === "company" && <MismatchFlag />}
-//         </>
-//       ) : (
-//         <>
-//           <div className="grid grid-cols-2 gap-x-4 px-6 pt-4">
-//             {section.key === "banking" ? (
-//               <>
-//                 {section.fields.map((field) => (
-//                   <EditField
-//                     key={field.key}
-//                     field={field}
-//                     value={draft[field.key]}
-//                     onChange={onDraftChange}
-//                   />
-//                 ))}
 
-//                 {COUNTRY_PROFILES[draft.country]?.fields?.map((field) => (
-//                   <EditField
-//                     key={field.name}
-//                     field={{
-//                       key: field.name,
-//                       label: field.label,
-//                       type: "text",
-//                       placeholder: field.placeholder,
-//                       hint: field.hint,
-//                       sensitive: field.name === "accountNumber",
-//                     }}
-//                     value={draft[field.name] || ""}
-//                     onChange={onDraftChange}
-//                   />
-//                 ))}
-//               </>
-//             ) : (
-//               section.fields.map((field) => (
-//                 <EditField
-//                   key={field.key}
-//                   field={field}
-//                   value={draft[field.key]}
-//                   onChange={onDraftChange}
-//                 />
-//               ))
-//             )}
-//           </div>
-//           <div className="flex justify-end gap-2.5 px-6 pb-5">
-//             <button
-//               onClick={() => onCancel(section.key)}
-//               className="rounded-md border border-outline-variant px-4 py-2 text-sm font-semibold text-on-surface-variant"
-//             >
-//               Cancel
-//             </button>
-//             <button
-//               onClick={() => onSave(section.key)}
-//               className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white"
-//             >
-//               Save changes
-//             </button>
-//           </div>
-//         </>
-//       )}
-//     </div>
-//   );
-// }
 function SectionCard({
   section,
   index,
@@ -1358,28 +1140,28 @@ function SectionCard({
                 {editBankingProfile?.fields?.some(
                   (field) => field.name === "accountNumber",
                 ) && (
-                    <div className="col-span-2">
-                      <EditField
-                        field={{
-                          key: "confirmAccount",
-                          label: "Confirm Account Number",
-                          type: "text",
-                          placeholder: "Re-enter account number",
-                        }}
-                        value={draft.confirmAccount || ""}
-                        draft={draft}
-                        onChange={onDraftChange}
-                      />
+                  <div className="col-span-2">
+                    <EditField
+                      field={{
+                        key: "confirmAccount",
+                        label: "Confirm Account Number",
+                        type: "text",
+                        placeholder: "Re-enter account number",
+                      }}
+                      value={draft.confirmAccount || ""}
+                      draft={draft}
+                      onChange={onDraftChange}
+                    />
 
-                      {draft.accountNumber &&
-                        draft.confirmAccount &&
-                        draft.accountNumber !== draft.confirmAccount && (
-                          <p className="mt-1 -translate-y-3 text-xs text-error">
-                            Account numbers do not match
-                          </p>
-                        )}
-                    </div>
-                  )}
+                    {draft.accountNumber &&
+                      draft.confirmAccount &&
+                      draft.accountNumber !== draft.confirmAccount && (
+                        <p className="mt-1 -translate-y-3 text-xs text-error">
+                          Account numbers do not match
+                        </p>
+                      )}
+                  </div>
+                )}
               </>
             ) : (
               section.fields.map((field) => (
@@ -1417,32 +1199,6 @@ function SectionCard({
 }
 
 function ReviewStep({ data, onBack, onSubmit, loading, onDataChange }) {
-  // const INITIAL_VALUES = {
-  //   companyName: data.companyName,
-  //   taxId: data.taxId,
-  //   bizType: data.businessType,
-  //   industry: data.industry,
-  //   address: data.address,
-  //   website: data.website,
-  //   currency: data.currency,
-  //   country: data.country,
-  //   paymentRail: data.paymentRail,
-  //   bankName: data.bankName,
-  //   acctName: data.accountName,
-  //   acctType: data.accountType,
-  //   accountNumber: data.accountNumber,
-  //   routingNumber: data.routingNumber,
-  //   sortCode: data.sortCode,
-  //   swiftCode: data.swiftCode,
-  //   branchCode: data.branchCode,
-  //   iban: data.iban,
-  //   transitNumber: data.transitNumber,
-  //   contactName: `${data.firstName} ${data.lastName}`,
-  //   title: data.title,
-  //   email: data.email,
-  //   phone: data.phone,
-  //   department: data.department,
-  // };
   const INITIAL_VALUES = {
     companyName: data.companyName,
     taxId: data.taxId,
@@ -1464,7 +1220,6 @@ function ReviewStep({ data, onBack, onSubmit, loading, onDataChange }) {
     sortCode: data.sortCode,
     swiftCode: data.swiftCode,
     branchCode: data.branchCode,
-    iban: data.iban,
     transitNumber: data.transitNumber,
     institutionNumber: data.institutionNumber,
 
@@ -1667,7 +1422,6 @@ export default function Onboarding() {
     sortCode: "",
     swiftCode: "",
     branchCode: "",
-    iban: "",
     transitNumber: "",
     institutionNumber: "",
     firstName: "",
@@ -1742,11 +1496,11 @@ export default function Onboarding() {
         if (!data.currency) {
           newErrors.currency = "Currency is required";
         }
-        if (!data.confirmAccount) {
-          newErrors.confirmAccount = "Please confirm your account number";
-        } else if (data.accountNumber !== data.confirmAccount) {
-          newErrors.confirmAccount = "Account numbers do not match";
-        }
+        // if (!data.confirmAccount) {
+        //   newErrors.confirmAccount = "Please confirm your account number";
+        // } else if (data.accountNumber !== data.confirmAccount) {
+        //   newErrors.confirmAccount = "Account numbers do not match";
+        // }
 
         break;
 
@@ -1873,9 +1627,14 @@ export default function Onboarding() {
           swift_code: pick("swiftCode"),
         }),
 
-        ...(pick("iban") && {
-          iban: pick("iban"),
-        }),
+        // Eurozone/generic-international countries both resolve to
+        // countryType "SWIFT" and use accountNumber to hold an IBAN.
+        // Send it under both keys since it's untested which one the
+        // backend actually reads for this country_type.
+        ...(countryType === "SWIFT" &&
+          data.accountNumber && {
+            iban: data.accountNumber,
+          }),
 
         authorized_test_deposit: true,
       });

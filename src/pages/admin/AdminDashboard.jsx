@@ -19,13 +19,6 @@ import InviteVendorModal from "../../components/ui/InviteVendorModal";
 import { formatCurrency } from "../../lib/utils";
 import { vendorService } from "../../lib/services/vendorService";
 
-function currencyValues(map) {
-  if (!map || Object.keys(map).length === 0) return [formatCurrency(0, "USD")];
-  return Object.entries(map).map(([currency, amount]) =>
-    formatCurrency(amount, currency),
-  );
-}
-
 // Shown in place of the usual stat/activity view until the workspace has at
 // least one vendor — a brand-new account has nothing to review yet, so
 // telling the admin what to set up next is more useful than empty stats.
@@ -102,7 +95,7 @@ export default function AdminDashboard() {
     vendorService
       .getAdminDashboard()
       .then(setDash)
-      .catch(() => { })
+      .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
 
@@ -135,8 +128,12 @@ export default function AdminDashboard() {
     },
     {
       label: "Monthly Volume",
-      values: loading ? null : currencyValues(dash?.monthly_volume_by_currency),
-      value: loading ? "—" : undefined,
+      values: loading
+        ? null
+        : formatCurrency(
+            dash?.monthly_volume?.amount || 0,
+            dash?.monthly_volume?.currency || "USD",
+          ),
       sub: "",
       subColor: "text-on-surface-variant",
       tip: "Total invoice value processed this calendar month, by currency.",
@@ -145,27 +142,27 @@ export default function AdminDashboard() {
 
   const quickActions = isFirstRun
     ? [
-      {
-        label: "Invite Vendors",
-        icon: Users,
-        onClick: () => setInviteOpen(true),
-      },
-      { label: "Invite Team Members", path: "/admin/team", icon: UserPlus },
-      // { label: 'Set Up Billing', path: '/admin/billing', icon: CreditCard },
-    ]
+        {
+          label: "Invite Vendors",
+          icon: Users,
+          onClick: () => setInviteOpen(true),
+        },
+        { label: "Invite Team Members", path: "/admin/team", icon: UserPlus },
+        // { label: 'Set Up Billing', path: '/admin/billing', icon: CreditCard },
+      ]
     : [
-      {
-        label: "Review Pending Invoices",
-        path: "/admin/invoices",
-        icon: Receipt,
-      },
-      {
-        label: "View All Vendors",
-        path: "/admin/vendors",
-        icon: AlertCircle,
-      },
-      { label: "Payment History", path: "/admin/payments", icon: Clock },
-    ];
+        {
+          label: "Review Pending Invoices",
+          path: "/admin/invoices",
+          icon: Receipt,
+        },
+        {
+          label: "View All Vendors",
+          path: "/admin/vendors",
+          icon: AlertCircle,
+        },
+        { label: "Payment History", path: "/admin/payments", icon: Clock },
+      ];
 
   return (
     <AppLayout role="admin">
@@ -219,14 +216,14 @@ export default function AdminDashboard() {
                   />
                 ) : values ? (
                   <div className="space-y-0.5 mt-1">
-                    {values.map((v, i) => (
-                      <p
-                        key={i}
-                        className={`text-2xl font-bold tnum leading-tight ${highlight ? "text-error" : "text-on-surface"}`}
-                      >
-                        {v}
-                      </p>
-                    ))}
+                    <p
+                      className={`text-2xl font-bold tnum leading-tight ${highlight ? "text-error" : "text-on-surface"}`}
+                    >
+                      {values}
+                    </p>
+                    {/* {values.map((v, i) => (
+                      
+                    ))} */}
                   </div>
                 ) : (
                   <p

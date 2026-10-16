@@ -37,11 +37,23 @@ export function maskAccountNumber(value) {
 }
 
 export function formatCurrency(amount, currency = 'USD') {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency,
-    minimumFractionDigits: 2,
-  }).format(amount);
+  try {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency,
+      minimumFractionDigits: 2,
+    }).format(amount);
+  } catch {
+    // Intl.NumberFormat only accepts a proper ISO 4217 code (e.g. "CAD") —
+    // it throws outright if a currency symbol (e.g. "CA$") is passed instead.
+    // The real fix is wherever that value originates sending the ISO code,
+    // but fall back to a plain number + whatever string we got so a bad
+    // value degrades gracefully instead of crashing the page.
+    const number = new Intl.NumberFormat('en-US', {
+      minimumFractionDigits: 2,
+    }).format(amount);
+    return `${currency} ${number}`;
+  }
 }
 
 export function formatDate(dateStr) {
