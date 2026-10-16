@@ -16,7 +16,10 @@ import { Plus, Loader2 } from "lucide-react";
 import TutorialCard from "../../components/ui/TutorialCard";
 import AppLayout from "../../components/layout/AppLayout";
 import Card from "../../components/ui/Card";
-import { formatCurrency, getCurrencySymbol } from "../../lib/utils";
+import {
+  // formatCurrency,
+  getCurrencySymbol
+} from "../../lib/utils";
 import { vendorService } from "../../lib/services/vendorService";
 import { FiPieChart } from "react-icons/fi";
 import { BiBarChartAlt2 } from "react-icons/bi";
@@ -38,14 +41,11 @@ function StatCard({
       </p>
       {values ? (
         <div className="space-y-0.5">
-          {values.map((v, i) => (
-            <p
-              key={i}
-              className="text-2xl font-bold text-on-surface tnum leading-tight"
-            >
-              {v}
-            </p>
-          ))}
+          <p
+
+            className="text-2xl font-bold text-on-surface tnum leading-tight"
+          >   {values}</p>
+
         </div>
       ) : (
         <p className="text-2xl font-bold text-on-surface tnum">{value}</p>
@@ -60,13 +60,13 @@ function StatCard({
   );
 }
 
-function currencyValues(map, fallbackCurrency = "USD") {
-  if (!map || Object.keys(map).length === 0)
-    return [formatCurrency(0, fallbackCurrency)];
-  return Object.entries(map).map(([currency, amount]) =>
-    formatCurrency(amount, currency),
-  );
-}
+// function currencyValues(map, fallbackCurrency = "USD") {
+//   if (!map || Object.keys(map).length === 0)
+//     return [formatCurrency(0, fallbackCurrency)];
+//   return Object.entries(map).map(([currency, amount]) =>
+//     formatCurrency(amount, currency),
+//   );
+// }
 export default function VendorDashboard() {
   const navigate = useNavigate();
   const [data, setData] = useState(null);
@@ -117,24 +117,83 @@ export default function VendorDashboard() {
   }
 
   // Determine primary currency from first trend bucket
-  const trendRaw = data.payment_trends ?? [];
-  const allCurrencies = trendRaw.flatMap((pt) =>
-    Object.keys(pt.submitted_by_currency ?? {}),
-  );
-  const primaryCurrency = allCurrencies[0] ?? profile?.currency ?? "USD";
+  // const trendRaw = data.payment_trends ?? [];
+  const trendRaw = Array.isArray(data?.payment_trends)
+    ? data.payment_trends
+    : [];
+  // const allCurrencies = trendRaw.flatMap((pt) =>
+  //   Object.keys(pt.submitted_by_currency.currency ?? {}),
+  // );
+  // const primaryCurrency = allCurrencies[0] ?? profile?.currency ?? "USD";
 
-  const trendData = trendRaw.map((pt) => ({
-    month: pt.month?.split(" ")[0] ?? pt.month,
-    submitted: pt.submitted_by_currency?.[primaryCurrency] ?? 0,
-    settled: pt.settled_by_currency?.[primaryCurrency] ?? 0,
-    rejected: pt.rejected_by_currency?.[primaryCurrency] ?? 0,
-    currency: primaryCurrency,
-  }));
+  // const trendData = trendRaw.map((pt) => ({
+  //   month: pt.month?.split(" ")[0] ?? pt.month,
+  //   submitted: pt.submitted_by_currency.amount ?? 0,
+  //   settled: pt.settled_by_currency.amount ?? 0,
+  //   rejected: pt.rejected_by_currency.amount ?? 0,
+  //   currency: pt.submitted_by_currency.currency,
+  // }));
 
   // All amounts derived from trend data so slices + centre label are consistent
-  const totalSubmittedAmt = trendData.reduce((sum, t) => sum + t.submitted, 0);
-  const totalSettledAmt = trendData.reduce((sum, t) => sum + t.settled, 0);
-  const totalRejectedAmt = trendData.reduce((sum, t) => sum + t.rejected, 0);
+  const trendData = trendRaw.map((pt) => ({
+    month: pt.month?.split(" ")[0] ?? pt.month ?? "Unknown",
+    submitted: Number(pt.submitted?.amount ?? 0),
+    settled: Number(pt.settled?.amount ?? 0),
+    rejected: Number(pt.rejected?.amount ?? 0),
+    currency:
+      pt.submitted?.currency ??
+      pt.settled?.currency ??
+      pt.rejected?.currency ??
+      profile?.currency ??
+      "USD",
+    symbol:
+      pt.submitted?.symbol ??
+      pt.settled?.symbol ??
+      pt.rejected?.symbol ??
+      null,
+  }));
+  // const totalSubmittedAmt = trendData.reduce((sum, t) => sum + t.submitted, 0);
+  // const totalSettledAmt = trendData.reduce((sum, t) => sum + t.settled, 0);
+  // const totalRejectedAmt = trendData.reduce((sum, t) => sum + t.rejected, 0);
+  // const totalPendingAmt = Math.max(
+  //   0,
+  //   totalSubmittedAmt - totalSettledAmt - totalRejectedAmt,
+  // );
+
+  // const settledPct =
+  //   totalSubmittedAmt > 0
+  //     ? Math.round((totalSettledAmt / totalSubmittedAmt) * 100)
+  //     : 0;
+  const firstTrend = trendRaw[0];
+  const primaryCurrency =
+    firstTrend?.submitted?.currency ??
+    firstTrend?.settled?.currency ??
+    firstTrend?.rejected?.currency ??
+    profile?.currency ??
+    "USD";
+
+  const currSymbol =
+    firstTrend?.submitted?.symbol ??
+    firstTrend?.settled?.symbol ??
+    firstTrend?.rejected?.symbol ??
+    getCurrencySymbol(primaryCurrency);
+
+  // Totals based on the amounts returned by the API.
+  const totalSubmittedAmt = trendData.reduce(
+    (sum, t) => sum + t.submitted,
+    0,
+  );
+
+  const totalSettledAmt = trendData.reduce(
+    (sum, t) => sum + t.settled,
+    0,
+  );
+
+  const totalRejectedAmt = trendData.reduce(
+    (sum, t) => sum + t.rejected,
+    0,
+  );
+
   const totalPendingAmt = Math.max(
     0,
     totalSubmittedAmt - totalSettledAmt - totalRejectedAmt,
@@ -145,7 +204,22 @@ export default function VendorDashboard() {
       ? Math.round((totalSettledAmt / totalSubmittedAmt) * 100)
       : 0;
 
+
   // Pie built from monetary amounts — slices and legend percentages are now value-based
+  // const rawPie = [
+  //   { name: "Settled", value: totalSettledAmt, color: "#009BC0" },
+  //   { name: "Rejected", value: totalRejectedAmt, color: "#D6463C" },
+  //   { name: "Pending", value: totalPendingAmt, color: "#667085" },
+  // ].filter((s) => s.value > 0);
+
+  // const pieTotal = rawPie.reduce((sum, s) => sum + s.value, 0);
+  // const pieData = rawPie.map((s) => ({
+  //   ...s,
+  //   pct: pieTotal > 0 ? Math.round((s.value / pieTotal) * 100) : 0,
+  // }));
+
+  // const currSymbol = getCurrencySymbol(primaryCurrency);
+  // const axisFormatter = (v) => `${currSymbol}${(v / 1000).toFixed(0)}k`;
   const rawPie = [
     { name: "Settled", value: totalSettledAmt, color: "#009BC0" },
     { name: "Rejected", value: totalRejectedAmt, color: "#D6463C" },
@@ -153,14 +227,31 @@ export default function VendorDashboard() {
   ].filter((s) => s.value > 0);
 
   const pieTotal = rawPie.reduce((sum, s) => sum + s.value, 0);
+
   const pieData = rawPie.map((s) => ({
     ...s,
-    pct: pieTotal > 0 ? Math.round((s.value / pieTotal) * 100) : 0,
+    pct:
+      pieTotal > 0
+        ? Math.round((s.value / pieTotal) * 100)
+        : 0,
   }));
 
-  const currSymbol = getCurrencySymbol(primaryCurrency);
-  const axisFormatter = (v) => `${currSymbol}${(v / 1000).toFixed(0)}k`;
+  const formatTrendAmount = (value) =>
+    `${currSymbol}${Number(value ?? 0).toLocaleString("en-US", {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    })}`;
 
+  const axisFormatter = (value) => {
+    const amount = Number(value ?? 0);
+    if (Math.abs(amount) >= 1_000_000) {
+      return `${currSymbol}${(amount / 1_000_000).toFixed(1)}m`;
+    }
+    if (Math.abs(amount) >= 1_000) {
+      return `${currSymbol}${(amount / 1_000).toFixed(0)}k`;
+    }
+    return `${currSymbol}${amount}`;
+  };
   return (
     <AppLayout role="vendor">
       <div className="space-y-6">
@@ -198,13 +289,15 @@ export default function VendorDashboard() {
           />
           <StatCard
             label="Paid This Month"
-            values={currencyValues(data.paid_this_month, primaryCurrency)}
+            // values="10.00"
+            values={`${data.paid_this_month.currency} ${data.paid_this_month.amount}`}
             sub={`${settledPct}% of invoices settled`}
           />
           <StatCard
             label="Total Amount Paid"
-            values={currencyValues(data.total_amount_paid_ytd, primaryCurrency)}
-            sub="YTD"
+            // values="10.00"
+            values={` ${data.total_amount_paid_ytd.currency} ${data.total_amount_paid_ytd.amount}`}
+            sub=""
           />
         </div>
 
@@ -230,7 +323,7 @@ export default function VendorDashboard() {
                 <BarChart
                   data={trendData}
                   barGap={2}
-                  margin={{ top: 0, right: 0, left: -20, bottom: 0 }}
+                  margin={{ top: 0, right: 0, left: 0, bottom: 0 }}
                 >
                   <XAxis
                     dataKey="month"
@@ -245,14 +338,20 @@ export default function VendorDashboard() {
                     tickFormatter={axisFormatter}
                   />
                   <Tooltip
-                    formatter={(v, name) => [
-                      formatCurrency(v, primaryCurrency),
+                    // formatter={(v, name) => [
+                    //   formatCurrency(v, primaryCurrency),
+                    //   name,
+                    // ]}
+                    formatter={(value, name) => [
+                      formatTrendAmount(value),
                       name,
                     ]}
+                    labelFormatter={(label) => `Month: ${label}`}
                     contentStyle={{
                       fontSize: 12,
                       borderRadius: 8,
                       border: "1px solid #D0D5DD",
+
                     }}
                   />
                   <Legend

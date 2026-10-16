@@ -29,7 +29,7 @@ import {
   // getCurrencySymbol,
 } from "../../lib/utils";
 import { invoiceService } from "../../lib/services/invoiceService";
-import { vendorService } from "../../lib/services/vendorService";
+// import { vendorService } from "../../lib/services/vendorService";
 import { BsThreeDotsVertical } from "react-icons/bs";
 // import { BiBarChartAlt2 } from "react-icons/bi";
 import { IoEyeOutline, IoTrash } from "react-icons/io5";
