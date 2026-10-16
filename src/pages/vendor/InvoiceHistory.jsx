@@ -1,14 +1,14 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  ResponsiveContainer,
-  Tooltip,
-  Legend,
-} from "recharts";
+// import {
+//   BarChart,
+//   Bar,
+//   XAxis,
+//   YAxis,
+//   ResponsiveContainer,
+//   Tooltip,
+//   Legend,
+// } from "recharts";
 import {
   Search,
   Download,
@@ -26,12 +26,12 @@ import {
   formatCurrency,
   formatDate,
   extractErrorMessage,
-  getCurrencySymbol,
+  // getCurrencySymbol,
 } from "../../lib/utils";
 import { invoiceService } from "../../lib/services/invoiceService";
 import { vendorService } from "../../lib/services/vendorService";
 import { BsThreeDotsVertical } from "react-icons/bs";
-import { BiBarChartAlt2 } from "react-icons/bi";
+// import { BiBarChartAlt2 } from "react-icons/bi";
 import { IoEyeOutline, IoTrash } from "react-icons/io5";
 import ConfirmModal from "../../components/ui/ConfirmModal";
 
@@ -64,7 +64,7 @@ export default function InvoiceHistory() {
   const navigate = useNavigate();
   const [invoices, setInvoices] = useState([]);
   const [dash, setDash] = useState(null);
-  const [profile, setProfile] = useState(null);
+  // const [profile, setProfile] = useState(null);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
@@ -111,12 +111,12 @@ export default function InvoiceHistory() {
     };
   }, [statusFilter, search, page]);
 
-  useEffect(() => {
-    vendorService
-      .getProfile()
-      .then(setProfile)
-      .catch(() => { });
-  }, []);
+  // useEffect(() => {
+  //   vendorService
+  //     .getProfile()
+  //     .then(setProfile)
+  //     .catch(() => { });
+  // }, []);
 
   async function handleDownload(invoiceId) {
     if (downloadingId) return;
@@ -130,19 +130,7 @@ export default function InvoiceHistory() {
     }
   }
 
-  // function formatByCurrency(map) {
-  //   if (!map || Object.keys(map).length === 0)
-  //     return [
-  //       {
-  //         label: formatCurrency(0, profile?.currency ?? "USD"),
-  //         key: profile?.currency ?? "USD",
-  //       },
-  //     ];
-  //   return Object.entries(map).map(([currency, amount]) => ({
-  //     key: currency,
-  //     label: formatCurrency(amount, currency),
-  //   }));
-  // }
+
   const handleDelete = async (invoice) => {
     if (!invoice || selectedInvoice) return;
     if (invoice.status !== "submitted") {
@@ -162,23 +150,23 @@ export default function InvoiceHistory() {
       setSelectedInvoice(null);
     }
   };
-  const trendRaw = dash?.payment_trends ?? [];
-  const histPrimaryCurrency =
-    trendRaw.flatMap((pt) => Object.keys(pt.submitted_by_currency ?? {}))[0] ??
-    profile?.currency ??
-    "USD";
-  const histCurrSymbol = getCurrencySymbol(histPrimaryCurrency);
+  // const trendRaw = dash?.payment_trends ?? [];
+  // const histPrimaryCurrency =
+  //   trendRaw.flatMap((pt) => Object.keys(pt.submitted_by_currency ?? {}))[0] ??
+  //   profile?.currency ??
+  //   "USD";
+  // const histCurrSymbol = getCurrencySymbol(histPrimaryCurrency);
 
-  const trendData = trendRaw.map((pt) => ({
-    month: pt.month?.split(" ")[0] ?? pt.month,
-    submitted: pt.submitted_by_currency?.[histPrimaryCurrency] ?? 0,
-    payment_confirmed: pt.payment_confirmed_by_currency?.[histPrimaryCurrency] ?? 0,
-    payment_disputed: pt.payment_disputed_by_currency?.[histPrimaryCurrency] ?? 0,
-    rejected: pt.rejected_by_currency?.[histPrimaryCurrency] ?? 0,
-    reviewed: pt.reviewed_by_currency?.[histPrimaryCurrency] ?? 0,
-    paid: pt.paid_by_currency?.[histPrimaryCurrency] ?? 0,
-    flagged: pt.flagged_by_currency?.[histPrimaryCurrency] ?? 0,
-  }));
+  // const trendData = trendRaw.map((pt) => ({
+  //   month: pt.month?.split(" ")[0] ?? pt.month,
+  //   submitted: pt.submitted_by_currency?.[histPrimaryCurrency] ?? 0,
+  //   payment_confirmed: pt.payment_confirmed_by_currency?.[histPrimaryCurrency] ?? 0,
+  //   payment_disputed: pt.payment_disputed_by_currency?.[histPrimaryCurrency] ?? 0,
+  //   rejected: pt.rejected_by_currency?.[histPrimaryCurrency] ?? 0,
+  //   reviewed: pt.reviewed_by_currency?.[histPrimaryCurrency] ?? 0,
+  //   paid: pt.paid_by_currency?.[histPrimaryCurrency] ?? 0,
+  //   flagged: pt.flagged_by_currency?.[histPrimaryCurrency] ?? 0,
+  // }));
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   return (
@@ -246,33 +234,13 @@ export default function InvoiceHistory() {
 
                   </p>
                 </div>
-                {/* {formatByCurrency(
-                  dash.paid_this_month
-                )
-                  .map(
-                  ({ key, label }) => (
-                    <p
-                      key={key}
-                      className="text-xl font-bold text-on-surface tnum leading-tight"
-                    >
-                      {label}
-                    </p>
-                  ),
-                )} */}
 
               </div>
             ) : (
               <p className="text-xl font-bold text-on-surface mt-1">—</p>
             )}
-            {/* {dash && (
-              <div className="mt-1 space-y-0 text-xs text-success">
-                {formatByCurrency(dash.total_amount_paid_ytd).map(
-                  ({ key, label }) => (
-                    <p key={key}>YTD: {label}</p>
-                  ),
-                )}
-              </div>
-            )} */}
+
+
           </Card>
           <Card className="py-4">
             <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant">
@@ -280,14 +248,7 @@ export default function InvoiceHistory() {
             </p>
             {dash ? (
               <div className="mt-1 space-y-0.5">
-                {/* {formatByCurrency(dash.overdue_amount).map(({ key, label }) => (
-                  <p
-                    key={key}
-                    className="text-xl font-bold text-on-surface tnum leading-tight"
-                  >
-                    {label}
-                  </p>
-                ))} */}
+
                 <p
 
                   className="text-xl font-bold text-on-surface tnum leading-tight"
@@ -321,48 +282,7 @@ export default function InvoiceHistory() {
               awaiting review
             </p>
           </Card>
-          {/* 
-          <Card className="py-4">
-            <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant">
-              Overdue
-            </p>
-            {dash ? (
-              <div className="mt-1 space-y-0.5">
-                {formatByCurrency(dash.overdue_amount).map(({ key, label }) => (
-                  <p
-                    key={key}
-                    className="text-xl font-bold text-on-surface tnum leading-tight"
-                  >
-                    {label}
-                  </p>
-                ))}
-              </div>
-            ) : (
-              <p className="text-xl font-bold text-on-surface mt-1">—</p>
-            )}
-            {dash?.overdue_count > 0 ? (
-              <p className="text-xs mt-0.5 text-error">
-                {dash.overdue_count} invoice
-                {dash.overdue_count !== 1 ? "s" : ""}
-              </p>
-            ) : (
-              <p className="text-xs mt-0.5 text-success">None overdue</p>
-            )}
-            <p className="text-xs mt-0.5 text-on-surface-variant">
-              Unpaid past the due date you set when submitting
-            </p>
-          </Card>
-          <Card className="py-4">
-            <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant">
-              Pending Approval
-            </p>
-            <p className="text-xl font-bold text-on-surface mt-1 tnum">
-              {dash?.pending_approval_count ?? "—"}
-            </p>
-            <p className="text-xs mt-0.5 text-on-surface-variant">
-              awaiting review
-            </p>
-          </Card> */}
+
         </div>
 
         <Card className="p-0 overflow-hidden">
@@ -431,8 +351,7 @@ export default function InvoiceHistory() {
                 </span>
               </div>
             ) : (
-              // <table className="w-full ">
-              //   <thead>
+
               //     <tr className="bg-surface-container border-y border-outline-variant">
               //       {[
               //         "Invoice #",
@@ -809,7 +728,7 @@ export default function InvoiceHistory() {
           </div>
         </Card>
 
-        <Card>
+        {/* <Card>
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-semibold text-on-surface">
               Payment Trends
@@ -892,7 +811,7 @@ export default function InvoiceHistory() {
               </BarChart>
             </ResponsiveContainer>
           )}
-        </Card>
+        </Card> */}
       </div>
     </AppLayout>
   );
