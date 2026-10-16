@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Camera, Loader2, Trash2 } from "lucide-react";
 import Input from "../ui/Input";
 import { resolveMediaUrl } from "../../lib/apiClient";
+import { isValidEmail } from "../../lib/utils";
 // import Select from "../ui/Select";
 
 const MAX_PHOTO_SIZE = 2 * 1024 * 1024; // 2MB
@@ -86,7 +87,7 @@ export default function ProfileForm({
 
     if (!formData.email.trim()) {
       newErrors.email = "Email is required";
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+    } else if (!isValidEmail(formData.email)) {
       newErrors.email = "Enter a valid email address";
     }
 

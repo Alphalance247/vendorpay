@@ -8,6 +8,12 @@ export function cn(...classes) {
 // password length is validated so the two never diverge again.
 export const MIN_PASSWORD_LENGTH = 10;
 
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+export function isValidEmail(value) {
+  return EMAIL_PATTERN.test((value ?? '').trim());
+}
+
 // The backend issues finer-grained roles (admin, owner, staff, member, ...)
 // than the app's two dashboards. Only an explicit "vendor" role belongs on
 // the vendor dashboard — every other role lands on the admin dashboard.

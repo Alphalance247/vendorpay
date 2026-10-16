@@ -11,6 +11,8 @@ export function useConfirm() {
     confirmLabel: 'Confirm',
     variant: 'danger',
     onConfirm: null,
+    warning: null,
+    requireText: '',
     loading: false,
     error: '',
   });
@@ -21,7 +23,7 @@ export function useConfirm() {
   // the modal open so the user can see what happened and retry or cancel,
   // instead of the modal vanishing before the result is known.
   const confirm = useCallback(
-    ({ title, message, confirmLabel = 'Confirm', variant = 'danger', onConfirm }) => {
+    ({ title, message, confirmLabel = 'Confirm', variant = 'danger', onConfirm, warning = null, requireText = '' }) => {
       return new Promise((resolve) => {
         setState({
           open: true,
@@ -31,6 +33,8 @@ export function useConfirm() {
           confirmLabel,
           variant,
           onConfirm,
+          warning,
+          requireText,
           loading: false,
           error: '',
         });
@@ -68,6 +72,8 @@ export function useConfirm() {
       message={state.message}
       confirmLabel={state.confirmLabel}
       variant={state.variant}
+      warning={state.warning}
+      requireText={state.requireText}
       loading={state.loading}
       error={state.error}
       onConfirm={handleConfirm}

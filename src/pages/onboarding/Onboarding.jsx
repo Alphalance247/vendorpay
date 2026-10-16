@@ -3,9 +3,10 @@ import { useNavigate } from "react-router-dom";
 import { Check, ArrowRight, ArrowLeft, Save, ShieldCheck } from "lucide-react";
 import { vendorService } from "../../lib/services/vendorService";
 import { useAuth } from "../../lib/authContext";
-import { extractErrorMessage } from "../../lib/utils";
+import { extractErrorMessage, isValidEmail } from "../../lib/utils";
 import Button from "../../components/ui/Button";
 import Input from "../../components/ui/Input";
+import PhoneInput from "../../components/ui/PhoneInput";
 import Select from "../../components/ui/Select";
 import { cn } from "../../lib/utils";
 // import { ToastContainer, toast } from "react-toastify";
@@ -80,7 +81,7 @@ function CompanyStep({ data, onChange, errors }) {
             onChange={onChange}
             placeholder="e.g. Acme Corporation LLC"
             required
-            error={errors?.companyName}
+            error={!data.companyName && errors?.companyName}
           />
         </div>
         <Input
@@ -88,9 +89,9 @@ function CompanyStep({ data, onChange, errors }) {
           name="taxId"
           value={data.taxId}
           onChange={onChange}
-          placeholder="XX-XXXXXXX"
+          placeholder="Enter your Tax ID"
           required
-          error={errors?.taxId}
+          error={!data.taxId && errors?.taxId}
         />
         {/* <Input
           label="Business Type"
@@ -107,7 +108,7 @@ function CompanyStep({ data, onChange, errors }) {
           onChange={onChange}
           placeholder="e.g. LLC, Corporation"
           required
-          error={errors?.businessType}>
+          error={!data.businessType && errors?.businessType}>
           <option value="">Select business type</option>
           <option>LLC</option>
           <option>Corporation</option>
@@ -122,7 +123,7 @@ function CompanyStep({ data, onChange, errors }) {
             onChange={onChange}
             placeholder="123 Main Street, New York, NY 10001"
             required
-            error={errors?.address}
+            error={!data.address && errors?.address}
           />
         </div>
         <Input
@@ -139,7 +140,7 @@ function CompanyStep({ data, onChange, errors }) {
           value={data.industry}
           onChange={onChange}
           required
-          error={errors.industry}
+          error={!data.industry && errors.industry}
         >
           <option value="">Select industry</option>
           <option>Technology</option>
@@ -196,6 +197,7 @@ const COUNTRY_PROFILES = {
         label: "Account Number",
         placeholder: "Enter account number",
       },
+
     ],
     accountTypes: ["Checking", "Savings"],
   },
@@ -413,6 +415,11 @@ function BankingStep({ data, onChange, errors }) {
     currency: "",
   };
   const countrySelected = !!country;
+  // With an odd number of country fields (besides the account number), the
+  // last one would sit alone on a row — it's moved to the end of the form.
+  const otherFields = profile.fields.filter((f) => f.name !== "accountNumber");
+  const fullRowField =
+    otherFields.length % 2 === 1 ? otherFields[otherFields.length - 1] : null;
   const mismatch =
     data.accountNumber &&
     data.confirmAccount &&
@@ -498,19 +505,20 @@ function BankingStep({ data, onChange, errors }) {
             hint="Must match the name on file with your bank"
             disabled={!countrySelected}
             required
-            error={errors.accountName}
+            error={!data.accountName && errors.accountName}
           />
-
-          {profile.fields.map((field) => (
-            <div
-              key={field.name}
-              className={
-                profile.fields.length % 2 === 1 &&
-                  field === profile.fields[profile.fields.length - 1]
-                  ? "col-span-2"
-                  : ""
-              }
-            >
+          <Input
+            label="Bank Name"
+            name="bankName"
+            value={data.bankName}
+            onChange={onChange}
+            placeholder={profile.bankPlaceholder}
+            disabled={!countrySelected}
+            required
+            error={!data.bankName && errors?.bankName}
+          />
+          {profile.fields.map((field) => {
+            const input = (
               <Input
                 label={field.label}
                 name={field.name}
@@ -521,22 +529,58 @@ function BankingStep({ data, onChange, errors }) {
                 disabled={!countrySelected}
                 required={field.name === "accountNumber"}
                 error={
-                  field.name === "accountNumber" ? errors.accountNumber : ""
+                  field.name === "accountNumber" ? field.name !== "accountNumber" && errors.accountNumber : ""
                 }
               />
-            </div>
-          ))}
+            );
 
-          <Input
-            label="Bank Name"
-            name="bankName"
-            value={data.bankName}
-            onChange={onChange}
-            placeholder={profile.bankPlaceholder}
-            disabled={!countrySelected}
-            required
-            error={errors?.bankName}
-          />
+            // Account number and its confirmation share a row
+            if (field.name === "accountNumber") {
+              return (
+                <div key={field.name} className="col-span-2 grid grid-cols-2 gap-4">
+                  {input}
+                  <Input
+                    label="Confirm Account Number"
+                    name="confirmAccount"
+                    value={data.confirmAccount}
+                    onChange={onChange}
+                    placeholder="Re-enter account number"
+                    error={
+                      mismatch
+                        ? "Account numbers do not match"
+                        : !data.confirmAccount && errors?.confirmAccount
+                    }
+                    disabled={!countrySelected}
+                    required
+                  />
+                </div>
+              );
+            }
+
+            // A lone field that would take a whole row is rendered last instead
+            if (field === fullRowField) return null;
+
+            return <div key={field.name}>{input}</div>;
+          })}
+          {/* Profiles without an account number field (e.g. EU) still show the confirm input */}
+          {!profile.fields.some((f) => f.name === "accountNumber") && (
+            <div className="col-span-2">
+              <Input
+                label="Confirm Account Number"
+                name="confirmAccount"
+                value={data.confirmAccount}
+                onChange={onChange}
+                placeholder="Re-enter account number"
+                error={
+                  mismatch
+                    ? "Account numbers do not match"
+                    : !data.confirmAccount && errors?.confirmAccount
+                }
+                disabled={!countrySelected}
+                required
+              />
+            </div>
+          )}
 
           <Select
             label="Account Type"
@@ -545,7 +589,7 @@ function BankingStep({ data, onChange, errors }) {
             onChange={onChange}
             disabled={!countrySelected}
             required
-            error={errors?.accountType}
+            error={!data.accountType && errors?.accountType}
           >
             <option value="">Select account type</option>
             {profile?.accountTypes?.map((t) => (
@@ -561,9 +605,22 @@ function BankingStep({ data, onChange, errors }) {
             placeholder="Currency will be selected automatically"
             disabled
             required
-            error={errors?.currency}
+            error={!data.currency && errors?.currency}
           />
-          <div className="col-span-2">
+          {fullRowField && (
+            <div className="col-span-2">
+              <Input
+                label={fullRowField.label}
+                name={fullRowField.name}
+                value={data[fullRowField.name] || ""}
+                onChange={onChange}
+                placeholder={fullRowField.placeholder}
+                hint={fullRowField.hint}
+                disabled={!countrySelected}
+              />
+            </div>
+          )}
+          {/* <div className="col-span-2">
             <Input
               label="Confirm Account Number"
               name="confirmAccount"
@@ -578,7 +635,7 @@ function BankingStep({ data, onChange, errors }) {
               disabled={!countrySelected}
               required
             />
-          </div>
+          </div> */}
         </div>
       </div>
 
@@ -601,6 +658,14 @@ function BankingStep({ data, onChange, errors }) {
     </div>
   );
 }
+// Banking countries that map to a single phone dial code (EU, AF_OTHER and
+// OTHER don't, so the phone field starts without a country for them).
+const PHONE_COUNTRIES = ["US", "GB", "NG", "KE", "ZA", "CA"];
+
+// Picking a country fills in just the dial code (e.g. "+234"), so a number
+// needs more digits than that to count as entered.
+const isValidPhone = (phone) => (phone || "").replace(/\D/g, "").length >= 8;
+
 function ContactStep({ data, onChange, errors }) {
   return (
     <div className="space-y-4">
@@ -620,7 +685,7 @@ function ContactStep({ data, onChange, errors }) {
           onChange={onChange}
           placeholder="Jane"
           required
-          error={errors.firstName}
+          error={!data.firstName && errors.firstName}
         />
         <Input
           label="Last Name"
@@ -629,7 +694,7 @@ function ContactStep({ data, onChange, errors }) {
           onChange={onChange}
           placeholder="Smith"
           required
-          error={errors.lastName}
+          error={!data.lastName && errors.lastName}
         />
         <Input
           label="Email Address"
@@ -639,17 +704,18 @@ function ContactStep({ data, onChange, errors }) {
           onChange={onChange}
           placeholder="jane@company.com"
           required
-          error={errors.email}
+          error={!data.email && errors.email}
         />
-        <Input
+        <PhoneInput
           label="Phone Number"
-          type="tel"
           name="phone"
           value={data.phone}
           onChange={onChange}
-          placeholder="+1 (555) 000-0000"
+          // Start on the banking country's dial code when it's a real country
+          country={PHONE_COUNTRIES.includes(data.country) ? data.country.toLowerCase() : undefined}
+          placeholder="Enter phone number"
           required
-          error={errors.phone}
+          error={!isValidPhone(data.phone) && errors.phone}
         />
         <Input
           label="Job Title"
@@ -1525,6 +1591,11 @@ function ReviewStep({ data, onBack, onSubmit, loading, onDataChange }) {
   //   setTimeout(() => setJustSaved(null), 3000);
   // }
   function handleSave(sectionKey) {
+    if (sectionKey === "contact" && !isValidEmail(draft.email)) {
+      setJustSaved("Enter a valid email address");
+      return;
+    }
+
     if (sectionKey === "banking") {
       if (!draft.confirmAccount) {
         setJustSaved("Please confirm your account number");
@@ -1761,10 +1832,14 @@ export default function Onboarding() {
 
         if (!data.email) {
           newErrors.email = "Email is required";
+        } else if (!isValidEmail(data.email)) {
+          newErrors.email = "Enter a valid email address";
         }
 
         if (!data.phone) {
           newErrors.phone = "Phone number is required";
+        } else if (!isValidPhone(data.phone)) {
+          newErrors.phone = "Enter a valid phone number";
         }
 
         break;
@@ -1908,13 +1983,13 @@ export default function Onboarding() {
 
         <div className="bg-white rounded-xl border border-outline-variant shadow-sm p-6">
           {step === 0 && (
-            <CompanyStep data={data} onChange={handleChange} errors={errors} />
+            <CompanyStep data={data} onChange={handleChange} errors={error && errors} />
           )}
           {step === 1 && (
-            <BankingStep data={data} onChange={handleChange} errors={errors} />
+            <BankingStep data={data} onChange={handleChange} errors={error && errors} />
           )}
           {step === 2 && (
-            <ContactStep data={data} onChange={handleChange} errors={errors} />
+            <ContactStep data={data} onChange={handleChange} errors={error && errors} />
           )}
           {step === 3 && (
             <ReviewStep

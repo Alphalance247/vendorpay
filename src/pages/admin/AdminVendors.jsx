@@ -158,11 +158,20 @@ export default function AdminVendors() {
   async function handleDelete(vendor) {
     const displayName =
       vendor.company_name || vendor.user_email || `Vendor #${vendor.id}`;
+    // Vendors without a company name fall back to their email, so the delete
+    // still needs a deliberate typed confirmation.
+    const nameToType = vendor.company_name || vendor.user_email || "";
     const ok = await confirm({
       title: "Delete Vendor",
-      message: `Delete "${displayName}"? This action cannot be undone.`,
+      message: `You are about to delete "${displayName}".`,
       confirmLabel: "Delete",
       variant: "danger",
+      warning: {
+        title: "Deleting is permanent",
+        message:
+          "This vendor and their data will be removed and can't be recovered. To suspend their access instead, deactivate them.",
+      },
+      requireText: nameToType,
       onConfirm: () => vendorService.deleteVendor(vendor.id),
     });
     if (ok) {
@@ -230,7 +239,6 @@ export default function AdminVendors() {
             "Active vendors (green badge) can submit invoices; toggle a vendor inactive to suspend their access without deleting them.",
             "Use the search bar to find vendors by company name, email address, or industry.",
             "Click any vendor row to view their full profile, banking details, and complete invoice history.",
-            "Deleting a vendor is permanent — deactivate instead unless you are certain the account should be removed.",
           ]}
         />
         <Card className="p-0 overflow-hidden">
