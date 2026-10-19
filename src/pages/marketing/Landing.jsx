@@ -3,9 +3,6 @@ import { useNavigate } from "react-router-dom";
 import {
   MdOutlineVerifiedUser,
   MdOutlineLock,
-  MdOutlineDownload,
-  MdOutlineLightbulb,
-  MdOutlineExpandMore,
   MdOutlineClose,
   MdOutlineCheckCircle,
   MdOutlineChevronRight,
@@ -175,7 +172,7 @@ export default function Landing() {
         </div>
       </header>
 
-      <main className="w-full pt-20 bg-surface flex-1">
+      <main className="w-full pt-10 bg-surface flex-1">
         <div className="flex flex-col w-full">
           {/* SECTION 1: HERO */}
           <section className="relative w-full overflow-hidden bg-gradient-to-b from-surface via-surface-container-low to-surface-container-lowest py-space-64 lg:py-space-96">
@@ -247,7 +244,7 @@ export default function Landing() {
                           </p>
                         </div>
                         <div className="flex items-center gap-space-8 shrink-0">
-                          <button
+                          {/* <button
                             type="button"
                             className="inline-flex items-center gap-space-4 px-space-12 py-1.5 rounded-lg border border-surface-variant/40 bg-surface-container-lowest text-on-surface font-label-caps text-label-caps text-[11px] hover:bg-surface-container-low transition-colors shadow-sm"
                           >
@@ -256,7 +253,7 @@ export default function Landing() {
                               className="text-on-surface-variant"
                             />{" "}
                             Export Report
-                          </button>
+                          </button> */}
                           <button
                             type="button"
                             className="inline-flex items-center gap-space-4 px-space-12 py-1.5 rounded-lg bg-primary text-on-primary font-label-caps text-label-caps text-[11px] hover:bg-primary/90 transition-colors shadow-sm"
@@ -266,7 +263,7 @@ export default function Landing() {
                         </div>
                       </div>
 
-                      <div className="rounded-lg bg-primary-fixed border border-primary-fixed-dim p-space-12 flex items-center justify-between gap-space-8 text-on-surface">
+                      {/* <div className="rounded-lg bg-primary-fixed border border-primary-fixed-dim p-space-12 flex items-center justify-between gap-space-8 text-on-surface">
                         <div className="flex items-center gap-space-8 min-w-0">
                           <div className="w-6 h-6 rounded-full bg-primary-fixed flex items-center justify-center text-primary shrink-0">
                             <MdOutlineLightbulb size={15} />
@@ -291,7 +288,7 @@ export default function Landing() {
                             className="cursor-pointer hover:text-on-surface"
                           />
                         </div>
-                      </div>
+                      </div> */}
 
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-space-12">
                         <div className="p-space-12 rounded-lg bg-surface-container-low border border-surface-variant/20 flex flex-col justify-between">
@@ -338,7 +335,7 @@ export default function Landing() {
                         </div>
                       </div>
 
-                      <div className="p-space-12 rounded-lg bg-surface-container-low border border-surface-variant/20 flex flex-wrap items-center justify-between gap-y-space-8 text-[11px] font-code-mono-sm text-on-surface-variant">
+                      {/* <div className="p-space-12 rounded-lg bg-surface-container-low border border-surface-variant/20 flex flex-wrap items-center justify-between gap-y-space-8 text-[11px] font-code-mono-sm text-on-surface-variant">
                         {[
                           ["bg-primary", "2", "Submitted"],
                           ["bg-surface-variant", "0", "Reviewed"],
@@ -361,7 +358,7 @@ export default function Landing() {
                             {label}
                           </div>
                         ))}
-                      </div>
+                      </div> */}
 
                       <div className="grid grid-cols-1 sm:grid-cols-12 gap-space-16">
                         <div className="sm:col-span-7 p-space-16 rounded-lg bg-surface-container-lowest border border-surface-variant/20 flex flex-col justify-between shadow-sm">
