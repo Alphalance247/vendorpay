@@ -32,25 +32,28 @@ const ROLES = [
     id: "Owner",
     icon: Crown,
     description:
-      "Full access, including billing and team management. Cannot be removed or reassigned.",
+      "Full access. Everything Admin can do, plus funding invoices and marking them paid. Can also delete invoices, activate, deactivate or remove vendors, and manage the team, company settings, logo and billing. Can view all support tickets and the activity log.",
   },
   {
     id: "Admin",
     icon: ShieldCheck,
     description:
-      "Manages vendors, invoices, and payments. No access to billing or removing the Owner.",
+      "Everything a Member can do, plus review work. Can manage invoices and verify or reject vendor bank details. Can't manage the company, team, or billing.",
   },
   {
-    id: "Reviewer",
+    id: "Member",
     icon: Eye,
     description:
-      "Reviews and approves or rejects invoices only. No access to payments, team, or billing.",
+      "View-only access. Can see invoices, vendors and the team list, but can't make any changes or take any actions.",
   },
 ];
 
 // Roles the backend invite endpoint accepts from this page. "vendor" used to
 // be one of them, but vendor invites now live on the Vendors page instead.
-const INVITE_ROLES = ["admin", "member", "staff"];
+const INVITE_ROLES = [
+  { name: "Admin", value: "Staff" },
+  { name: "Member", value: "member" },
+];
 
 // The API returns lowercase status values (e.g. "active", "pending");
 // StatusChip's style map is keyed on the capitalized form.
@@ -140,8 +143,8 @@ function InviteModal({ open, onClose, onInvite, submitting }) {
           disabled={submitting}
         >
           {INVITE_ROLES.map((r) => (
-            <option key={r} value={r}>
-              {r}
+            <option key={r.value} value={r.value}>
+              {r.name}
             </option>
           ))}
         </Select>
@@ -324,7 +327,9 @@ export default function TeamRoles() {
           {isLoading ? (
             <div className="flex items-center justify-center py-12">
               <Loader2 size={24} className="animate-spin text-secondary" />
-              <span className="ml-2 text-sm text-on-surface-variant">Loading team...</span>
+              <span className="ml-2 text-sm text-on-surface-variant">
+                Loading team...
+              </span>
             </div>
           ) : isError ? (
             <p className="px-6 py-12 text-center text-sm text-error">
@@ -360,7 +365,11 @@ export default function TeamRoles() {
                       const resending =
                         resendInvite.isPending &&
                         resendInvite.variables === member.id;
-                      const actions = memberActions(member, { isOwner, resending, removing });
+                      const actions = memberActions(member, {
+                        isOwner,
+                        resending,
+                        removing,
+                      });
                       return (
                         <tr
                           key={member.id}
@@ -375,7 +384,8 @@ export default function TeamRoles() {
                           <td className="px-6 py-4">
                             {isOwner ? (
                               <span className="text-sm text-on-surface-variant flex items-center gap-1.5">
-                                <Crown size={13} className="text-warning" /> Owner
+                                <Crown size={13} className="text-warning" />{" "}
+                                Owner
                               </span>
                             ) : (
                               <span className="text-sm text-on-surface-variant capitalize">
@@ -387,7 +397,9 @@ export default function TeamRoles() {
                             <StatusChip status={statusLabel(member.status)} />
                           </td>
                           <td className="px-6 py-4 text-right">
-                            {actions.length > 0 && <ActionMenu items={actions} />}
+                            {actions.length > 0 && (
+                              <ActionMenu items={actions} />
+                            )}
                           </td>
                         </tr>
                       );
@@ -406,7 +418,11 @@ export default function TeamRoles() {
                   const resending =
                     resendInvite.isPending &&
                     resendInvite.variables === member.id;
-                  const actions = memberActions(member, { isOwner, resending, removing });
+                  const actions = memberActions(member, {
+                    isOwner,
+                    resending,
+                    removing,
+                  });
                   return (
                     <div key={member.id} className="px-4 py-4">
                       <div className="flex items-start justify-between gap-3">
