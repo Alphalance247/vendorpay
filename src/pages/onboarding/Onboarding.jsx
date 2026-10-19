@@ -439,6 +439,20 @@ const COUNTRY_PROFILES = Object.fromEntries(
 // cleared, otherwise a value typed for the old country (e.g. a US routing
 // number) gets sent with the new one and the banking setup is rejected.
 const COUNTRY_SPECIFIC_FIELDS = [
+  "country",
+  "bankName",
+  "accountName",
+  "accountNumber",
+  "confirmAccount",
+  "accountType",
+  "routingNumber",
+  "sortCode",
+  "swiftCode",
+  "branchCode",
+  "transitNumber",
+  "institutionNumber",
+  "currency",
+  "paymentRail",
   "routingNumber",
   "sortCode",
   "swiftCode",
@@ -447,16 +461,45 @@ const COUNTRY_SPECIFIC_FIELDS = [
   "institutionNumber",
 ];
 
+// function resetForCountry(prev, countryCode) {
+//   const profile = COUNTRY_PROFILES[countryCode];
+//   const next = { ...prev, country: countryCode };
+//   next.currency = profile?.currency || "";
+//   next.paymentRail = profile?.rail || "";
+
+//   for (const key of COUNTRY_SPECIFIC_FIELDS) next[key] = "";
+//   if (!profile?.accountTypes?.includes(prev.accountType)) next.accountType = "";
+//   return next;
+// }
 function resetForCountry(prev, countryCode) {
   const profile = COUNTRY_PROFILES[countryCode];
-  const next = { ...prev, country: countryCode };
-  next.currency = profile?.currency || "";
-  next.paymentRail = profile?.rail || "";
-  for (const key of COUNTRY_SPECIFIC_FIELDS) next[key] = "";
-  if (!profile?.accountTypes?.includes(prev.accountType)) next.accountType = "";
-  return next;
-}
 
+  return {
+    ...prev,
+
+    // Set the newly selected country
+    country: countryCode,
+
+    // Clear the banking input fields
+    bankName: "",
+    accountName: "",
+    accountNumber: "",
+    confirmAccount: "",
+    accountType: "",
+
+    // Clear all country-specific fields
+    routingNumber: "",
+    sortCode: "",
+    swiftCode: "",
+    branchCode: "",
+    transitNumber: "",
+    institutionNumber: "",
+
+    // Update based on the newly selected country
+    currency: profile?.currency || "",
+    paymentRail: profile?.rail || "",
+  };
+}
 function BankingStep({ data, onChange, errors }) {
   const country = data.country;
   const profile = COUNTRY_PROFILES[country] || {
@@ -481,6 +524,7 @@ function BankingStep({ data, onChange, errors }) {
     const next = resetForCountry(data, countryCode);
 
     for (const key of [
+
       "country",
       "currency",
       "paymentRail",
