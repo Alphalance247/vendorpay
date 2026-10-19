@@ -164,6 +164,10 @@ export default function TeamRoles() {
   const deleteMember = useDeleteTeamMember();
   const resendInvite = useResendInvite();
 
+  const hasStaffOrMember = team.some((m) =>
+    ["staff", "member"].includes(m.role?.toLowerCase())
+  );
+
   function handleInvite({ email, role }, resetForm) {
     createInvite.mutate(
       { email, role },
@@ -251,13 +255,15 @@ export default function TeamRoles() {
               Manage who has access to your company's VendorPay workspace.
             </p>
           </div>
-          <Button
-            onClick={() => setInviteOpen(true)}
-            className="flex items-center gap-2"
-          >
-            <UserPlus size={16} />
-            Invite Teammate
-          </Button>
+          {!hasStaffOrMember && (
+            <Button
+              onClick={() => setInviteOpen(true)}
+              className="flex items-center gap-2"
+            >
+              <UserPlus size={16} />
+              Invite Teammate
+            </Button>
+          )}
         </div>
 
         <TutorialCard
