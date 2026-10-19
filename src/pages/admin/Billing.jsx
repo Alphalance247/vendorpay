@@ -534,11 +534,7 @@ export default function Billing() {
                   </Button>
                 )}
                 <Button
-                  className={
-                    !canManageBilling
-                      ? "cursor-not-allowed"
-                      : "cursor-not-allowed"
-                  }
+                  className={!canManageBilling ? "cursor-not-allowed" : ""}
                   onClick={() => setPlanModalOpen(true)}
                   disabled={!canManageBilling}
                   title={
