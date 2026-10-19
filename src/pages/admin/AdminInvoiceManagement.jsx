@@ -14,6 +14,7 @@ import {
 } from "../../lib/utils";
 import { adminInvoiceService } from "../../lib/services/invoiceService";
 import { useConfirm } from "../../hooks/useConfirm";
+import { adminService } from "../../lib/services/adminService";
 
 const PAGE_SIZE = 25;
 
@@ -297,6 +298,19 @@ export default function AdminInvoiceManagement() {
     (i) => i.status === "payment_disputed",
   ).length;
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const [userRole, setUserRole] = useState("");
+
+  useEffect(() => {
+    adminService
+      .getProfile()
+      .then((profile) => {
+        setUserRole(profile.role?.toLowerCase() || "");
+      })
+      .catch((error) => {
+        console.error("Failed to fetch user profile:", error);
+      });
+  }, []);
+  const canManageInvoices = !!userRole && !["staff", "member"].includes(userRole);
 
   return (
     <AppLayout role="admin">
@@ -397,8 +411,8 @@ export default function AdminInvoiceManagement() {
                 key={tab.label}
                 onClick={() => switchTab(idx)}
                 className={`px-4 py-3 text-sm font-medium whitespace-nowrap transition-colors flex-shrink-0 ${activeTab === idx
-                    ? "text-secondary border-b-2 border-secondary -mb-px"
-                    : "text-on-surface-variant hover:text-on-surface"
+                  ? "text-secondary border-b-2 border-secondary -mb-px"
+                  : "text-on-surface-variant hover:text-on-surface"
                   }`}
               >
                 {tab.label}
@@ -464,7 +478,8 @@ export default function AdminInvoiceManagement() {
                         "Rail",
                         "Status",
                         "Paid On",
-                        "Actions",
+
+                        ...(canManageInvoices ? ["Actions"] : [""]),
                       ].map((h) => (
                         <th
                           key={h}
@@ -543,15 +558,17 @@ export default function AdminInvoiceManagement() {
                             className="px-3 py-2.5 whitespace-nowrap"
                             onClick={(e) => e.stopPropagation()}
                           >
-                            <InvoiceActions
-                              inv={inv}
-                              loading={rowKey}
-                              onApprove={() => handleApprove(inv)}
-                              onFund={() => handleFund(inv)}
-                              onMarkPaid={() => handleMarkPaid(inv)}
-                              onReject={() => openReject(inv)}
-                              className="flex items-center gap-1.5 flex-nowrap"
-                            />
+                            {canManageInvoices &&
+                              <InvoiceActions
+                                inv={inv}
+                                loading={rowKey}
+                                onApprove={() => handleApprove(inv)}
+                                onFund={() => handleFund(inv)}
+                                onMarkPaid={() => handleMarkPaid(inv)}
+                                onReject={() => openReject(inv)}
+                                className="flex items-center gap-1.5 flex-nowrap"
+                              />}
+
                           </td>
                         </tr>
                       );

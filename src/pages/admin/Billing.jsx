@@ -26,6 +26,7 @@ import {
   useBillingPortal,
   useBillingHistory,
 } from "../../hooks/useQueries/billingPlan/useBillingPlanList";
+import { adminService } from "../../lib/services/adminService";
 
 const HISTORY_PAGE_SIZE = 10;
 
@@ -306,6 +307,27 @@ function ChangePlanModal({
 // }
 
 export default function Billing() {
+  const [userRole, setUserRole] = useState("");
+  const [roleLoading, setRoleLoading] = useState(true);
+
+  useEffect(() => {
+    adminService
+      .getProfile()
+      .then((profile) => {
+        setUserRole(profile.role?.toLowerCase() || "");
+      })
+      .catch((error) => {
+        console.error("Failed to fetch user role:", error);
+        setUserRole(""); // Fail closed: don't grant billing permissions
+      })
+      .finally(() => {
+        setRoleLoading(false);
+      });
+  }, []);
+
+  const canManageBilling =
+    !roleLoading && !!userRole && !["staff", "member"].includes(userRole);
+
   // `data` is undefined until the query resolves (react-query's initial
   // state, not an empty array) — calling .find() on it directly before
   // then throws, so every usage below goes through `plans` instead.
@@ -319,6 +341,7 @@ export default function Billing() {
   // (null for the first page). Going back just pops the last cursor.
   const [historyCursors, setHistoryCursors] = useState([null]);
   const historyPage = historyCursors.length;
+
   const {
     data: historyData,
     isLoading: historyLoading,
@@ -327,10 +350,13 @@ export default function Billing() {
   } = useBillingHistory({
     limit: HISTORY_PAGE_SIZE,
     startingAfter: historyCursors[historyCursors.length - 1],
+    enabled: canManageBilling,
   });
+
   const historyRaw = Array.isArray(historyData)
     ? historyData
     : (historyData?.data ?? historyData?.items ?? historyData?.invoices ?? []);
+
   const history = historyRaw.map(normalizeBillingInvoice);
   const historyHasMore = !!historyData?.has_more;
 
@@ -345,6 +371,7 @@ export default function Billing() {
   const [vendorCount, setVendorCount] = useState(null);
   const [planModalOpen, setPlanModalOpen] = useState(false);
   // const [cardModalOpen, setCardModalOpen] = useState(false);
+
   const billingPortal = useBillingPortal();
   const { confirm, confirmEl } = useConfirm();
   const { toast } = useToast();
@@ -501,12 +528,25 @@ export default function Billing() {
                 </p>
               </div>
               <div className="flex items-center gap-2">
-                {status === "canceled" && (
+                {canManageBilling && status === "canceled" && (
                   <Button variant="secondary" onClick={handleReactivate}>
                     Reactivate
                   </Button>
                 )}
-                <Button onClick={() => setPlanModalOpen(true)}>
+                <Button
+                  className={
+                    !canManageBilling
+                      ? "cursor-not-allowed"
+                      : "cursor-not-allowed"
+                  }
+                  onClick={() => setPlanModalOpen(true)}
+                  disabled={!canManageBilling}
+                  title={
+                    !canManageBilling
+                      ? "You don't have permission to change the billing plan."
+                      : undefined
+                  }
+                >
                   Change Plan
                 </Button>
               </div>
@@ -595,147 +635,151 @@ export default function Billing() {
           </Card> */}
         </div>
 
-        <Card className="p-0 overflow-hidden">
-          <div className="px-6 py-4 border-b border-outline-variant flex items-center justify-between">
-            <p className="text-sm font-semibold text-on-surface">
-              Billing History
-            </p>
-            {historyFetching && !historyLoading && (
-              <Loader2
-                size={14}
-                className="animate-spin text-on-surface-variant"
-              />
-            )}
-          </div>
-
-          {historyLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 size={20} className="animate-spin text-secondary" />
+        {canManageBilling && (
+          <Card className="p-0 overflow-hidden">
+            <div className="px-6 py-4 border-b border-outline-variant flex items-center justify-between">
+              <p className="text-sm font-semibold text-on-surface">
+                Billing History
+              </p>
+              {historyFetching && !historyLoading && (
+                <Loader2
+                  size={14}
+                  className="animate-spin text-on-surface-variant"
+                />
+              )}
             </div>
-          ) : historyError ? (
-            <p className="px-6 py-10 text-center text-sm text-error">
-              Couldn't load billing history. Please try again.
-            </p>
-          ) : history.length === 0 ? (
-            <p className="px-6 py-10 text-center text-sm text-on-surface-variant">
-              No billing history yet.
-            </p>
-          ) : (
-            <>
-              {/* Desktop / tablet: table */}
-              <div className="hidden md:block overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="bg-surface-container border-b border-outline-variant">
-                      {["Date", "Description", "Amount", "Status", ""].map(
-                        (h) => (
-                          <th
-                            key={h}
-                            className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-on-surface-variant"
-                          >
-                            {h}
-                          </th>
-                        ),
-                      )}
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-outline-variant">
-                    {history.map((row) => (
-                      <tr
-                        key={row.id}
-                        className="hover:bg-surface-container/50 transition-colors"
-                      >
-                        <td className="px-6 py-4 text-sm text-on-surface-variant">
+
+            {historyLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 size={20} className="animate-spin text-secondary" />
+              </div>
+            ) : historyError ? (
+              <p className="px-6 py-10 text-center text-sm text-error">
+                Couldn't load billing history. Please try again.
+              </p>
+            ) : history.length === 0 ? (
+              <p className="px-6 py-10 text-center text-sm text-on-surface-variant">
+                No billing history yet.
+              </p>
+            ) : (
+              <>
+                {/* Desktop / tablet: table */}
+
+                <div className="hidden md:block overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="bg-surface-container border-b border-outline-variant">
+                        {["Date", "Description", "Amount", "Status", ""].map(
+                          (h) => (
+                            <th
+                              key={h}
+                              className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-on-surface-variant"
+                            >
+                              {h}
+                            </th>
+                          ),
+                        )}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-outline-variant">
+                      {history.map((row) => (
+                        <tr
+                          key={row.id}
+                          className="hover:bg-surface-container/50 transition-colors"
+                        >
+                          <td className="px-6 py-4 text-sm text-on-surface-variant">
+                            {row.date ? formatDate(row.date) : "—"}
+                          </td>
+                          <td className="px-6 py-4 text-sm text-on-surface capitalize">
+                            {`${row.description}/`}
+                            <span className="text-sm text-on-surface-variant font-medium">
+                              Monthly
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 text-sm font-semibold tnum text-on-surface">
+                            {row.amount != null
+                              ? formatCurrency(row.amount, row.currency)
+                              : "—"}
+                          </td>
+                          <td className="px-6 py-4">
+                            <StatusChip status={row.status} />
+                          </td>
+                          <td className="px-6 py-4">
+                            <ReceiptLink url={row.receiptUrl} />
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Phone: stacked cards */}
+
+                <div className="md:hidden divide-y divide-outline-variant">
+                  {history.map((row) => (
+                    <div
+                      key={row.id}
+                      className="px-4 py-4 flex items-start justify-between gap-3"
+                    >
+                      <div className="min-w-0">
+                        <p className="text-sm text-on-surface">
+                          {row.description}
+                        </p>
+                        <p className="text-xs text-on-surface-variant mt-0.5">
                           {row.date ? formatDate(row.date) : "—"}
-                        </td>
-                        <td className="px-6 py-4 text-sm text-on-surface capitalize">
-                          {`${row.description}/`}
-                          <span className="text-sm text-on-surface-variant font-medium">
-                            Monthly
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 text-sm font-semibold tnum text-on-surface">
+                        </p>
+                        <div className="mt-1.5">
+                          <StatusChip status={row.status} />
+                        </div>
+                      </div>
+                      <div className="text-right flex-shrink-0">
+                        <p className="text-sm font-semibold tnum text-on-surface">
                           {row.amount != null
                             ? formatCurrency(row.amount, row.currency)
                             : "—"}
-                        </td>
-                        <td className="px-6 py-4">
-                          <StatusChip status={row.status} />
-                        </td>
-                        <td className="px-6 py-4">
-                          <ReceiptLink url={row.receiptUrl} />
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Phone: stacked cards */}
-              <div className="md:hidden divide-y divide-outline-variant">
-                {history.map((row) => (
-                  <div
-                    key={row.id}
-                    className="px-4 py-4 flex items-start justify-between gap-3"
-                  >
-                    <div className="min-w-0">
-                      <p className="text-sm text-on-surface">
-                        {row.description}
-                      </p>
-                      <p className="text-xs text-on-surface-variant mt-0.5">
-                        {row.date ? formatDate(row.date) : "—"}
-                      </p>
-                      <div className="mt-1.5">
-                        <StatusChip status={row.status} />
+                        </p>
+                        <ReceiptLink
+                          url={row.receiptUrl}
+                          className="mt-1 -mr-1.5"
+                        />
                       </div>
                     </div>
-                    <div className="text-right flex-shrink-0">
-                      <p className="text-sm font-semibold tnum text-on-surface">
-                        {row.amount != null
-                          ? formatCurrency(row.amount, row.currency)
-                          : "—"}
-                      </p>
-                      <ReceiptLink
-                        url={row.receiptUrl}
-                        className="mt-1 -mr-1.5"
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </>
-          )}
+                  ))}
+                </div>
+              </>
+            )}
 
-          {(historyPage > 1 || historyHasMore) && (
-            <div className="px-6 py-3 border-t border-outline-variant flex items-center justify-between">
-              <p className="text-xs text-on-surface-variant">
-                Page {historyPage}
-              </p>
-              <div className="flex items-center gap-1">
-                <button
-                  type="button"
-                  onClick={goToPrevHistoryPage}
-                  disabled={historyPage === 1 || historyFetching}
-                  aria-label="Previous page"
-                  className="p-1.5 rounded text-on-surface-variant hover:bg-surface-container disabled:opacity-30 transition-colors"
-                >
-                  <ChevronLeft size={14} />
-                </button>
-                <button
-                  type="button"
-                  onClick={goToNextHistoryPage}
-                  disabled={!historyHasMore || historyFetching}
-                  aria-label="Next page"
-                  className="p-1.5 rounded text-on-surface-variant hover:bg-surface-container disabled:opacity-30 transition-colors"
-                >
-                  <ChevronRight size={14} />
-                </button>
+            {(historyPage > 1 || historyHasMore) && (
+              <div className="px-6 py-3 border-t border-outline-variant flex items-center justify-between">
+                <p className="text-xs text-on-surface-variant">
+                  Page {historyPage}
+                </p>
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={goToPrevHistoryPage}
+                    disabled={historyPage === 1 || historyFetching}
+                    aria-label="Previous page"
+                    className="p-1.5 rounded text-on-surface-variant hover:bg-surface-container disabled:opacity-30 transition-colors"
+                  >
+                    <ChevronLeft size={14} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={goToNextHistoryPage}
+                    disabled={!historyHasMore || historyFetching}
+                    aria-label="Next page"
+                    className="p-1.5 rounded text-on-surface-variant hover:bg-surface-container disabled:opacity-30 transition-colors"
+                  >
+                    <ChevronRight size={14} />
+                  </button>
+                </div>
               </div>
-            </div>
-          )}
-        </Card>
+            )}
+          </Card>
+        )}
 
-        {planName !== "free" && (
+        {canManageBilling && planName !== "free" && (
           <Card className="border-error/30 bg-error/5">
             <div className="flex flex-col sm:flex-row items-start gap-3">
               <div className="w-9 h-9 rounded-lg bg-error/10 flex items-center justify-center flex-shrink-0">
@@ -757,7 +801,8 @@ export default function Billing() {
                     variant="danger"
                     size="sm"
                     onClick={handleCancel}
-                    disabled={billingPortal.isPending}
+                    // disabled={billingPortal.isPending}
+                    disabled={!canManageBilling}
                   >
                     {billingPortal.isPending ? (
                       <span className="flex items-center gap-2">

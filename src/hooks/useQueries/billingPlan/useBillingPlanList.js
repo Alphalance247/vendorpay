@@ -72,14 +72,16 @@ export const useBillingPortal = () => {
                 window.location.href = data.url;
             }
         },
+
     });
 }
-export const useBillingHistory = ({ limit = 10, startingAfter = null } = {}) => {
+export const useBillingHistory = ({ limit = 10, startingAfter = null, enabled = true } = {}) => {
     return useQuery({
-        queryKey: ['billing-history', limit, startingAfter],
+        queryKey: ['billing-history', limit, startingAfter,],
         queryFn: () => getBillingHistory({ limit, startingAfter }),
         // Keep showing the current page while the next one loads, instead of
         // flashing an empty table on every page change.
         placeholderData: keepPreviousData,
+        enabled
     })
 }

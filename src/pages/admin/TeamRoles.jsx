@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   Search,
@@ -25,6 +25,7 @@ import { useCreateInvite } from "../../hooks/useQueries/vendorAdmin/useCreateInv
 import { useTeamMembers } from "../../hooks/useQueries/vendorAdmin/useTeamMembers";
 import { useDeleteTeamMember } from "../../hooks/useQueries/vendorAdmin/useDeleteTeamMember";
 import { useResendInvite } from "../../hooks/useQueries/vendorAdmin/useResendInvite";
+import { adminService } from "../../lib/services/adminService";
 
 const ROLES = [
   {
@@ -164,9 +165,30 @@ export default function TeamRoles() {
   const deleteMember = useDeleteTeamMember();
   const resendInvite = useResendInvite();
 
-  const hasStaffOrMember = team.some((m) =>
-    ["staff", "member"].includes(m.role?.toLowerCase())
-  );
+  const [userRole, setUserRole] = useState("");
+  const [roleLoading, setRoleLoading] = useState(true);
+
+  useEffect(() => {
+    adminService
+      .getProfile()
+      .then((profile) => {
+        setUserRole(profile.role?.toLowerCase() || "");
+      })
+      .catch((error) => {
+        console.error("Failed to fetch user role:", error);
+        setUserRole("staff"); // Hide restricted actions if role lookup fails
+      })
+      .finally(() => {
+        setRoleLoading(false);
+      });
+  }, []);
+
+  const canInviteTeammate =
+    !roleLoading &&
+    !!userRole &&
+    !["staff", "member"].includes(userRole);
+
+  const canManageTeam = canInviteTeammate;
 
   function handleInvite({ email, role }, resetForm) {
     createInvite.mutate(
@@ -204,6 +226,9 @@ export default function TeamRoles() {
   // Row actions shared by the desktop table and the phone cards.
   function memberActions(member, { isOwner, resending, removing }) {
     const items = [];
+    if (!canManageTeam) return items;
+
+
     if (member.status === "pending") {
       items.push({
         label: resending ? "Resending…" : "Resend invite",
@@ -255,7 +280,7 @@ export default function TeamRoles() {
               Manage who has access to your company's VendorPay workspace.
             </p>
           </div>
-          {!hasStaffOrMember && (
+          {canInviteTeammate && !isLoading && (
             <Button
               onClick={() => setInviteOpen(true)}
               className="flex items-center gap-2"
