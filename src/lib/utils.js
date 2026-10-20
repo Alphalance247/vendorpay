@@ -62,6 +62,36 @@ export function formatCurrency(amount, currency = 'USD') {
   }
 }
 
+// For headline/stat-card numbers that could plausibly grow into the
+// millions, billions or beyond (e.g. a monthly volume total) — keeps the
+// displayed string short and roughly constant-width regardless of
+// magnitude ("$166M", "$1.2B") instead of a long figure that can overflow
+// a fixed-width card or wrap awkwardly on small screens. Not meant for
+// line-item amounts (invoice rows, payment rows, etc.) where the exact
+// figure matters more than brevity — use formatCurrency there, and pair
+// this with the full formatCurrency value nearby (e.g. in a sub-label or
+// tooltip) so the precise number is never hidden, only de-emphasized.
+export function formatCompactCurrency(amount, currency = 'USD') {
+  try {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency,
+      notation: 'compact',
+      compactDisplay: 'short',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 1,
+    }).format(amount);
+  } catch {
+    const number = new Intl.NumberFormat('en-US', {
+      notation: 'compact',
+      compactDisplay: 'short',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 1,
+    }).format(amount);
+    return `${currency} ${number}`;
+  }
+}
+
 export function formatDate(dateStr) {
   return new Date(dateStr).toLocaleDateString('en-US', {
     year: 'numeric',
