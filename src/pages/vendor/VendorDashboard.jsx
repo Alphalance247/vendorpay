@@ -17,7 +17,8 @@ import TutorialCard from "../../components/ui/TutorialCard";
 import AppLayout from "../../components/layout/AppLayout";
 import Card from "../../components/ui/Card";
 import {
-  // formatCurrency,
+  formatCurrency,
+  formatCompactCurrency,
   getCurrencySymbol
 } from "../../lib/utils";
 import { vendorService } from "../../lib/services/vendorService";
@@ -30,27 +31,33 @@ function StatCard({
   label,
   value,
   values,
+  valuesTitle,
   sub,
   subColor = "text-success",
   badge,
 }) {
   return (
-    <Card className="flex flex-col gap-1">
-      <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant">
+    <Card className="flex flex-col gap-1 min-w-0">
+      <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant truncate">
         {label}
       </p>
       {values ? (
-        <div className="space-y-0.5">
+        <div className="space-y-0.5 min-w-0">
           <p
-
-            className="text-2xl font-bold text-on-surface tnum leading-tight"
-          >   {values}</p>
-
+            className="text-xl sm:text-2xl font-bold text-on-surface tnum leading-tight truncate"
+            title={valuesTitle}
+          >
+            {values}
+          </p>
         </div>
       ) : (
-        <p className="text-2xl font-bold text-on-surface tnum">{value}</p>
+        <p className="text-xl sm:text-2xl font-bold text-on-surface tnum truncate">
+          {value}
+        </p>
       )}
-      {sub && <p className={`text-xs font-medium ${subColor}`}>{sub}</p>}
+      {sub && (
+        <p className={`text-xs font-medium truncate ${subColor}`}>{sub}</p>
+      )}
       {badge && (
         <span className="inline-flex items-center self-start px-2 py-0.5 bg-error/10 text-error text-xs font-semibold rounded-full mt-1">
           {badge}
@@ -289,15 +296,31 @@ export default function VendorDashboard() {
           />
           <StatCard
             label="Paid This Month"
-            // values="10.00"
-            values={`${data.paid_this_month.currency} ${data.paid_this_month.amount}`}
+            values={formatCompactCurrency(
+              data.paid_this_month.amount,
+              data.paid_this_month.currency,
+            )}
+            valuesTitle={formatCurrency(
+              data.paid_this_month.amount,
+              data.paid_this_month.currency,
+            )}
             sub={`${settledPct}% of invoices settled`}
           />
           <StatCard
             label="Total Amount Paid"
-            // values="10.00"
-            values={` ${data.total_amount_paid_ytd.currency} ${data.total_amount_paid_ytd.amount}`}
-            sub=""
+            values={formatCompactCurrency(
+              data.total_amount_paid_ytd.amount,
+              data.total_amount_paid_ytd.currency,
+            )}
+            valuesTitle={formatCurrency(
+              data.total_amount_paid_ytd.amount,
+              data.total_amount_paid_ytd.currency,
+            )}
+            sub={formatCurrency(
+              data.total_amount_paid_ytd.amount,
+              data.total_amount_paid_ytd.currency,
+            )}
+            subColor="text-on-surface-variant"
           />
         </div>
 

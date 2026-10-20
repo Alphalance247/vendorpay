@@ -16,7 +16,7 @@ import Card from "../../components/ui/Card";
 import Button from "../../components/ui/Button";
 import Tooltip from "../../components/ui/Tooltip";
 import InviteVendorModal from "../../components/ui/InviteVendorModal";
-import { formatCurrency } from "../../lib/utils";
+import { formatCurrency, formatCompactCurrency } from "../../lib/utils";
 import { vendorService } from "../../lib/services/vendorService";
 
 // Shown in place of the usual stat/activity view until the workspace has at
@@ -128,13 +128,21 @@ export default function AdminDashboard() {
     },
     {
       label: "Monthly Volume",
+      // Compact ("$166M") so a growing volume never overflows the card or
+      // wraps on small screens — the exact figure is still shown below via
+      // `sub`, so nothing is hidden, just de-emphasized.
       values: loading
         ? null
+        : formatCompactCurrency(
+            dash?.monthly_volume?.amount || 0,
+            dash?.monthly_volume?.currency || "USD",
+          ),
+      sub: loading
+        ? ""
         : formatCurrency(
             dash?.monthly_volume?.amount || 0,
             dash?.monthly_volume?.currency || "USD",
           ),
-      sub: "",
       subColor: "text-on-surface-variant",
       tip: "Total invoice value processed this calendar month, by currency.",
     },
@@ -215,24 +223,26 @@ export default function AdminDashboard() {
                     className="animate-spin text-secondary mt-2"
                   />
                 ) : values ? (
-                  <div className="space-y-0.5 mt-1">
+                  <div className="space-y-0.5 mt-1 min-w-0">
                     <p
-                      className={`text-2xl font-bold tnum leading-tight ${highlight ? "text-error" : "text-on-surface"}`}
+                      className={`text-2xl font-bold tnum leading-tight truncate ${highlight ? "text-error" : "text-on-surface"}`}
+                      title={typeof values === "string" ? values : undefined}
                     >
                       {values}
                     </p>
-                    {/* {values.map((v, i) => (
-                      
-                    ))} */}
                   </div>
                 ) : (
                   <p
-                    className={`text-2xl font-bold mt-1 tnum ${highlight ? "text-error" : "text-on-surface"}`}
+                    className={`text-2xl font-bold mt-1 tnum truncate ${highlight ? "text-error" : "text-on-surface"}`}
                   >
                     {value}
                   </p>
                 )}
-                {sub && <p className={`text-xs mt-0.5 ${subColor}`}>{sub}</p>}
+                {sub && (
+                  <p className={`text-xs mt-0.5 truncate ${subColor}`}>
+                    {sub}
+                  </p>
+                )}
               </Card>
             ),
           )}

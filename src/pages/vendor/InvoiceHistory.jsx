@@ -24,6 +24,7 @@ import Button from "../../components/ui/Button";
 import StatusChip from "../../components/ui/StatusChip";
 import {
   formatCurrency,
+  formatCompactCurrency,
   formatDate,
   extractErrorMessage,
   // getCurrencySymbol,
@@ -205,80 +206,98 @@ export default function InvoiceHistory() {
         )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-          <Card className="py-4">
-            <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant">
+          <Card className="py-4 min-w-0">
+            <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant truncate">
               Total Invoices
             </p>
-            <p className="text-xl font-bold text-on-surface mt-1 tnum">
+            <p className="text-xl font-bold text-on-surface mt-1 tnum truncate">
               {dash?.total_invoices ?? "—"}
             </p>
-            <p className="text-xs mt-0.5 text-on-surface-variant">
+            <p className="text-xs mt-0.5 text-on-surface-variant truncate">
               {dash?.pending_approval_count ?? 0} pending approval
             </p>
           </Card>
-          <Card className="py-4">
-            <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant">
+          <Card className="py-4 min-w-0">
+            <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant truncate">
               Paid This Month
             </p>
             {dash ? (
-              <div className="mt-1 space-y-0.5">
+              <div className="mt-1 space-y-0.5 min-w-0">
                 <p
-
-                  className="text-xl font-bold text-on-surface tnum leading-tight"
-                > {`${dash.paid_this_month.currency} ${dash.paid_this_month.amount}`}</p>
-                <div className="mt-1 space-y-0 text-xs text-success">
+                  className="text-xl font-bold text-on-surface tnum leading-tight truncate"
+                  title={formatCurrency(
+                    dash.paid_this_month.amount,
+                    dash.paid_this_month.currency,
+                  )}
+                >
+                  {formatCompactCurrency(
+                    dash.paid_this_month.amount,
+                    dash.paid_this_month.currency,
+                  )}
+                </p>
+                <div className="mt-1 space-y-0 text-xs text-success min-w-0">
                   <p
-
+                    className="truncate"
+                    title={`YTD: ${formatCurrency(
+                      dash.total_amount_paid_ytd.amount,
+                      dash.total_amount_paid_ytd.currency,
+                    )}`}
                   >
-                    {` YTD:${dash.total_amount_paid_ytd.currency} ${dash.total_amount_paid_ytd.amount}`}
-
+                    {`YTD: ${formatCompactCurrency(
+                      dash.total_amount_paid_ytd.amount,
+                      dash.total_amount_paid_ytd.currency,
+                    )}`}
                   </p>
                 </div>
-
               </div>
             ) : (
               <p className="text-xl font-bold text-on-surface mt-1">—</p>
             )}
-
-
           </Card>
-          <Card className="py-4">
-            <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant">
+          <Card className="py-4 min-w-0">
+            <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant truncate">
               Overdue
             </p>
             {dash ? (
-              <div className="mt-1 space-y-0.5">
-
+              <div className="mt-1 space-y-0.5 min-w-0">
                 <p
-
-                  className="text-xl font-bold text-on-surface tnum leading-tight"
+                  className="text-xl font-bold text-on-surface tnum leading-tight truncate"
+                  title={formatCurrency(
+                    dash.overdue_amount.amount,
+                    dash.overdue_amount.currency,
+                  )}
                 >
-                  {`${dash.overdue_amount.currency} ${dash.overdue_amount.amount}`}</p>
+                  {formatCompactCurrency(
+                    dash.overdue_amount.amount,
+                    dash.overdue_amount.currency,
+                  )}
+                </p>
               </div>
             ) : (
               <p className="text-xl font-bold text-on-surface mt-1">—</p>
             )}
             {dash?.overdue_count > 0 ? (
-              <p className="text-xs mt-0.5 text-error">
+              <p className="text-xs mt-0.5 text-error truncate">
                 {dash.overdue_count} invoice
                 {dash.overdue_count !== 1 ? "s" : ""}
               </p>
             ) : (
-              <p className="text-xs mt-0.5 text-success">None overdue</p>
+              <p className="text-xs mt-0.5 text-success truncate">
+                None overdue
+              </p>
             )}
-            <p className="text-xs mt-0.5 text-on-surface-variant">
+            <p className="text-xs mt-0.5 text-on-surface-variant truncate">
               Unpaid past the due date you set when submitting
             </p>
           </Card>
-          <Card className="py-4">
-            <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant">
+          <Card className="py-4 min-w-0">
+            <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant truncate">
               Pending Approval
             </p>
-            <p className="text-xl font-bold text-on-surface mt-1 tnum">
+            <p className="text-xl font-bold text-on-surface mt-1 tnum truncate">
               {dash?.pending_approval_count ?? "—"}
-
             </p>
-            <p className="text-xs mt-0.5 text-on-surface-variant">
+            <p className="text-xs mt-0.5 text-on-surface-variant truncate">
               awaiting review
             </p>
           </Card>

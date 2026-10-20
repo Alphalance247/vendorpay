@@ -9,6 +9,7 @@ import StatusChip from "../../components/ui/StatusChip";
 import RejectModal from "../../components/ui/RejectModal";
 import {
   formatCurrency,
+  formatCompactCurrency,
   formatDate,
   extractErrorMessage,
 } from "../../lib/utils";
@@ -310,7 +311,8 @@ export default function AdminInvoiceManagement() {
         console.error("Failed to fetch user profile:", error);
       });
   }, []);
-  const canManageInvoices = !!userRole && !["staff", "member"].includes(userRole);
+  const canManageInvoices =
+    !!userRole && !["staff", "member"].includes(userRole);
 
   return (
     <AppLayout role="admin">
@@ -359,42 +361,62 @@ export default function AdminInvoiceManagement() {
         )}
 
         {/* Stats row */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-          <Card className="py-4">
-            <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2">
+          <Card className="py-4 min-w-0">
+            <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant truncate">
               Total Invoices
             </p>
-            <p className="text-2xl font-bold text-on-surface mt-1">{total}</p>
+            <p className="text-xl sm:text-2xl font-bold text-on-surface mt-1 truncate">
+              {total}
+            </p>
           </Card>
-          <Card className="py-4 bg-inverse-surface border-0 text-on-surface-variant">
-            <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant">
+          <Card className="py-4 min-w-0 bg-inverse-surface border-0 text-on-surface-variant">
+            <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant truncate">
               Pending Review
             </p>
-            <p className="text-2xl font-bold mt-1 text-on-surface">
+            <p className="text-xl sm:text-2xl font-bold mt-1 text-on-surface truncate">
               {pendingCount}
             </p>
           </Card>
-          <Card className="py-4">
-            <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant">
+          <Card className="py-4 min-w-0">
+            <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant truncate">
               Disputed
             </p>
-            <p className="text-2xl font-bold text-on-surface mt-1">
+            <p className="text-xl sm:text-2xl font-bold text-on-surface mt-1 truncate">
               {disputedCount}
             </p>
           </Card>
-          <Card className="py-4">
-            <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant">
+          <Card className="py-4 min-w-0">
+            <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant truncate">
               Total Paid
             </p>
-            <p className="text-2xl font-bold text-on-surface tnum mt-1">
+            <p
+              className="text-xl sm:text-2xl font-bold text-on-surface tnum mt-1 truncate"
+              title={formatCurrency(totalPaid.amount, totalPaid.currency)}
+            >
+              {formatCompactCurrency(totalPaid.amount, totalPaid.currency)}
+            </p>
+            <p className="text-xs text-on-surface-variant mt-0.5 truncate">
               {formatCurrency(totalPaid.amount, totalPaid.currency)}
             </p>
           </Card>
-          <Card className="py-4">
-            <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant">
+          <Card className="py-4 min-w-0">
+            <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant truncate">
               Outstanding Payment
             </p>
-            <p className="text-2xl font-bold text-on-surface tnum mt-1">
+            <p
+              className="text-xl sm:text-2xl font-bold text-on-surface tnum mt-1 truncate"
+              title={formatCurrency(
+                outstandingPayments.amount,
+                outstandingPayments.currency,
+              )}
+            >
+              {formatCompactCurrency(
+                outstandingPayments.amount,
+                outstandingPayments.currency,
+              )}
+            </p>
+            <p className="text-xs text-on-surface-variant mt-0.5 truncate">
               {formatCurrency(
                 outstandingPayments.amount,
                 outstandingPayments.currency,
@@ -410,10 +432,11 @@ export default function AdminInvoiceManagement() {
               <button
                 key={tab.label}
                 onClick={() => switchTab(idx)}
-                className={`px-4 py-3 text-sm font-medium whitespace-nowrap transition-colors flex-shrink-0 ${activeTab === idx
-                  ? "text-secondary border-b-2 border-secondary -mb-px"
-                  : "text-on-surface-variant hover:text-on-surface"
-                  }`}
+                className={`px-4 py-3 text-sm font-medium whitespace-nowrap transition-colors flex-shrink-0 ${
+                  activeTab === idx
+                    ? "text-secondary border-b-2 border-secondary -mb-px"
+                    : "text-on-surface-variant hover:text-on-surface"
+                }`}
               >
                 {tab.label}
               </button>
@@ -558,7 +581,7 @@ export default function AdminInvoiceManagement() {
                             className="px-3 py-2.5 whitespace-nowrap"
                             onClick={(e) => e.stopPropagation()}
                           >
-                            {canManageInvoices &&
+                            {canManageInvoices && (
                               <InvoiceActions
                                 inv={inv}
                                 loading={rowKey}
@@ -567,8 +590,8 @@ export default function AdminInvoiceManagement() {
                                 onMarkPaid={() => handleMarkPaid(inv)}
                                 onReject={() => openReject(inv)}
                                 className="flex items-center gap-1.5 flex-nowrap"
-                              />}
-
+                              />
+                            )}
                           </td>
                         </tr>
                       );

@@ -669,11 +669,14 @@ export default function InvoiceDetail() {
                     Due: {invoice.due_date ? formatDate(invoice.due_date) : "—"}
                   </p>
                 </div>
-                <div>
+                <div className="min-w-0">
                   <p className="text-xs text-on-surface-variant uppercase tracking-wide">
                     Amount
                   </p>
-                  <p className="text-xl font-bold tnum text-on-surface mt-0.5">
+                  <p
+                    className="text-xl font-bold tnum text-on-surface mt-0.5 truncate"
+                    title={formatCurrency(invoice.amount, invoice.currency)}
+                  >
                     {formatCurrency(invoice.amount, invoice.currency)}
                   </p>
                   <StatusChip
