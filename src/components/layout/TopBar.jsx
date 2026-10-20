@@ -98,6 +98,7 @@ export default function TopBar({ onMenuClick }) {
   }, [role]);
 
   const { data: currentUser } = useCurrentUser(role === "admin");
+  console.log(currentUser.full_name)
   // const adminAvatar = currentUser.avatar_url;
   // console.log(adminAvatar);
   // Fetch recent invoices to drive notifications
@@ -175,12 +176,12 @@ export default function TopBar({ onMenuClick }) {
     "Vendor"
     : role === "admin"
       ? currentUser?.full_name || "—"
-      : "—";
+      : currentUser?.full_name;
 
   const displayEmail =
     profile?.contact_email ||
     profile?.user_email ||
-    (role === "admin" ? currentUser?.email : "") ||
+    (role === "admin" ? currentUser?.email : currentUser?.email) ||
     "";
 
   return (
@@ -311,12 +312,12 @@ export default function TopBar({ onMenuClick }) {
                   <p className="text-sm font-semibold text-on-surface truncate capitalize">
                     {displayName}
                   </p>
-                  {displayEmail && (
+                  {role === "admin" && displayEmail && (
                     <p className="text-xs text-on-surface-variant truncate">
                       {displayEmail}
                     </p>
                   )}
-                  <p className="text-xs text-outline capitalize">{role}</p>
+                  <p className="text-xs text-on-surface-variant capitalize">{role}</p>
                 </div>
               </div>
               {/* } */}

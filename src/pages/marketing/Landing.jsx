@@ -23,6 +23,8 @@ import {
   MdOutlineDescription,
   MdOutlineGroup,
   MdOutlineHistory,
+  MdOutlineEmail,
+  MdOutlineSupportAgent,
 } from "react-icons/md";
 import { getCountries } from "../../lib/country";
 import Logo from "../../components/ui/Logo";
@@ -122,6 +124,12 @@ const NAV_LINKS = [
   { path: "pricing", label: "Pricing", href: "#pricing" },
 ];
 
+const CONTACT_EMAIL = "vendorpaysupport@alluvium.net";
+
+// Pre-filled subjects let the support inbox tell which part of the page an inquiry came from.
+const contactHref = (subject = "VendorPay inquiry") =>
+  `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(subject)}`;
+
 export default function Landing() {
   const navigate = useNavigate();
   const { data: billingPlanList, isLoading: plansLoading } =
@@ -154,6 +162,13 @@ export default function Landing() {
                 {link.label}
               </a>
             ))}
+            {/* Kept inside the nav (not the button group) so the nav stays centered; lg+ only to avoid crowding md. */}
+            <a
+              href={contactHref()}
+              className="hidden lg:block font-body-md text-body-md text-on-surface-variant hover:text-secondary py-2 transition-colors whitespace-nowrap"
+            >
+              Contact Us
+            </a>
           </nav>
           <div className="flex items-center gap-2 sm:gap-space-16 md:gap-space-24">
             <a
@@ -326,10 +341,10 @@ export default function Landing() {
                           </span>
                           <div className="mt-space-8 flex flex-col">
                             <span className="font-code-mono-sm text-code-mono-sm font-bold text-on-surface text-[12px] truncate">
-                              NGN 3,500,011.00
+                              $980.00
                             </span>
                             <span className="font-code-mono-sm text-code-mono-sm text-on-surface-variant text-[11px]">
-                              $980.00
+                              ₦3,500,011.00
                             </span>
                           </div>
                         </div>
@@ -650,11 +665,17 @@ export default function Landing() {
                   <h2 className="font-headline-lg text-headline-lg text-on-surface mb-space-20">
                     Built for handling vendor banking data.
                   </h2>
-                  <p className="font-body-lg text-body-lg text-on-surface-variant">
+                  <p className="font-body-lg text-body-lg text-on-surface-variant mb-space-24">
                     Vendor bank account numbers, routing details, and IBANs are
                     sensitive by nature. VendorPay is built with that in mind
                     from the ground up, not bolted on after the fact.
                   </p>
+                  <a
+                    href={contactHref("VendorPay security documentation request")}
+                    className="inline-flex items-center gap-space-8 font-label-caps text-sm font-bold uppercase tracking-[0.08em] text-secondary hover:underline"
+                  >
+                    Request security documentation →
+                  </a>
                 </div>
                 <div className="lg:col-span-6 grid grid-cols-1 sm:grid-cols-2 gap-space-24">
                   <div className="p-space-32 rounded-xl bg-surface-container-lowest shadow-sm flex flex-col justify-between">
@@ -759,6 +780,29 @@ export default function Landing() {
                   })
                 )}
               </div>
+              <div className="mt-space-32 p-space-24 rounded-xl bg-surface-container-lowest shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-space-16">
+                <div className="flex items-center gap-space-16">
+                  <div className="w-12 h-12 rounded-full bg-surface-container flex items-center justify-center text-secondary shrink-0">
+                    <MdOutlineSupportAgent size={26} />
+                  </div>
+                  <div>
+                    <h3 className="font-sans text-headline-sm text-on-surface">
+                      Need a larger plan or custom terms?
+                    </h3>
+                    <p className="font-body-sm text-body-sm text-on-surface-variant">
+                      Talk to us about high vendor volumes, invoicing, or
+                      onboarding support.
+                    </p>
+                  </div>
+                </div>
+                <a
+                  href={contactHref("VendorPay pricing inquiry")}
+                  className="inline-flex items-center justify-center gap-space-8 px-space-20 py-space-12 rounded-lg border border-outline text-on-surface font-label-caps text-sm font-bold uppercase tracking-[0.08em] hover:bg-surface-container transition-colors whitespace-nowrap shrink-0"
+                >
+                  <MdOutlineEmail size={18} />
+                  Contact Us
+                </a>
+              </div>
             </div>
           </section>
 
@@ -828,14 +872,23 @@ export default function Landing() {
               </h2>
               <p className="font-body-lg text-body-lg text-surface-variant mb-space-32 max-w-xl">
                 Set up your company workspace in a few minutes. No sales call
-                required.
+                required, but we're here if you have questions.
               </p>
-              <a
-                onClick={() => navigate("/signup-company")}
-                className="inline-flex items-center justify-center px-space-32 py-space-16 rounded-lg bg-brand-orange text-on-primary font-label-caps text-sm font-bold uppercase tracking-[0.08em] hover:bg-brand-orange-dark transition-all shadow-md cursor-pointer"
-              >
-                GET STARTED →
-              </a>
+              <div className="flex flex-wrap items-center justify-center gap-space-16">
+                <a
+                  onClick={() => navigate("/signup-company")}
+                  className="inline-flex items-center justify-center px-space-32 py-space-16 rounded-lg bg-brand-orange text-on-primary font-label-caps text-sm font-bold uppercase tracking-[0.08em] hover:bg-brand-orange-dark transition-all shadow-md cursor-pointer"
+                >
+                  GET STARTED →
+                </a>
+                <a
+                  href={contactHref()}
+                  className="inline-flex items-center justify-center gap-space-8 px-space-32 py-space-16 rounded-lg border border-surface-variant/40 text-surface-container-lowest font-label-caps text-sm font-bold uppercase tracking-[0.08em] hover:bg-surface-container-lowest/10 transition-all"
+                >
+                  <MdOutlineEmail size={18} />
+                  Contact Us
+                </a>
+              </div>
             </div>
           </section>
         </div>
@@ -851,9 +904,16 @@ export default function Landing() {
                 <p className="font-body-md text-body-md text-surface-variant max-w-sm">
                   Vendor Management, without the chaos.
                 </p>
+                <a
+                  href={contactHref()}
+                  className="inline-flex items-center justify-center gap-space-8 px-space-20 py-space-12 rounded-lg border border-surface-variant/40 text-surface-container-lowest font-label-caps text-sm font-bold uppercase tracking-[0.08em] hover:bg-surface-container-lowest/10 transition-colors"
+                >
+                  <MdOutlineEmail size={18} />
+                  Contact Us
+                </a>
               </div>
             </div>
-            <div className="md:col-span-3">
+            <div className="md:col-span-2">
               <h4 className="font-label-caps text-label-caps uppercase tracking-wider text-secondary-fixed mb-space-24 font-bold">
                 PRODUCT
               </h4>
@@ -870,7 +930,7 @@ export default function Landing() {
                 ))}
               </ul>
             </div>
-            <div className="md:col-span-3">
+            <div className="md:col-span-2">
               <h4 className="font-label-caps text-label-caps uppercase tracking-wider text-secondary-fixed mb-space-24 font-bold">
                 ACCOUNT
               </h4>
@@ -889,6 +949,29 @@ export default function Landing() {
                     className="font-body-md text-body-md text-surface-variant hover:text-surface-container-lowest transition-colors cursor-pointer"
                   >
                     Get Started
+                  </a>
+                </li>
+              </ul>
+            </div>
+            <div className="md:col-span-2">
+              <h4 className="font-label-caps text-label-caps uppercase tracking-wider text-secondary-fixed mb-space-24 font-bold">
+                SUPPORT
+              </h4>
+              <ul className="space-y-space-12">
+                <li className="list-none">
+                  <a
+                    href={contactHref("VendorPay security documentation request")}
+                    className="font-body-md text-body-md text-surface-variant hover:text-surface-container-lowest transition-colors"
+                  >
+                    Security Docs
+                  </a>
+                </li>
+                <li className="list-none">
+                  <a
+                    href={contactHref()}
+                    className="font-body-md text-body-md text-surface-variant hover:text-surface-container-lowest transition-colors break-all"
+                  >
+                    {CONTACT_EMAIL}
                   </a>
                 </li>
               </ul>
