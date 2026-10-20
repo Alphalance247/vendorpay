@@ -99,19 +99,19 @@ const ROLES = [
     icon: MdOutlineWorkspacePremium,
     title: "Owner",
     description:
-      "Full access, including billing and team management. There's only ever one, and it can't be reassigned..",
+      "Full access. Everything Admin can do, plus funding invoices and marking them paid. Can also delete invoices, activate, deactivate or remove vendors, and manage the team, company settings, logo and billing. Can view all support tickets and the activity log.",
   },
   {
     icon: MdOutlineAdminPanelSettings,
     title: "Admin",
     description:
-      "Manages vendors, invoices, and payments. No access to billing or removing the Owner.",
+      "Everything a Member can do, plus review work. Can manage invoices and verify or reject vendor bank details. Can't manage the company, team, or billing.",
   },
   {
     icon: MdOutlineVisibility,
-    title: "Reviewer",
+    title: "Member",
     description:
-      "Reviews and approves or rejects invoices only. No access to payments, team, or billing.",
+      "View-only access. Can see invoices, vendors and the team list, but can't make any changes or take any actions.",
   },
 ];
 

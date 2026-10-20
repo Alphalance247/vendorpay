@@ -51,7 +51,7 @@ export default function InvoiceDetail() {
   const navigate = useNavigate();
   const { id } = useParams();
   const { role } = useAuth();
-  const isAdmin = role === "admin";
+  const isAdmin = role === "admin" || role === "staff" || role === "member";
 
   const [invoice, setInvoice] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -60,7 +60,6 @@ export default function InvoiceDetail() {
   const [docUrl, setDocUrl] = useState(null);
   const [docContentType, setDocContentType] = useState(null);
   const [docLoading, setDocLoading] = useState(false);
-
 
   const [aiMessages, setAiMessages] = useState([
     {
@@ -96,7 +95,7 @@ export default function InvoiceDetail() {
         setDocUrl(doc.url);
         setDocContentType(doc.contentType);
       })
-      .catch(() => { })
+      .catch(() => {})
       .finally(() => setDocLoading(false));
     return () => {
       if (url) window.URL.revokeObjectURL(url);
@@ -131,7 +130,7 @@ export default function InvoiceDetail() {
           return data;
         });
       })
-      .catch(() => { });
+      .catch(() => {});
   }, [id]);
 
   useEffect(() => {
@@ -305,10 +304,7 @@ export default function InvoiceDetail() {
 
       const reply = await supportService.chat(history);
 
-      setAiMessages((prev) => [
-        ...prev,
-        { role: "ai", text: reply },
-      ]);
+      setAiMessages((prev) => [...prev, { role: "ai", text: reply }]);
     } catch {
       setAiMessages((prev) => [
         ...prev,
@@ -721,8 +717,14 @@ export default function InvoiceDetail() {
                           {log.notes ? ` — ${log.notes}` : ""}
                         </p>
                         <p className="text-xs text-outline">
-                          <span className="capitalize">{displayActor(log.performed_by)}</span> ·{" "}
-                          <span className="capitalize"> {formatDate(log.timestamp)}</span>
+                          <span className="capitalize">
+                            {displayActor(log.performed_by)}
+                          </span>{" "}
+                          ·{" "}
+                          <span className="capitalize">
+                            {" "}
+                            {formatDate(log.timestamp)}
+                          </span>
                         </p>
                       </div>
                     </div>
@@ -878,10 +880,11 @@ export default function InvoiceDetail() {
                     onClick={() => sendAiMessage()}
                     disabled={!aiInput.trim() || aiTyping}
                     aria-label="Send message to AI Support"
-                    className={`p-2 px-3 rounded-lg flex items-center justify-center transition-colors ${!aiInput.trim() || aiTyping
-                      ? "bg-surface-container text-outline cursor-not-allowed opacity-60"
-                      : "bg-primary text-on-primary hover:bg-primary/90 active:bg-primary/80 cursor-pointer"
-                      }`}
+                    className={`p-2 px-3 rounded-lg flex items-center justify-center transition-colors ${
+                      !aiInput.trim() || aiTyping
+                        ? "bg-surface-container text-outline cursor-not-allowed opacity-60"
+                        : "bg-primary text-on-primary hover:bg-primary/90 active:bg-primary/80 cursor-pointer"
+                    }`}
                   >
                     {aiTyping ? (
                       <Loader2 size={14} className="animate-spin" />
@@ -901,24 +904,26 @@ export default function InvoiceDetail() {
                 </div>
                 {/* <div className="flex gap-1 mt-2 flex-wrap"> */}
                 <div className="grid grid-cols-1  gap-2 mt-2">
-                  {["What is the current status of this invoice?",
+                  {[
+                    "What is the current status of this invoice?",
                     "Why is this invoice still pending?",
                     "When is this invoice due for payment?",
-                    "What should I do if my invoice is rejected?",].map(
-                      (q) => (
-                        <button
-                          key={q}
-                          type="button"
-                          onClick={() => sendAiMessage(q)}
-                          disabled={aiTyping}
-                          className="flex justify-between text-left text-xs px-3 py-2.5 rounded-lg border border-outline-variant bg-white text-on-surface hover:border-success hover:bg-success/5 transition-colors disabled:opacity-50"
-                        >
-                          {q}
-                          <MdOutlineArrowOutward size={14} className="text-on-surface" />
-
-                        </button>
-                      ),
-                    )}
+                    "What should I do if my invoice is rejected?",
+                  ].map((q) => (
+                    <button
+                      key={q}
+                      type="button"
+                      onClick={() => sendAiMessage(q)}
+                      disabled={aiTyping}
+                      className="flex justify-between text-left text-xs px-3 py-2.5 rounded-lg border border-outline-variant bg-white text-on-surface hover:border-success hover:bg-success/5 transition-colors disabled:opacity-50"
+                    >
+                      {q}
+                      <MdOutlineArrowOutward
+                        size={14}
+                        className="text-on-surface"
+                      />
+                    </button>
+                  ))}
                 </div>
 
                 <div className="px-4 py-3 border-t border-outline-variant bg-surface-container/30">
@@ -938,14 +943,17 @@ export default function InvoiceDetail() {
                       </p> */}
 
                       <p className="text-xs text-on-surface-variant mt-1 leading-relaxed">
-                        If the AI assistant can't resolve your question, raise a support
-                        ticket and the VendorPay support team will follow up with you.
+                        If the AI assistant can't resolve your question, raise a
+                        support ticket and the VendorPay support team will
+                        follow up with you.
                       </p>
 
                       <button
                         type="button"
                         onClick={() =>
-                          navigate(isAdmin ? "/admin/support" : "/vendor/support")
+                          navigate(
+                            isAdmin ? "/admin/support" : "/vendor/support",
+                          )
                         }
                         className="mt-3 inline-flex items-center gap-2 rounded-lg bg-primary text-on-primary px-3 py-2 text-xs font-medium hover:bg-primary/90 transition-colors"
                       >
@@ -956,7 +964,6 @@ export default function InvoiceDetail() {
                     </div>
                   </div>
                 </div>
-
               </div>
             </Card>
           </div>

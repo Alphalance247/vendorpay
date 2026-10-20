@@ -51,7 +51,7 @@ const ROLES = [
 // Roles the backend invite endpoint accepts from this page. "vendor" used to
 // be one of them, but vendor invites now live on the Vendors page instead.
 const INVITE_ROLES = [
-  { name: "Admin", value: "Staff" },
+  { name: "Admin", value: "staff" },
   { name: "Member", value: "member" },
 ];
 
@@ -187,9 +187,7 @@ export default function TeamRoles() {
   }, []);
 
   const canInviteTeammate =
-    !roleLoading &&
-    !!userRole &&
-    !["staff", "member"].includes(userRole);
+    !roleLoading && !!userRole && !["staff", "member"].includes(userRole);
 
   const canManageTeam = canInviteTeammate;
 
@@ -230,7 +228,6 @@ export default function TeamRoles() {
   function memberActions(member, { isOwner, resending, removing }) {
     const items = [];
     if (!canManageTeam) return items;
-
 
     if (member.status === "pending") {
       items.push({
