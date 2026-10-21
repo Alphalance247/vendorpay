@@ -264,6 +264,28 @@ definitions:
             echo "================================================================="
             echo " Frontend deployment to $BITBUCKET_DEPLOYMENT_ENVIRONMENT succeeded! ✅"
             echo "================================================================="
+        # Slack alert: posts every deploy result (green/red; @here on production
+        # failures). Needs the secured workspace variable SLACK_WEBHOOK_URL; skipped
+        # if unset. after-script runs even when the deploy fails, and a failure here
+        # never changes the step result, so Slack being down cannot block a deploy.
+        after-script:
+          - |
+            if [ -z "${SLACK_WEBHOOK_URL:-}" ]; then echo "SLACK_WEBHOOK_URL not set — skipping Slack alert"; exit 0; fi
+            ENV="${BITBUCKET_DEPLOYMENT_ENVIRONMENT:-test}"
+            LINK="https://bitbucket.org/${BITBUCKET_WORKSPACE}/${BITBUCKET_REPO_SLUG}/pipelines/results/${BITBUCKET_BUILD_NUMBER}"
+            SHORT=$(printf '%s' "$BITBUCKET_COMMIT" | cut -c1-7)
+            if [ "${BITBUCKET_EXIT_CODE:-1}" -eq 0 ]; then
+              COLOR="#2eb67d"; HEAD=":white_check_mark: ${BITBUCKET_REPO_SLUG} deployed to *${ENV}*"
+            else
+              COLOR="#e01e5a"; HEAD=":x: ${BITBUCKET_REPO_SLUG} deploy to *${ENV}* FAILED"
+              if [ "$ENV" = "production" ]; then HEAD="<!here> $HEAD"; fi
+            fi
+            printf '{"attachments":[{"color":"%s","text":"%s\\nBranch `%s` · commit `%s` · build <%s|#%s>"}]}' \
+              "$COLOR" "$HEAD" "$BITBUCKET_BRANCH" "$SHORT" "$LINK" "$BITBUCKET_BUILD_NUMBER" > /tmp/slack.json
+            curl -sS -m 10 -o /dev/null -w "Slack alert HTTP %{http_code}\n" \
+              -H 'Content-type: application/json' --data @/tmp/slack.json "$SLACK_WEBHOOK_URL" \
+              || echo "Slack alert failed (non-fatal)"
+
 
 pipelines:
   pull-requests:
@@ -330,7 +352,11 @@ pipelines:
 #     longer used. The EC2 host still needs its own read-only Bitbucket access key
 #     so `git fetch` works when SSM runs the deploy as `ubuntu`.
 #
-#  5. THE `prod` BRANCH MUST CARRY THIS SAME FILE.
+#  5. Deploy alerts go to Slack through the secured WORKSPACE variable
+#     SLACK_WEBHOOK_URL (Workspace settings -> Pipelines -> Workspace variables).
+#     Without it the deploy still runs; only the alert is skipped.
+#
+#  6. THE `prod` BRANCH MUST CARRY THIS SAME FILE.
 #     Bitbucket always reads bitbucket-pipelines.yml from the branch being built,
 #     and for a pull request that means the PR's SOURCE branch. So:
 #
