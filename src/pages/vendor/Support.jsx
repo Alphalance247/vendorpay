@@ -8,9 +8,9 @@ import { formatDate, extractErrorMessage } from '../../lib/utils';
 import { supportService } from '../../lib/services/supportService';
 
 const STATUS_STYLES = {
-  open:        { label: 'Open',        className: 'bg-navy/10 text-navy', Icon: Clock },
-  in_progress: { label: 'In Progress', className: 'bg-primary-fixed text-primary',  Icon: AlertCircle },
-  closed:      { label: 'Closed',      className: 'bg-surface-container text-on-surface-variant', Icon: CheckCircle },
+  open: { label: 'Open', className: 'bg-navy/10 text-navy', Icon: Clock },
+  in_progress: { label: 'In Progress', className: 'bg-primary-fixed text-primary', Icon: AlertCircle },
+  closed: { label: 'Closed', className: 'bg-surface-container text-on-surface-variant', Icon: CheckCircle },
 };
 
 function TicketBadge({ status }) {
@@ -25,10 +25,10 @@ function TicketBadge({ status }) {
 // ── Ticket Thread ─────────────────────────────────────────────────────────────
 
 function TicketThread({ ticketId, isAdmin, onBack }) {
-  const [ticket, setTicket]   = useState(null);
+  const [ticket, setTicket] = useState(null);
   const [replyText, setReply] = useState('');
   const [sending, setSending] = useState(false);
-  const [error, setError]     = useState('');
+  const [error, setError] = useState('');
   const bottomRef = useRef(null);
 
   const load = useCallback(() => {
@@ -39,7 +39,7 @@ function TicketThread({ ticketId, isAdmin, onBack }) {
         if (prev.messages.length === data.messages.length && prev.status === data.status) return prev;
         return data;
       });
-    }).catch(() => {});
+    }).catch(() => { });
   }, [ticketId]);
 
   useEffect(() => { load(); }, [load]);
@@ -117,18 +117,16 @@ function TicketThread({ ticketId, isAdmin, onBack }) {
           const isOwnMessage = isAdmin ? msg.sender_role === 'admin' : msg.sender_role === 'vendor';
           return (
             <div key={msg.id} className={`flex gap-3 ${isOwnMessage ? 'flex-row-reverse' : ''}`}>
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold ${
-                msg.sender_role === 'admin' ? 'bg-navy text-white' : 'bg-success/10 text-success'
-              }`}>
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold ${msg.sender_role === 'admin' ? 'bg-navy text-white' : 'bg-success/10 text-success'
+                }`}>
                 {msg.sender_name.charAt(0).toUpperCase()}
               </div>
               <div className={`max-w-[70%] ${isOwnMessage ? 'items-end' : 'items-start'} flex flex-col gap-0.5`}>
                 <span className="text-[10px] text-on-surface-variant px-1">
                   {msg.sender_name} · {formatDate(msg.created_at)}
                 </span>
-                <div className={`rounded-lg px-3 py-2 text-sm leading-relaxed ${
-                  isOwnMessage ? 'bg-navy text-white' : 'bg-surface-container text-on-surface'
-                }`}>
+                <div className={`rounded-lg px-3 py-2 text-sm leading-relaxed ${isOwnMessage ? 'bg-navy text-white' : 'bg-surface-container text-on-surface'
+                  }`}>
                   {msg.body}
                 </div>
               </div>
@@ -215,9 +213,9 @@ function TicketList({ tickets, onSelect, onNew, isAdmin }) {
 
 function NewTicketForm({ onSubmit, onCancel }) {
   const [subject, setSubject] = useState('');
-  const [body, setBody]       = useState('');
-  const [submitting, setSub]  = useState(false);
-  const [error, setError]     = useState('');
+  const [body, setBody] = useState('');
+  const [submitting, setSub] = useState(false);
+  const [error, setError] = useState('');
 
   async function handleSubmit() {
     if (!subject.trim() || !body.trim()) { setError('Subject and message are required.'); return; }
@@ -276,7 +274,7 @@ function NewTicketForm({ onSubmit, onCancel }) {
 
 // ── AI Chat Tab ────────────────────────────────────────────────────────────────
 
-const GREETING = { role: 'assistant', content: "Hi! I'm your VendorPay assistant. Ask me about your invoices, payments, onboarding, or anything else." };
+const GREETING = { role: 'assistant', content: "Hi! I'm your VendorsPay assistant. Ask me about your invoices, payments, onboarding, or anything else." };
 const MAX_STORED = 100; // cap stored messages so localStorage doesn't grow unbounded
 
 function getChatKey() {
@@ -311,8 +309,8 @@ function saveHistory(msgs) {
 
 function AiChat() {
   const [messages, setMessages] = useState(loadHistory);
-  const [input, setInput]   = useState('');
-  const [loading, setLoad]  = useState(false);
+  const [input, setInput] = useState('');
+  const [loading, setLoad] = useState(false);
   const bottomRef = useRef(null);
 
   // Persist to localStorage whenever messages change
@@ -371,9 +369,8 @@ function AiChat() {
             <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${msg.role === 'assistant' ? 'bg-success/10' : 'bg-navy'}`}>
               {msg.role === 'assistant' ? <Bot size={14} className="text-secondary" /> : <User size={14} className="text-white" />}
             </div>
-            <div className={`max-w-[72%] rounded-lg px-3 py-2 text-sm leading-relaxed ${
-              msg.role === 'assistant' ? 'bg-surface-container text-on-surface' : 'bg-navy text-white'
-            }`}>
+            <div className={`max-w-[72%] rounded-lg px-3 py-2 text-sm leading-relaxed ${msg.role === 'assistant' ? 'bg-surface-container text-on-surface' : 'bg-navy text-white'
+              }`}>
               {msg.content.split('\n').filter(l => l.trim()).map((para, j) => (
                 <p key={j} className={j > 0 ? 'mt-2' : ''}>{para}</p>
               ))}
@@ -415,11 +412,11 @@ function AiChat() {
 export default function Support({ admin = false }) {
   const role = admin ? 'admin' : 'vendor';
 
-  const [tab, setTab]           = useState(admin ? 'tickets' : 'ai');
-  const [tickets, setTickets]   = useState([]);
+  const [tab, setTab] = useState(admin ? 'tickets' : 'ai');
+  const [tickets, setTickets] = useState([]);
   const [loadingTickets, setLT] = useState(false);
-  const [activeTicket, setAT]   = useState(null);   // ticket id being viewed
-  const [newForm, setNewForm]   = useState(false);
+  const [activeTicket, setAT] = useState(null);   // ticket id being viewed
+  const [newForm, setNewForm] = useState(false);
 
   const loadTickets = useCallback(async (showSpinner = true) => {
     if (showSpinner) setLT(true);
@@ -463,9 +460,9 @@ export default function Support({ admin = false }) {
   const TABS = admin
     ? [{ key: 'tickets', label: 'Support Tickets' }]
     : [
-        { key: 'ai',      label: 'AI Assistant' },
-        { key: 'tickets', label: 'My Tickets'   },
-      ];
+      { key: 'ai', label: 'AI Assistant' },
+      { key: 'tickets', label: 'My Tickets' },
+    ];
 
   return (
     <AppLayout role={role}>
@@ -485,15 +482,15 @@ export default function Support({ admin = false }) {
           tips={
             admin
               ? [
-                  "The Support Tickets tab lists all open and resolved vendor tickets — click any ticket to read the thread and reply.",
-                  "Close a ticket once the issue is resolved; vendors can reopen it if needed.",
-                  "Use the AI Assistant tab yourself to quickly look up invoice or vendor information.",
-                ]
+                "The Support Tickets tab lists all open and resolved vendor tickets — click any ticket to read the thread and reply.",
+                "Close a ticket once the issue is resolved; vendors can reopen it if needed.",
+                "Use the AI Assistant tab yourself to quickly look up invoice or vendor information.",
+              ]
               : [
-                  "The AI Assistant answers common questions about your invoices, payment status, and account 24/7.",
-                  "For issues needing human attention, open the My Tickets tab and create a new support ticket.",
-                  "You can track all your open and resolved tickets and reply directly within each ticket thread.",
-                ]
+                "The AI Assistant answers common questions about your invoices, payment status, and account 24/7.",
+                "For issues needing human attention, open the My Tickets tab and create a new support ticket.",
+                "You can track all your open and resolved tickets and reply directly within each ticket thread.",
+              ]
           }
         />
 
@@ -504,11 +501,10 @@ export default function Support({ admin = false }) {
               <button
                 key={key}
                 onClick={() => { setTab(key); setAT(null); setNewForm(false); }}
-                className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-                  tab === key
+                className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${tab === key
                     ? 'border-success text-success'
                     : 'border-transparent text-on-surface-variant hover:text-on-surface'
-                }`}
+                  }`}
               >
                 {label}
               </button>

@@ -152,7 +152,7 @@ function ChangePlanModal({
       open={open}
       onClose={onClose}
       title="Change Plan"
-      subtitle="You'll be redirected to Stripe to complete this securely — no card details are handled by VendorPay."
+      subtitle="You'll be redirected to Stripe to complete this securely — no card details are handled by VendorsPay."
       size="xl"
       footer={
         <>
@@ -478,14 +478,14 @@ export default function Billing() {
             Billing & Subscription
           </h1>
           <p className="text-sm text-on-surface-variant mt-0.5">
-            Manage your VendorPay plan, payment method, and billing history.
+            Manage your VendorsPay plan, payment method, and billing history.
           </p>
         </div>
 
         <TutorialCard
           id="admin-billing"
           title="Managing Your Subscription"
-          description="This is what your company pays VendorPay — separate from the payments you send to your own vendors."
+          description="This is what your company pays VendorsPay — separate from the payments you send to your own vendors."
           tips={[
             "Your plan determines how many vendors you can onboard — see the usage meter below.",
             "Changing plans here applies immediately in this preview; no payment is actually processed.",

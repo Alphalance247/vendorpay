@@ -39,7 +39,7 @@ function GettingStartedPanel({ onInviteVendors }) {
     {
       key: "funding-account",
       label: "Connect a funding account",
-      description: "Link the account VendorPay will disburse payments from.",
+      description: "Link the account VendorsPay will disburse payments from.",
     },
   ];
 
@@ -95,7 +95,7 @@ export default function AdminDashboard() {
     vendorService
       .getAdminDashboard()
       .then(setDash)
-      .catch(() => {})
+      .catch(() => { })
       .finally(() => setLoading(false));
   }, []);
 
@@ -134,15 +134,15 @@ export default function AdminDashboard() {
       values: loading
         ? null
         : formatCompactCurrency(
-            dash?.monthly_volume?.amount || 0,
-            dash?.monthly_volume?.currency || "USD",
-          ),
+          dash?.monthly_volume?.amount || 0,
+          dash?.monthly_volume?.currency || "USD",
+        ),
       sub: loading
         ? ""
         : formatCurrency(
-            dash?.monthly_volume?.amount || 0,
-            dash?.monthly_volume?.currency || "USD",
-          ),
+          dash?.monthly_volume?.amount || 0,
+          dash?.monthly_volume?.currency || "USD",
+        ),
       subColor: "text-on-surface-variant",
       tip: "Total invoice value processed this calendar month, by currency.",
     },
@@ -150,27 +150,27 @@ export default function AdminDashboard() {
 
   const quickActions = isFirstRun
     ? [
-        {
-          label: "Invite Vendors",
-          icon: Users,
-          onClick: () => setInviteOpen(true),
-        },
-        { label: "Invite Team Members", path: "/admin/team", icon: UserPlus },
-        // { label: 'Set Up Billing', path: '/admin/billing', icon: CreditCard },
-      ]
+      {
+        label: "Invite Vendors",
+        icon: Users,
+        onClick: () => setInviteOpen(true),
+      },
+      { label: "Invite Team Members", path: "/admin/team", icon: UserPlus },
+      // { label: 'Set Up Billing', path: '/admin/billing', icon: CreditCard },
+    ]
     : [
-        {
-          label: "Review Pending Invoices",
-          path: "/admin/invoices",
-          icon: Receipt,
-        },
-        {
-          label: "View All Vendors",
-          path: "/admin/vendors",
-          icon: AlertCircle,
-        },
-        { label: "Payment History", path: "/admin/payments", icon: Clock },
-      ];
+      {
+        label: "Review Pending Invoices",
+        path: "/admin/invoices",
+        icon: Receipt,
+      },
+      {
+        label: "View All Vendors",
+        path: "/admin/vendors",
+        icon: AlertCircle,
+      },
+      { label: "Payment History", path: "/admin/payments", icon: Clock },
+    ];
 
   return (
     <AppLayout role="admin">

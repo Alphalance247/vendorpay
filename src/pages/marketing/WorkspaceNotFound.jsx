@@ -20,7 +20,7 @@ export default function WorkspaceNotFound({ slug, rootDomain }) {
           <h1 className="font-headline-lg text-xl font-semibold text-on-surface tracking-tight">Workspace unavailable</h1>
 
           <p className="text-on-surface-variant text-sm mt-3 leading-relaxed">
-            We couldn't find a VendorPay workspace at
+            We couldn't find a VendorsPay workspace at
           </p>
           <p className="text-on-surface font-medium text-sm mt-1 mb-3 break-all">{attemptedHost}</p>
           <p className="text-on-surface-variant text-sm leading-relaxed">
@@ -30,7 +30,7 @@ export default function WorkspaceNotFound({ slug, rootDomain }) {
 
           <div className="flex items-center justify-center gap-3 mt-6">
             <a href={rootUrl} className={primaryLink}>
-              Go to VendorPay
+              Go to VendorsPay
             </a>
             <a href="mailto:support@alluvium.net" className={secondaryLink}>
               <Mail size={14} />
