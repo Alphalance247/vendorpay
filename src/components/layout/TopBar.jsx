@@ -93,12 +93,11 @@ export default function TopBar({ onMenuClick }) {
       vendorService
         .getProfile()
         .then(setProfile)
-        .catch(() => { });
+        .catch(() => {});
     }
   }, [role]);
 
   const { data: currentUser } = useCurrentUser(role === "admin");
-  console.log(currentUser.full_name)
   // const adminAvatar = currentUser.avatar_url;
   // console.log(adminAvatar);
   // Fetch recent invoices to drive notifications
@@ -170,10 +169,10 @@ export default function TopBar({ onMenuClick }) {
 
   const displayName = profile
     ? [profile.contact_first_name, profile.contact_last_name]
-      .filter(Boolean)
-      .join(" ") ||
-    profile.company_name ||
-    "Vendor"
+        .filter(Boolean)
+        .join(" ") ||
+      profile.company_name ||
+      "Vendor"
     : role === "admin"
       ? currentUser?.full_name || "—"
       : currentUser?.full_name;
@@ -317,7 +316,9 @@ export default function TopBar({ onMenuClick }) {
                       {displayEmail}
                     </p>
                   )}
-                  <p className="text-xs text-on-surface-variant capitalize">{role}</p>
+                  <p className="text-xs text-on-surface-variant capitalize">
+                    {role}
+                  </p>
                 </div>
               </div>
               {/* } */}
