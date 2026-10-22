@@ -34,9 +34,8 @@ export default function AppLayout({ children, role = "vendor" }) {
       }
       : {
         name: profile
-          ? [profile.contact_first_name, profile.contact_last_name]
-            .filter(Boolean)
-            .join(" ") ||
+          ? profile.full_name
+          ||
           profile.company_name ||
           "Vendor"
           : "—",

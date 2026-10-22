@@ -741,7 +741,7 @@ function BankingStep({ data, onChange, errors }) {
         </div>
       </div>
 
-      <label
+      {/* <label
         className={cn(
           "flex items-start gap-2 select-none text-sm",
           !countrySelected
@@ -756,7 +756,7 @@ function BankingStep({ data, onChange, errors }) {
         />
         I authorize VendorsPay to perform a small test deposit to verify this
         account. I understand that failure to verify may delay payment cycles.
-      </label>
+      </label> */}
     </div>
   );
 }
@@ -776,7 +776,7 @@ function ContactStep({ data, onChange, errors }) {
           Contact Information
         </h2>
         <p className="text-on-surface-variant text-sm mt-1">
-          Who should we reach for payment and compliance matters?
+          Who should we reach for to if you are not available?
         </p>
       </div>
       <div className="grid grid-cols-2 gap-4">

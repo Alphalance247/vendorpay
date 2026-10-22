@@ -307,14 +307,14 @@ export default function VendorDetail() {
           </Card>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-1 xl:grid-cols-3 gap-4">
           <Card>
             <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant mb-3">
               Contact Information
             </p>
             <div className="space-y-2 text-sm">
               <div className="flex gap-2">
-                <span className="text-on-surface-variant w-24 flex-shrink-0">
+                <span className="text-on-surface-variant w-20 md:w-24 flex-shrink-0">
                   Name
                 </span>
                 <span className="text-on-surface font-medium">
@@ -322,7 +322,7 @@ export default function VendorDetail() {
                 </span>
               </div>
               <div className="flex gap-2">
-                <span className="text-on-surface-variant w-24 flex-shrink-0">
+                <span className="text-on-surface-variant w-20 md:w-24 flex-shrink-0">
                   Email
                 </span>
                 <span className="text-on-surface">
@@ -330,13 +330,13 @@ export default function VendorDetail() {
                 </span>
               </div>
               <div className="flex gap-2">
-                <span className="text-on-surface-variant w-24 flex-shrink-0">
+                <span className="text-on-surface-variant w-20 md:w-24 flex-shrink-0">
                   Phone
                 </span>
                 <span className="text-on-surface">{vendor.phone ?? "—"}</span>
               </div>
               <div className="flex gap-2">
-                <span className="text-on-surface-variant w-24 flex-shrink-0">
+                <span className="text-on-surface-variant w-20 md:w-24 flex-shrink-0">
                   Job Title
                 </span>
                 <span className="text-on-surface">
@@ -345,14 +345,50 @@ export default function VendorDetail() {
               </div>
             </div>
           </Card>
-
+          <Card>
+            <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant mb-3">
+              Contact Information
+            </p>
+            <div className="space-y-2 text-sm">
+              <div className="flex gap-2">
+                <span className="text-on-surface-variant w-20 md:w-24 flex-shrink-0">
+                  Name
+                </span>
+                <span className="text-on-surface font-medium">
+                  {vendor.contact_first_name} {vendor.contact_last_name}
+                </span>
+              </div>
+              <div className="flex gap-2">
+                <span className="text-on-surface-variant w-20 md:w-24 flex-shrink-0">
+                  Email
+                </span>
+                <span className="text-on-surface">
+                  {vendor.contact_email ?? vendor.user_email ?? "—"}
+                </span>
+              </div>
+              <div className="flex gap-2">
+                <span className="text-on-surface-variant w-20 md:w-24 flex-shrink-0">
+                  Phone
+                </span>
+                <span className="text-on-surface">{vendor.phone ?? "—"}</span>
+              </div>
+              <div className="flex gap-2">
+                <span className="text-on-surface-variant w-20 md:w-24 flex-shrink-0">
+                  Job Title
+                </span>
+                <span className="text-on-surface">
+                  {vendor.job_title ?? "—"}
+                </span>
+              </div>
+            </div>
+          </Card>
           <Card>
             <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant mb-3">
               Business Details
             </p>
             <div className="space-y-2 text-sm">
               <div className="flex gap-2">
-                <span className="text-on-surface-variant w-24 flex-shrink-0">
+                <span className="text-on-surface-variant w-20 md:w-24 flex-shrink-0">
                   Tax ID
                 </span>
                 <span className="text-on-surface font-medium">
@@ -360,7 +396,7 @@ export default function VendorDetail() {
                 </span>
               </div>
               <div className="flex gap-2">
-                <span className="text-on-surface-variant w-24 flex-shrink-0">
+                <span className="text-on-surface-variant w-20 md:w-24 flex-shrink-0">
                   Address
                 </span>
                 <span className="text-on-surface">
@@ -368,7 +404,7 @@ export default function VendorDetail() {
                 </span>
               </div>
               <div className="flex gap-2">
-                <span className="text-on-surface-variant w-24 flex-shrink-0">
+                <span className="text-on-surface-variant w-20 md:w-24 flex-shrink-0">
                   Website
                 </span>
                 <span className="text-on-surface">{vendor.website ?? "—"}</span>
@@ -404,7 +440,7 @@ export default function VendorDetail() {
             </p>
           ) : (
             <>
-              <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2 text-sm">
                 <div className="flex gap-2">
                   <span className="text-on-surface-variant w-36 flex-shrink-0">
                     Bank Name
@@ -497,7 +533,7 @@ export default function VendorDetail() {
           )}
         </Card>
 
-        <Card className="p-0 overflow-hidden">
+        <Card className="p-0 overflow-x-auto lg:overflow-hidden">
           <div className="px-5 py-3 border-b border-outline-variant">
             <span className="text-sm font-semibold text-on-surface">
               Invoice History
@@ -510,7 +546,7 @@ export default function VendorDetail() {
           ) : (
             <table className="w-full">
               <thead>
-                <tr className="bg-surface-container border-b border-outline-variant">
+                <tr className="bg-surface-container border-b border-outline-variant ">
                   {[
                     "Invoice #",
                     "Submitted",
@@ -521,7 +557,8 @@ export default function VendorDetail() {
                   ].map((h) => (
                     <th
                       key={h}
-                      className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-on-surface-variant"
+                      className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-on-surface-variant whitespace-nowrap"
+
                     >
                       {h}
                     </th>
@@ -534,22 +571,22 @@ export default function VendorDetail() {
                     key={inv.id}
                     className="hover:bg-surface-container/50 transition-colors"
                   >
-                    <td className="px-5 py-4 text-sm font-semibold text-on-surface">
+                    <td className="px-5 py-4 text-sm font-semibold text-on-surface whitespace-nowrap">
                       {inv.invoice_number}
                     </td>
-                    <td className="px-5 py-4 text-sm text-on-surface-variant">
+                    <td className="px-5 py-4 text-sm text-on-surface-variant whitespace-nowrap">
                       {formatDate(inv.submitted_at)}
                     </td>
-                    <td className="px-5 py-4 text-sm text-on-surface-variant">
+                    <td className="px-5 py-4 text-sm text-on-surface-variant whitespace-nowrap">
                       {inv.due_date ? formatDate(inv.due_date) : "—"}
                     </td>
-                    <td className="px-5 py-4 text-sm font-semibold tnum text-on-surface">
+                    <td className="px-5 py-4 text-sm font-semibold tnum text-on-surface whitespace-nowrap">
                       {formatCurrency(inv.amount, inv.currency)}
                     </td>
                     <td className="px-5 py-4">
                       <StatusChip status={inv.status} />
                     </td>
-                    <td className="px-5 py-4">
+                    <td className="px-5 py-4 whitespace-nowrap">
                       <Button
                         variant="ghost"
                         size="sm"
@@ -568,6 +605,7 @@ export default function VendorDetail() {
             </table>
           )}
         </Card>
+
       </div>
     </AppLayout>
   );

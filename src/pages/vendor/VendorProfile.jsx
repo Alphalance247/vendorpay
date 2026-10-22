@@ -70,8 +70,8 @@ const BANKING_STATUS_LABEL = {
 };
 
 const TABS = [
+  { key: "company", label: "Personal & Company" },
   { key: "contact", label: "Contact" },
-  { key: "company", label: "Company" },
   { key: "banking", label: "Banking" },
 ];
 
@@ -85,12 +85,14 @@ const TAB_SUBTITLES = {
 
 export default function VendorProfile() {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState("contact");
+  const [activeTab, setActiveTab] = useState("company");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
   const [form, setForm] = useState({
+    full_name: "",
+    user_email: "",
     contact_first_name: "",
     contact_last_name: "",
     contact_email: "",
@@ -202,6 +204,8 @@ export default function VendorProfile() {
       .getProfile()
       .then((data) => {
         setForm({
+          full_name: data.full_name ?? "",
+          user_email: data.user_email ?? "",
           contact_first_name: data.contact_first_name ?? "",
           contact_last_name: data.contact_last_name ?? "",
           contact_email: data.contact_email ?? "",
@@ -298,10 +302,10 @@ export default function VendorProfile() {
   }
 
   const initials =
-    [form.contact_first_name, form.contact_last_name]
-      .filter(Boolean)
-      .map((s) => s[0])
-      .join("")
+    form.full_name.charAt(0)
+      // .filter(Boolean)
+      // .map((s) => s[0])
+      // .join("")
       .toUpperCase() || "?";
 
   if (loading) {
@@ -370,12 +374,13 @@ export default function VendorProfile() {
             </div>
             <div className="min-w-0">
               <p className="text-sm font-semibold text-on-surface truncate capitalize">
-                {[form.contact_first_name, form.contact_last_name]
+                {/* {[form.contact_first_name, form.contact_last_name]
                   .filter(Boolean)
-                  .join(" ") || "Your Name"}
+                  .join(" ") || "Your Name"} */}
+                {form.full_name || "Your Name"}
               </p>
               <p className="text-xs text-on-surface-variant truncate">
-                {form.contact_email || "contact email"}
+                {form.user_email || "contact email"}
               </p>
 
               {/* Photo actions — beside the avatar */}
@@ -577,9 +582,49 @@ export default function VendorProfile() {
 
             <Card>
               <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant mb-4">
-                Company Details
+                Personal & Company Details
               </p>
+
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <Input
+                  label="Fullname"
+                  name="full_name"
+                  value={form.full_name}
+                  onChange={handleChange}
+                  placeholder="John Doe"
+                  className="col-span-2"
+                />
+                <div className="flex flex-col gap-1 ">
+                  <label className="text-xs font-semibold tracking-wide text-on-surface-variant uppercase">
+                    Email
+                  </label>
+                  <div className="relative">
+                    <input
+                      readOnly
+                      value={form.user_email}
+                      className="w-full rounded border border-outline-variant bg-surface-container px-3 py-2 text-sm text-on-surface-variant cursor-not-allowed select-none"
+                    />
+                  </div>
+                  <p className="text-[11px] text-outline">
+                    To update,{" "}
+                    <button
+                      type="button"
+                      onClick={() => navigate("/vendor/support")}
+                      className="text-warning underline hover:no-underline"
+                    >
+                      contact support
+                    </button>
+                    .
+                  </p>
+                </div>
+                {/* <Input
+                  label="Email"
+                  name="email"
+                  value={form.user_email}
+                  onChange={handleChange}
+                  placeholder="johndoea@example.com"
+                  className="col-span-2"
+                /> */}
                 <Input
                   label="Legal Company Name"
                   name="company_name"
