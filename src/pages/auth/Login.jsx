@@ -176,7 +176,7 @@ export default function Login() {
 
         <div>
           <p className="text-center text-sm text-on-surface-variant mb-2">
-            Setting up VendorPay for your company for the first time?
+            Setting up VendorsPay for your company for the first time?
           </p>
           <Button
             type="button"

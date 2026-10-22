@@ -754,7 +754,7 @@ function BankingStep({ data, onChange, errors }) {
           className="mt-0.5 accent-secondary"
           disabled={!countrySelected}
         />
-        I authorize VendorPay to perform a small test deposit to verify this
+        I authorize VendorsPay to perform a small test deposit to verify this
         account. I understand that failure to verify may delay payment cycles.
       </label>
     </div>
