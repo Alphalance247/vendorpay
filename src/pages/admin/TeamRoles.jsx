@@ -277,7 +277,7 @@ export default function TeamRoles() {
               Team & Roles
             </h1>
             <p className="text-sm text-on-surface-variant mt-0.5">
-              Manage who has access to your company's VendorPay workspace.
+              Manage who has access to your company's VendorsPay workspace.
             </p>
           </div>
           {canInviteTeammate && !isLoading && (

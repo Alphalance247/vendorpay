@@ -1,6 +1,6 @@
 const KNOWLEDGE_BASE = {
   greeting: [
-    "Hello! I'm your VendorPay AI assistant. How can I help you today?",
+    "Hello! I'm your VendorsPay AI assistant. How can I help you today?",
     "Hi there! I'm here to help with your invoices, payments, or onboarding. What do you need?",
   ],
   payment_status: (invoices) => {
@@ -22,17 +22,17 @@ const KNOWLEDGE_BASE = {
     const paid = invoices.filter(i => i.status === 'Paid');
     return `You have ${invoices.length} total invoice(s): ${submitted.length} submitted, ${reviewed.length} under review, ${paid.length} paid.`;
   },
-  onboarding_help: () => 
+  onboarding_help: () =>
     "To complete your onboarding, please fill out: Company Information, Banking Details (select your country first), and Contact Information. If you uploaded an invoice, we can auto-extract your details!",
-  bank_details: () => 
+  bank_details: () =>
     "To update bank details, go to the Onboarding page. Select your country first to see the correct banking fields (ACH for US, NIP for Nigeria, SEPA for Europe, etc.).",
-  payment_methods: () => 
+  payment_methods: () =>
     "We support ACH (US), Wire Transfer (international), SEPA (Europe), NIP (Nigeria), and other regional payment rails. Your available methods depend on your selected country.",
-  tax_documents: () => 
+  tax_documents: () =>
     "Tax documents like 1099s are generated automatically at year-end. You can download them from the Payments page under 'Documents'.",
-  escalation: () => 
+  escalation: () =>
     "I'm connecting you to a human agent. Average wait time: 3 minutes. Please hold...",
-  default: () => 
+  default: () =>
     "I can help with: invoice status, payment tracking, onboarding steps, bank details, or payment methods. What would you like to know?",
 };
 
@@ -43,7 +43,7 @@ function extractInvoiceId(text) {
 
 function detectIntent(text) {
   const lower = text.toLowerCase();
-  
+
   if (lower.match(/hi|hello|hey|good morning|good afternoon/)) return 'greeting';
   if (lower.match(/payment|paid|disburse|money|when.*pay|where.*money/)) return 'payment_status';
   if (lower.match(/invoice|inv-|bill|submitted|status.*invoice/)) return 'invoice_status';
@@ -52,19 +52,19 @@ function detectIntent(text) {
   if (lower.match(/method|how.*pay|ach|wire|sepa|nip/)) return 'payment_methods';
   if (lower.match(/tax|1099|document|w-9|form/)) return 'tax_documents';
   if (lower.match(/human|agent|person|representative|talk.*someone/)) return 'escalation';
-  
+
   return 'default';
 }
 
 export function getAIResponse(message, context = {}) {
   const intent = detectIntent(message);
   const invoiceId = extractInvoiceId(message);
-  
+
   if (intent === 'greeting') {
     const options = KNOWLEDGE_BASE.greeting;
     return options[Math.floor(Math.random() * options.length)];
   }
-  
+
   const responseFn = KNOWLEDGE_BASE[intent] || KNOWLEDGE_BASE.default;
   return responseFn(context.invoices || [], invoiceId);
 }

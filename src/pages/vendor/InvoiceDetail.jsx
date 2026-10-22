@@ -95,7 +95,7 @@ export default function InvoiceDetail() {
         setDocUrl(doc.url);
         setDocContentType(doc.contentType);
       })
-      .catch(() => {})
+      .catch(() => { })
       .finally(() => setDocLoading(false));
     return () => {
       if (url) window.URL.revokeObjectURL(url);
@@ -130,7 +130,7 @@ export default function InvoiceDetail() {
           return data;
         });
       })
-      .catch(() => {});
+      .catch(() => { });
   }, [id]);
 
   useEffect(() => {
@@ -883,11 +883,10 @@ export default function InvoiceDetail() {
                     onClick={() => sendAiMessage()}
                     disabled={!aiInput.trim() || aiTyping}
                     aria-label="Send message to AI Support"
-                    className={`p-2 px-3 rounded-lg flex items-center justify-center transition-colors ${
-                      !aiInput.trim() || aiTyping
+                    className={`p-2 px-3 rounded-lg flex items-center justify-center transition-colors ${!aiInput.trim() || aiTyping
                         ? "bg-surface-container text-outline cursor-not-allowed opacity-60"
                         : "bg-primary text-on-primary hover:bg-primary/90 active:bg-primary/80 cursor-pointer"
-                    }`}
+                      }`}
                   >
                     {aiTyping ? (
                       <Loader2 size={14} className="animate-spin" />
@@ -947,7 +946,7 @@ export default function InvoiceDetail() {
 
                       <p className="text-xs text-on-surface-variant mt-1 leading-relaxed">
                         If the AI assistant can't resolve your question, raise a
-                        support ticket and the VendorPay support team will
+                        support ticket and the VendorsPay support team will
                         follow up with you.
                       </p>
 

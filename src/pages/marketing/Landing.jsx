@@ -124,10 +124,10 @@ const NAV_LINKS = [
   { path: "pricing", label: "Pricing", href: "#pricing" },
 ];
 
-const CONTACT_EMAIL = "vendorpaysupport@alluvium.net";
+const CONTACT_EMAIL = "vendorspaysupport@alluvium.net";
 
 // Pre-filled subjects let the support inbox tell which part of the page an inquiry came from.
-const contactHref = (subject = "VendorPay inquiry") =>
+const contactHref = (subject = "VendorsPay inquiry") =>
   `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(subject)}`;
 
 export default function Landing() {
@@ -141,7 +141,7 @@ export default function Landing() {
 
   // Quick test wiring: logs the REST Countries call to the console on load.
   useEffect(() => {
-    getCountries().catch(() => {});
+    getCountries().catch(() => { });
   }, []);
 
   return (
@@ -505,7 +505,7 @@ export default function Landing() {
             <div className="w-full max-w-7xl mx-auto px-space-24 lg:px-space-48">
               <div className="flex flex-col items-center text-center max-w-3xl mx-auto mb-space-48">
                 <span className="font-label-eyebrow text-label-eyebrow text-secondary uppercase tracking-widest font-bold mb-space-8">
-                  BEFORE VENDORPAY
+                  BEFORE VENDORSPAY
                 </span>
                 <h2 className="font-headline-lg text-headline-lg text-on-surface">
                   The spreadsheet stops being enough at some point.
@@ -551,7 +551,7 @@ export default function Landing() {
                         <MdOutlineCheck size={18} />
                       </span>
                       <h3 className="font-sans text-headline-sm text-secondary font-bold">
-                        With VendorPay
+                        With VendorsPay
                       </h3>
                     </div>
                     <ul className="space-y-space-20">
@@ -667,11 +667,11 @@ export default function Landing() {
                   </h2>
                   <p className="font-body-lg text-body-lg text-on-surface-variant mb-space-24">
                     Vendor bank account numbers, routing details, and IBANs are
-                    sensitive by nature. VendorPay is built with that in mind
+                    sensitive by nature. VendorsPay is built with that in mind
                     from the ground up, not bolted on after the fact.
                   </p>
                   <a
-                    href={contactHref("VendorPay security documentation request")}
+                    href={contactHref("VendorsPay security documentation request")}
                     className="inline-flex items-center gap-space-8 font-label-caps text-sm font-bold uppercase tracking-[0.08em] text-secondary hover:underline"
                   >
                     Request security documentation →
@@ -796,7 +796,7 @@ export default function Landing() {
                   </div>
                 </div>
                 <a
-                  href={contactHref("VendorPay pricing inquiry")}
+                  href={contactHref("VendorsPay pricing inquiry")}
                   className="inline-flex items-center justify-center gap-space-8 px-space-20 py-space-12 rounded-lg border border-outline text-on-surface font-label-caps text-sm font-bold uppercase tracking-[0.08em] hover:bg-surface-container transition-colors whitespace-nowrap shrink-0"
                 >
                   <MdOutlineEmail size={18} />
@@ -849,14 +849,14 @@ export default function Landing() {
                 className="text-secondary/30 leading-none mb-space-16 select-none"
               />
               <blockquote className="font-headline-md text-headline-md lg:text-headline-lg lg:leading-[42px] text-on-surface italic mb-space-24 font-normal">
-                "We built VendorPay because managing a vendor in Lagos and one
+                "We built VendorsPay because managing a vendor in Lagos and one
                 in Berlin shouldn't take two different workflows, or a week of
                 your finance team's time."
               </blockquote>
               <div className="flex items-center gap-space-8">
                 <span className="w-8 h-[2px] bg-secondary" />
                 <span className="font-label-caps text-label-caps uppercase tracking-wider text-on-surface-variant font-bold">
-                  The VendorPay Team
+                  The VendorsPay Team
                 </span>
                 <span className="w-8 h-[2px] bg-secondary" />
               </div>
@@ -960,7 +960,7 @@ export default function Landing() {
               <ul className="space-y-space-12">
                 <li className="list-none">
                   <a
-                    href={contactHref("VendorPay security documentation request")}
+                    href={contactHref("VendorsPay security documentation request")}
                     className="font-body-md text-body-md text-surface-variant hover:text-surface-container-lowest transition-colors"
                   >
                     Security Docs

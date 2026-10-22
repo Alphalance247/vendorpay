@@ -38,7 +38,7 @@ export default function Logo({ variant = "light", onClick, className = "" }) {
         <span
           className={`font-label-eyebrow text-label-eyebrow uppercase tracking-widest mt-space-2 font-bold ${styles.eyebrow}`}
         >
-          VendorPay
+          VendorsPay
         </span>
       </div>
     </Tag>

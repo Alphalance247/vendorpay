@@ -175,7 +175,7 @@ export default function Sidebar({
         <ConfirmModal
           open={showSignOutConfirm}
           variant="neutral"
-          title="Sign out of VendorPay?"
+          title="Sign out of VendorsPay?"
           message="You'll need to sign in again to access your dashboard."
           confirmLabel="Sign out"
           onConfirm={handleSignOut}
