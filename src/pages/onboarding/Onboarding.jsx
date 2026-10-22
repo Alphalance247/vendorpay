@@ -29,8 +29,8 @@ function StepIndicator({ current }) {
                   done && "bg-secondary border-secondary text-white",
                   active && "bg-white border-secondary text-secondary",
                   !done &&
-                  !active &&
-                  "bg-white border-outline-variant text-on-surface-variant",
+                    !active &&
+                    "bg-white border-outline-variant text-on-surface-variant",
                 )}
               >
                 {done ? <Check size={14} /> : i + 1}
@@ -111,7 +111,8 @@ function CompanyStep({ data, onChange, errors }) {
           onChange={onChange}
           placeholder="e.g. LLC, Corporation"
           required
-          error={!data.businessType && errors?.businessType}>
+          error={!data.businessType && errors?.businessType}
+        >
           <option value="">Select business type</option>
           <option>LLC</option>
           <option>Corporation</option>
@@ -237,7 +238,6 @@ const SPECIFIC_COUNTRY_FIELDS = {
         label: "Account Number",
         placeholder: "Enter account number",
       },
-
     ],
     accountTypes: ["Checking", "Savings"],
   },
@@ -524,7 +524,6 @@ function BankingStep({ data, onChange, errors }) {
     const next = resetForCountry(data, countryCode);
 
     for (const key of [
-
       "country",
       "currency",
       "paymentRail",
@@ -620,6 +619,8 @@ function BankingStep({ data, onChange, errors }) {
             error={!data.bankName && errors?.bankName}
           />
           {profile.fields.map((field) => {
+            const required =
+              field.name === "accountNumber" || field.name === "swiftCode";
             const input = (
               <Input
                 label={field.label}
@@ -629,17 +630,18 @@ function BankingStep({ data, onChange, errors }) {
                 placeholder={field.placeholder}
                 hint={field.hint}
                 disabled={!countrySelected}
-                required={field.name === "accountNumber"}
-                error={
-                  field.name === "accountNumber" ? field.name !== "accountNumber" && errors.accountNumber : ""
-                }
+                required={required}
+                error={required ? errors[field.name] : ""}
               />
             );
 
             // Account number and its confirmation share a row
             if (field.name === "accountNumber") {
               return (
-                <div key={field.name} className="col-span-2 grid grid-cols-2 gap-4">
+                <div
+                  key={field.name}
+                  className="col-span-2 grid grid-cols-2 gap-4"
+                >
                   {input}
                   <Input
                     label="Confirm Account Number"
@@ -719,25 +721,15 @@ function BankingStep({ data, onChange, errors }) {
                 placeholder={fullRowField.placeholder}
                 hint={fullRowField.hint}
                 disabled={!countrySelected}
+                required={fullRowField.name === "swiftCode"}
+                error={
+                  fullRowField.name === "swiftCode"
+                    ? errors[fullRowField.name]
+                    : ""
+                }
               />
             </div>
           )}
-          {/* <div className="col-span-2">
-            <Input
-              label="Confirm Account Number"
-              name="confirmAccount"
-              value={data.confirmAccount}
-              onChange={onChange}
-              placeholder="Re-enter account number"
-              error={
-                mismatch
-                  ? "Account numbers do not match"
-                  : errors?.confirmAccount
-              }
-              disabled={!countrySelected}
-              required
-            />
-          </div> */}
         </div>
       </div>
 
@@ -814,7 +806,11 @@ function ContactStep({ data, onChange, errors }) {
           value={data.phone}
           onChange={onChange}
           // Start on the banking country's dial code when it's a real country
-          country={PHONE_COUNTRIES.includes(data.country) ? data.country.toLowerCase() : undefined}
+          country={
+            PHONE_COUNTRIES.includes(data.country)
+              ? data.country.toLowerCase()
+              : undefined
+          }
           placeholder="Enter phone number"
           required
           error={!isValidPhone(data.phone) && errors.phone}
@@ -1266,28 +1262,28 @@ function SectionCard({
                 {editBankingProfile?.fields?.some(
                   (field) => field.name === "accountNumber",
                 ) && (
-                    <div className="col-span-2">
-                      <EditField
-                        field={{
-                          key: "confirmAccount",
-                          label: "Confirm Account Number",
-                          type: "text",
-                          placeholder: "Re-enter account number",
-                        }}
-                        value={draft.confirmAccount || ""}
-                        draft={draft}
-                        onChange={onDraftChange}
-                      />
+                  <div className="col-span-2">
+                    <EditField
+                      field={{
+                        key: "confirmAccount",
+                        label: "Confirm Account Number",
+                        type: "text",
+                        placeholder: "Re-enter account number",
+                      }}
+                      value={draft.confirmAccount || ""}
+                      draft={draft}
+                      onChange={onDraftChange}
+                    />
 
-                      {draft.accountNumber &&
-                        draft.confirmAccount &&
-                        draft.accountNumber !== draft.confirmAccount && (
-                          <p className="mt-1 -translate-y-3 text-xs text-error">
-                            Account numbers do not match
-                          </p>
-                        )}
-                    </div>
-                  )}
+                    {draft.accountNumber &&
+                      draft.confirmAccount &&
+                      draft.accountNumber !== draft.confirmAccount && (
+                        <p className="mt-1 -translate-y-3 text-xs text-error">
+                          Account numbers do not match
+                        </p>
+                      )}
+                  </div>
+                )}
               </>
             ) : (
               section.fields.map((field) => (
@@ -1624,6 +1620,23 @@ export default function Onboarding() {
         if (!data.accountNumber) {
           newErrors.accountNumber = "Account number is required";
         }
+
+        // Only countries whose profile actually has a swiftCode field
+        // (Nigeria, Kenya, Eurozone, and the generic international-wire
+        // fallback) need it — the backend rejects these at final submit
+        // with "SWIFT code is required for international transfers" if
+        // it's missing, so require it here too instead of only catching
+        // it after Review.
+        if (
+          COUNTRY_PROFILES[data.country]?.fields?.some(
+            (f) => f.name === "swiftCode",
+          ) &&
+          !data.swiftCode
+        ) {
+          newErrors.swiftCode =
+            "SWIFT code is required for international transfers";
+        }
+
         if (!data.currency) {
           newErrors.currency = "Currency is required";
         }
@@ -1768,8 +1781,8 @@ export default function Onboarding() {
         // backend actually reads for this country_type.
         ...(countryType === "SWIFT" &&
           data.accountNumber && {
-          iban: data.accountNumber,
-        }),
+            iban: data.accountNumber,
+          }),
 
         authorized_test_deposit: true,
       });
@@ -1802,13 +1815,25 @@ export default function Onboarding() {
 
         <div className="bg-white rounded-xl border border-outline-variant shadow-sm p-6">
           {step === 0 && (
-            <CompanyStep data={data} onChange={handleChange} errors={error && errors} />
+            <CompanyStep
+              data={data}
+              onChange={handleChange}
+              errors={error && errors}
+            />
           )}
           {step === 1 && (
-            <BankingStep data={data} onChange={handleChange} errors={error && errors} />
+            <BankingStep
+              data={data}
+              onChange={handleChange}
+              errors={error && errors}
+            />
           )}
           {step === 2 && (
-            <ContactStep data={data} onChange={handleChange} errors={error && errors} />
+            <ContactStep
+              data={data}
+              onChange={handleChange}
+              errors={error && errors}
+            />
           )}
           {step === 3 && (
             <ReviewStep
