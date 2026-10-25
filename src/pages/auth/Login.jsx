@@ -47,7 +47,14 @@ export default function Login() {
         window.location.hostname,
       );
 
-      if (companySlug && companySlug !== currentSlug) {
+      // Already on the company's own host (even if the root domain wasn't
+      // recognised, so no slug was parsed) — redirecting would just stack
+      // the slug again, e.g. demo.demo.example.com.
+      const alreadyOnCompanyHost =
+        window.location.hostname.split(".")[0] === companySlug &&
+        window.location.hostname.split(".").length > 2;
+
+      if (companySlug && companySlug !== currentSlug && !alreadyOnCompanyHost) {
         const port = window.location.port ? `:${window.location.port}` : "";
         const params = new URLSearchParams({
           access_token: accessToken,
