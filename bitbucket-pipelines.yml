@@ -180,7 +180,7 @@ definitions:
 
             if [ -z "${VITE_BACKEND_URL:-}" ]; then
               if [ "${BITBUCKET_DEPLOYMENT_ENVIRONMENT:-test}" = "production" ]; then
-                export VITE_BACKEND_URL="https://vpay.goalluvium.net/"
+                export VITE_BACKEND_URL="https://vendorspay.com/"
               else
                 export VITE_BACKEND_URL="https://vpay.goalluvium.net/"
               fi
