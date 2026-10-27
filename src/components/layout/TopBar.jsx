@@ -93,7 +93,7 @@ export default function TopBar({ onMenuClick }) {
       vendorService
         .getProfile()
         .then(setProfile)
-        .catch(() => {});
+        .catch(() => { });
     }
   }, [role]);
 
@@ -168,19 +168,18 @@ export default function TopBar({ onMenuClick }) {
   }
 
   const displayName = profile
-    ? [profile.contact_first_name, profile.contact_last_name]
-        .filter(Boolean)
-        .join(" ") ||
-      profile.company_name ||
-      "Vendor"
+    ? profile.full_name
+    ||
+    profile.company_name ||
+    "Vendor"
     : role === "admin"
       ? currentUser?.full_name || "—"
       : currentUser?.full_name;
 
   const displayEmail =
-    profile?.contact_email ||
+    // profile?.contact_email ||
     profile?.user_email ||
-    (role === "admin" ? currentUser?.email : currentUser?.email) ||
+    (role === "admin" ? currentUser?.user_email : currentUser?.user_email) ||
     "";
 
   return (
@@ -311,7 +310,7 @@ export default function TopBar({ onMenuClick }) {
                   <p className="text-sm font-semibold text-on-surface truncate capitalize">
                     {displayName}
                   </p>
-                  {role === "admin" && displayEmail && (
+                  {displayEmail && (
                     <p className="text-xs text-on-surface-variant truncate">
                       {displayEmail}
                     </p>

@@ -268,11 +268,12 @@ export default function AdminDashboard() {
                     paid: "bg-success",
                     rejected: "bg-error",
                     flagged: "bg-warning",
+                    payment_disputed: "bg-secondary"
                   };
                   return (
                     <div key={key} className="flex items-center gap-3">
                       <span className="text-xs text-on-surface-variant capitalize w-28 flex-shrink-0">
-                        {key}
+                        {key.replace("_", " ")}
                       </span>
                       <div className="flex-1 h-2 bg-surface-container rounded-full overflow-hidden">
                         <div
