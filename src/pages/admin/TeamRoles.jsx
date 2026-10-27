@@ -204,7 +204,7 @@ export default function TeamRoles() {
   }
 
   function handleResend(member) {
-    resendInvite.mutate(member.id, {
+    resendInvite.mutate(member?.invite_id, {
       onSuccess: () => {
         toast(`Invitation resent to ${member.email}.`);
       },
