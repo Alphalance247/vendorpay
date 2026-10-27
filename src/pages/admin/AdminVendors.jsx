@@ -119,7 +119,7 @@ export default function AdminVendors() {
 
   function handleResendInvite(invite) {
     const email = invite.email ?? invite.contact_email ?? invite.user_email;
-    resendInvite.mutate(invite.id, {
+    resendInvite.mutate(invite?.invite_id, {
       onSuccess: () => {
         toast(`Invitation resent to ${email}.`);
       },
@@ -133,7 +133,7 @@ export default function AdminVendors() {
       message: `Revoke the invitation sent to "${email}"? Their invite link will stop working.`,
       confirmLabel: "Revoke Access",
       variant: "danger",
-      onConfirm: () => deleteInvite.mutateAsync(invite.id),
+      onConfirm: () => deleteInvite.mutateAsync(invite?.invite_id),
     });
     if (ok) {
       loadVendors();
