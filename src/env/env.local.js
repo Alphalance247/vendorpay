@@ -4,5 +4,5 @@
 // lives on a subdomain of it. The dev host is only the fallback for local
 // runs with no override.
 export const environment = {
-  baseUrl: import.meta.env.VITE_BACKEND_URL || "https://vpay.goalluvium.net/",
+  baseUrl: import.meta.env?.VITE_BACKEND_URL || "https://vpay.goalluvium.net/",
 };
