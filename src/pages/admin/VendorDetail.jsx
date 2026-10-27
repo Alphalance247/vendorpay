@@ -310,7 +310,7 @@ export default function VendorDetail() {
         <div className="grid grid-cols-1 md:grid-cols-2  gap-4">
           <Card>
             <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant mb-3">
-              Contact Information
+              Personal and Company Details
             </p>
             <div className="space-y-2 text-sm">
               <div className="flex  gap-2">
@@ -318,29 +318,29 @@ export default function VendorDetail() {
                   Name
                 </span>
                 <span className="text-on-surface font-medium ">
-                  {vendor.contact_first_name} {vendor.contact_last_name}
+                  {vendor?.full_name}
                 </span>
               </div>
               <div className="flex gap-2">
                 <span className="text-on-surface-variant w-20 md:w-24 lg:w-20 flex-shrink-0">
                   Email
                 </span>
+                <span className="text-on-surface">{vendor.user_email}</span>
+              </div>
+              <div className="flex gap-2">
+                <span className="text-on-surface-variant w-20 md:w-24 lg:w-24 flex-shrink-0">
+                  Business Type
+                </span>
                 <span className="text-on-surface">
-                  {vendor.contact_email ?? vendor.user_email ?? "—"}
+                  {vendor.business_type ?? "—"}
                 </span>
               </div>
               <div className="flex gap-2">
                 <span className="text-on-surface-variant w-20 md:w-24 lg:w-20 flex-shrink-0">
-                  Phone
-                </span>
-                <span className="text-on-surface">{vendor.phone ?? "—"}</span>
-              </div>
-              <div className="flex gap-2">
-                <span className="text-on-surface-variant w-20 md:w-24 lg:w-20 flex-shrink-0">
-                  Job Title
+                  Industry
                 </span>
                 <span className="text-on-surface">
-                  {vendor.job_title ?? "—"}
+                  {vendor.industry ?? "—"}
                 </span>
               </div>
             </div>
@@ -533,7 +533,6 @@ export default function VendorDetail() {
           </Card>
         </div>
 
-
         <Card className="p-0 overflow-hidden">
           <div className="overflow-x-auto w-full">
             <div className="px-5 py-3 border-b border-outline-variant">
@@ -561,7 +560,6 @@ export default function VendorDetail() {
                         <th
                           key={h}
                           className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-on-surface-variant "
-
                         >
                           {h}
                         </th>
@@ -595,7 +593,9 @@ export default function VendorDetail() {
                               variant="ghost"
                               size="sm"
                               className="p-1.5"
-                              onClick={() => navigate(`/admin/invoices/${inv.id}`)}
+                              onClick={() =>
+                                navigate(`/admin/invoices/${inv.id}`)
+                              }
                             >
                               <Eye size={15} />
                             </Button>
@@ -612,7 +612,6 @@ export default function VendorDetail() {
             )}
           </div>
         </Card>
-
       </div>
     </AppLayout>
   );
