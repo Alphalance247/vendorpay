@@ -343,6 +343,28 @@ export default function VendorDetail() {
                   {vendor.industry ?? "—"}
                 </span>
               </div>
+              <div className="flex gap-2">
+                <span className="text-on-surface-variant w-20 md:w-24 flex-shrink-0">
+                  Tax ID
+                </span>
+                <span className="text-on-surface font-medium">
+                  {vendor.tax_id ?? "—"}
+                </span>
+              </div>
+              <div className="flex gap-2">
+                <span className="text-on-surface-variant w-20 md:w-24 flex-shrink-0">
+                  Address
+                </span>
+                <span className="text-on-surface">
+                  {vendor.business_address ?? "—"}
+                </span>
+              </div>
+              <div className="flex gap-2">
+                <span className="text-on-surface-variant w-20 md:w-24 flex-shrink-0">
+                  Website
+                </span>
+                <span className="text-on-surface">{vendor.website ?? "—"}</span>
+              </div>
             </div>
           </Card>
           <Card>
@@ -382,156 +404,127 @@ export default function VendorDetail() {
               </div>
             </div>
           </Card>
-          <Card>
-            <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant mb-3">
-              Business Details
-            </p>
-            <div className="space-y-2 text-sm">
-              <div className="flex gap-2">
-                <span className="text-on-surface-variant w-20 md:w-24 flex-shrink-0">
-                  Tax ID
-                </span>
-                <span className="text-on-surface font-medium">
-                  {vendor.tax_id ?? "—"}
-                </span>
-              </div>
-              <div className="flex gap-2">
-                <span className="text-on-surface-variant w-20 md:w-24 flex-shrink-0">
-                  Address
-                </span>
-                <span className="text-on-surface">
-                  {vendor.business_address ?? "—"}
-                </span>
-              </div>
-              <div className="flex gap-2">
-                <span className="text-on-surface-variant w-20 md:w-24 flex-shrink-0">
-                  Website
-                </span>
-                <span className="text-on-surface">{vendor.website ?? "—"}</span>
-              </div>
-            </div>
-          </Card>
-          <Card
-            className={
-              bankingStatus === "rejected"
-                ? "border-error/30"
-                : bankingStatus === "pending"
-                  ? "border-warning/30"
-                  : ""
-            }
-          >
-            <div className="flex items-center justify-between mb-3">
-              <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant flex items-center gap-1.5">
-                <Landmark size={12} /> Banking Details
-              </p>
-              {bankingStatus && (
-                <StatusChip status={BANKING_STATUS_LABEL[bankingStatus]} />
-              )}
-            </div>
-
-            {bankingQuery.isLoading ? (
-              <div className="flex items-center justify-center py-8">
-                <Loader2 size={20} className="animate-spin text-secondary" />
-              </div>
-            ) : !banking ? (
-              <p className="text-sm text-on-surface-variant py-2">
-                No banking details submitted yet.
-              </p>
-            ) : (
-              <>
-                <div className="grid  gap-x-4 gap-y-2 text-sm">
-                  <div className="flex gap-2">
-                    <span className="text-on-surface-variant w-36 flex-shrink-0">
-                      Bank Name
-                    </span>
-                    <span className="text-on-surface font-medium">
-                      {banking.bank_name ?? "—"}
-                    </span>
-                  </div>
-                  <div className="flex gap-2">
-                    <span className="text-on-surface-variant w-36 flex-shrink-0">
-                      Account Name
-                    </span>
-                    <span className="text-on-surface">
-                      {banking.account_name ?? "—"}
-                    </span>
-                  </div>
-                  <div className="flex gap-2">
-                    <span className="text-on-surface-variant w-36 flex-shrink-0">
-                      Account Type
-                    </span>
-                    <span className="text-on-surface">
-                      {banking.account_type ?? "—"}
-                    </span>
-                  </div>
-                  <div className="flex gap-2">
-                    <span className="text-on-surface-variant w-36 flex-shrink-0">
-                      Country Type
-                    </span>
-                    <span className="text-on-surface">
-                      {banking.country_type ?? "—"}
-                    </span>
-                  </div>
-                  <div className="flex gap-2">
-                    <span className="text-on-surface-variant w-36 flex-shrink-0">
-                      Bank Code
-                    </span>
-                    <span className="text-on-surface">
-                      {banking.bank_code ?? "—"}
-                    </span>
-                  </div>
-                  <div className="flex gap-2">
-                    <span className="text-on-surface-variant w-36 flex-shrink-0">
-                      Account Number
-                    </span>
-                    <span className="text-on-surface">
-                      {banking.account_number ?? "—"}
-                    </span>
-                  </div>
-                  {banking.swift_code && (
-                    <div className="flex gap-2">
-                      <span className="text-on-surface-variant w-36 flex-shrink-0">
-                        SWIFT / BIC
-                      </span>
-                      <span className="text-on-surface">
-                        {banking.swift_code}
-                      </span>
-                    </div>
-                  )}
-                </div>
-
-                {bankingStatus === "rejected" && banking.rejection_reason && (
-                  <div className="mt-4 p-3 bg-error/5 border border-error/30 rounded text-sm text-error">
-                    <span className="font-medium">Rejection reason:</span>{" "}
-                    {banking.rejection_reason}
-                  </div>
-                )}
-
-                {bankingStatus === "pending" && (
-                  <div className="flex gap-2 mt-4">
-                    <Button
-                      size="sm"
-                      onClick={handleApproveBanking}
-                      className="flex items-center gap-1.5"
-                    >
-                      <Check size={14} />
-                      Approve
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={openBankingReject}
-                      className="flex items-center gap-1.5 text-error hover:bg-error/5"
-                    >
-                      <XCircle size={14} />
-                      Reject
-                    </Button>
-                  </div>
-                )}
-              </>
-            )}
-          </Card>
         </div>
+        <Card
+          className={
+            bankingStatus === "rejected"
+              ? "border-error/30"
+              : bankingStatus === "pending"
+                ? "border-warning/30"
+                : ""
+          }
+        >
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-xs font-semibold uppercase tracking-wide text-on-surface-variant flex items-center gap-1.5">
+              <Landmark size={12} /> Banking Details
+            </p>
+            {bankingStatus && (
+              <StatusChip status={BANKING_STATUS_LABEL[bankingStatus]} />
+            )}
+          </div>
+
+          {bankingQuery.isLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 size={20} className="animate-spin text-secondary" />
+            </div>
+          ) : !banking ? (
+            <p className="text-sm text-on-surface-variant py-2">
+              No banking details submitted yet.
+            </p>
+          ) : (
+            <>
+              <div className="grid  gap-x-4 gap-y-2 text-sm">
+                <div className="flex gap-2">
+                  <span className="text-on-surface-variant w-36 flex-shrink-0">
+                    Bank Name
+                  </span>
+                  <span className="text-on-surface font-medium">
+                    {banking.bank_name ?? "—"}
+                  </span>
+                </div>
+                <div className="flex gap-2">
+                  <span className="text-on-surface-variant w-36 flex-shrink-0">
+                    Account Name
+                  </span>
+                  <span className="text-on-surface">
+                    {banking.account_name ?? "—"}
+                  </span>
+                </div>
+                <div className="flex gap-2">
+                  <span className="text-on-surface-variant w-36 flex-shrink-0">
+                    Account Type
+                  </span>
+                  <span className="text-on-surface">
+                    {banking.account_type ?? "—"}
+                  </span>
+                </div>
+                <div className="flex gap-2">
+                  <span className="text-on-surface-variant w-36 flex-shrink-0">
+                    Country Type
+                  </span>
+                  <span className="text-on-surface">
+                    {banking.country_type ?? "—"}
+                  </span>
+                </div>
+                <div className="flex gap-2">
+                  <span className="text-on-surface-variant w-36 flex-shrink-0">
+                    Bank Code
+                  </span>
+                  <span className="text-on-surface">
+                    {banking.bank_code ?? "—"}
+                  </span>
+                </div>
+                <div className="flex gap-2">
+                  <span className="text-on-surface-variant w-36 flex-shrink-0">
+                    Account Number
+                  </span>
+                  <span className="text-on-surface">
+                    {banking.account_number ?? "—"}
+                  </span>
+                </div>
+                {banking.swift_code && (
+                  <div className="flex gap-2">
+                    <span className="text-on-surface-variant w-36 flex-shrink-0">
+                      SWIFT / BIC
+                    </span>
+                    <span className="text-on-surface">
+                      {banking.swift_code}
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {bankingStatus === "rejected" && banking.rejection_reason && (
+                <div className="mt-4 p-3 bg-error/5 border border-error/30 rounded text-sm text-error">
+                  <span className="font-medium">Rejection reason:</span>{" "}
+                  {banking.rejection_reason}
+                </div>
+              )}
+
+              {bankingStatus === "pending" && (
+                <div className="flex gap-2 mt-4">
+                  <Button
+                    size="sm"
+                    onClick={handleApproveBanking}
+                    className="flex items-center gap-1.5"
+                  >
+                    <Check size={14} />
+                    Approve
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={openBankingReject}
+                    className="flex items-center gap-1.5 text-error hover:bg-error/5"
+                  >
+                    <XCircle size={14} />
+                    Reject
+                  </Button>
+                </div>
+              )}
+            </>
+          )}
+        </Card>
 
         <Card className="p-0 overflow-hidden">
           <div className="overflow-x-auto w-full">
