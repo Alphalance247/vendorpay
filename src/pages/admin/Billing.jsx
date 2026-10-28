@@ -18,7 +18,6 @@ import StatusChip from "../../components/ui/StatusChip";
 import { useConfirm } from "../../hooks/useConfirm";
 import { useToast } from "../../components/ui/Toast";
 import { formatCurrency, formatDate, cn } from "../../lib/utils";
-import { vendorService } from "../../lib/services/vendorService";
 import {
   useBillingStatus,
   useBillingPlanList,
@@ -368,20 +367,12 @@ export default function Billing() {
   function goToPrevHistoryPage() {
     setHistoryCursors((c) => (c.length > 1 ? c.slice(0, -1) : c));
   }
-  const [vendorCount, setVendorCount] = useState(null);
   const [planModalOpen, setPlanModalOpen] = useState(false);
   // const [cardModalOpen, setCardModalOpen] = useState(false);
 
   const billingPortal = useBillingPortal();
   const { confirm, confirmEl } = useConfirm();
   const { toast } = useToast();
-
-  useEffect(() => {
-    vendorService
-      .getAllVendors()
-      .then((list) => setVendorCount(Array.isArray(list) ? list.length : 0))
-      .catch(() => setVendorCount(null));
-  }, []);
 
   // Seeds planId/status from the real subscription once it loads — kept as
   // local state (rather than reading billingStatus directly) so Change
@@ -403,7 +394,6 @@ export default function Billing() {
   }
 
   // const plan = plans.find((p) => p.slug === planSlug) ?? plans[0] ?? {};
-  const effectiveVendorCount = billingStatus?.vendor?.used ?? vendorCount;
   const vendorLimit = billingStatus?.vendors?.limit;
   const vendorUsed = billingStatus?.vendors?.used;
   const renewsOn =
@@ -416,12 +406,7 @@ export default function Billing() {
   const invoiceLimit = billingStatus?.invoices_this_month?.limit;
   const aiRequestsUsed = billingStatus?.ai_requests_this_month?.used;
   const aiRequestsLimit = billingStatus?.ai_requests_this_month?.limit;
-  const usagePct =
-    effectiveVendorCount == null || !Number.isFinite(vendorLimit)
-      ? 0
-      : Math.min(100, Math.round((effectiveVendorCount / vendorLimit) * 100));
-  // Keep the bar empty until billing status arrives; otherwise the missing
-  // limit reads as "unlimited" and the bar flashes full on first render.
+
   const vendorBarPct = !billingStatus
     ? 0
     : Number.isFinite(vendorLimit) && vendorLimit > 0
@@ -564,7 +549,7 @@ export default function Billing() {
                 <div
                   className={cn(
                     "h-full rounded-full transition-all",
-                    usagePct >= 90 ? "bg-error" : "bg-success",
+                    vendorBarPct >= 90 ? "bg-error" : "bg-success",
                   )}
                   style={{ width: `${vendorBarPct}%` }}
                 />
@@ -586,7 +571,7 @@ export default function Billing() {
                 <div
                   className={cn(
                     "h-full rounded-full transition-all",
-                    usagePct >= 90 ? "bg-error" : "bg-success",
+                    invoiceBarPct >= 90 ? "bg-error" : "bg-success",
                   )}
                   style={{ width: `${invoiceBarPct}%` }}
                 />
@@ -610,7 +595,7 @@ export default function Billing() {
                 <div
                   className={cn(
                     "h-full rounded-full transition-all",
-                    usagePct >= 90 ? "bg-error" : "bg-success",
+                    aiRequestsBarPct >= 90 ? "bg-error" : "bg-success",
                   )}
                   style={{ width: `${aiRequestsBarPct}%` }}
                 />

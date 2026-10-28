@@ -291,7 +291,7 @@ export default function AdminVendors() {
               <table className="w-[300px] lg:w-full">
                 <thead>
                   <tr className="bg-surface-container border-b border-outline-variant">
-                    {["Company", "Contact", "Industry", "Status", "Action"].map(
+                    {["Company", "Profile", "Industry", "Status", "Action"].map(
                       (h) => (
                         <th
                           key={h}
@@ -328,7 +328,7 @@ export default function AdminVendors() {
                               : "—"}
                           </p>
                           <p className="text-xs text-on-surface-variant">
-                            {vendor.contact_email ?? vendor.user_email ?? "—"}
+                            {vendor.user_email || "—"}
                           </p>
                         </td>
                         <td className="px-6 py-4 text-sm text-on-surface-variant">
@@ -432,7 +432,7 @@ export default function AdminVendors() {
                                 : "—"}
                             </p>
                             <p className="text-xs text-on-surface-variant">
-                              {invite.contact_email ?? invite.user_email ?? "—"}
+                              {invite?.user_email || "—"}
                             </p>
                           </td>
                           <td className="px-6 py-4 text-sm text-on-surface-variant">
